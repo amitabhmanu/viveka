@@ -302,33 +302,54 @@ S6 redaction + leakage ─► S7 coder audits ─► S8 coding ─► S9 measure
   <p class="lede">The registry is the framework's "fixed before scoring" made mechanical. The pipeline reads it; nothing writes to a frozen version.</p>
 
   <h3>Contents</h3>
-  <p>Thresholds and conventions from the framework's parameter registry live in <code>thresholds.yaml</code>, each with its value, its status (<code>fitted</code>, <code>simulated</code>, <code>convention</code>) and, for fitted and simulated values, the run that produced it. Instrument components from the framework's second registry table live in the other directories. The loader <span class="tag req">must</span> reject a registry with any parameter used by code but missing from the file.</p>
+  <p>Thresholds and conventions from the framework's parameter registry live in <code>thresholds.yaml</code>, each with its value, its status (<code>fitted</code>, <code>simulated</code>, <code>convention</code>) and, for fitted and simulated values, the run that produced it. Instrument components from the framework's second registry table live in the other directories. The loader (<code>viveka.registry.thresholds</code>) rejects a thresholds file that lacks any parameter in its <code>PARAMETERS</code> list, and raises when code reads a value that is still null; a test keeps <code>PARAMETERS</code> identical to the schema's required list.</p>
 <pre><code># registry/thresholds.yaml (excerpt)
-version: 3
+version: 0
+state: draft
 parameters:
-  l_lag_years:      {symbol: "ℓ", value: 2,    status: convention}
-  interval_level:   {value: 0.95,              status: convention}
-  w_window_years:   {symbol: "w", value: 5,    status: convention,
-                     variants: {length: [4, 7], shift_max: 2}}
-  o_overlap:        {symbol: "o", value: 0.3,  status: convention, sweep: [0.2, 0.5]}
-  j_idle_years:     {symbol: "j", value: 10,   status: convention}
-  kappa_min:        {symbol: "κ", value: 0.6,  status: convention}
-  m_min_members:    {symbol: "m", value: null, status: simulated, source_run: null}
-  delta:            {symbol: "δ", value: null, status: fitted,    source_run: null}</code></pre>
+  l_lag_years:    {symbol: "ℓ", used_in: gate 1, value: 2,    status: convention, source_run: null}
+  w_window_years: {symbol: "w", used_in: gate 4, value: 5,    status: convention, source_run: null,
+                   variants: {length_years: [4, 7], boundary_shift_max_years: 2}}
+  o_min_overlap:  {symbol: "o", used_in: lineages, value: 0.3, status: convention, source_run: null}
+  kappa_min:      {symbol: "κ", used_in: trigger 2, value: 0.6, status: convention, source_run: null}
+  m_min_members:  {symbol: "m", used_in: gate 1, value: null, status: simulated, source_run: null}
+  delta:          {symbol: "δ", used_in: gate 2, value: null, status: fitted,    source_run: null}</code></pre>
+
+  <h3>Components</h3>
+  <p>A component is the unit that freezes. Components come from a fixed map in <code>viveka.registry.components</code>; nothing is configured by hand. <code>.gitkeep</code> files and <code>FROZEN.json</code> belong to no component, and any other file under <code>registry/</code> that matches no component fails validation.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Component</th><th>Files</th><th>Upstream</th></tr></thead>
+      <tbody>
+        <tr><td><code>thresholds</code></td><td><code>registry/thresholds.yaml</code></td><td>—</td></tr>
+        <tr><td><code>instrument</code></td><td><code>registry/instrument.yaml</code></td><td><code>schemas</code></td></tr>
+        <tr><td><code>schemas</code>, <code>codebook</code></td><td>every file in the directory</td><td>—</td></tr>
+        <tr><td><code>prompts</code></td><td>every file in <code>registry/prompts/</code></td><td><code>codebook</code>, <code>schemas</code></td></tr>
+        <tr><td><code>events/&lt;claim&gt;</code>, <code>predictions/&lt;case&gt;</code>, <code>redaction/&lt;case&gt;</code></td><td><code>registry/&lt;dir&gt;/&lt;name&gt;.yaml</code></td><td>—</td></tr>
+        <tr><td><code>filters/&lt;commitment&gt;</code></td><td><code>registry/filters/&lt;name&gt;.yaml</code></td><td><code>codebook</code>, and <code>events/&lt;claim&gt;</code> for the claim the file names</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p><strong>Hashes.</strong> A file hash is SHA-256 of its raw bytes; <code>.gitattributes</code> pins LF, so every checkout hashes the same. A component hash is SHA-256 over sorted <code>&lt;posix path&gt;\0&lt;file hash&gt;\n</code> lines, so adding, removing, renaming or changing any byte changes it, and no timestamp ever enters it.</p>
+<pre><code>// registry/FROZEN.json (format 1)
+{"format": 1, "version": 2,
+ "components": {"schemas": {"sha256": "sha256:…", "files": ["registry/schemas/instrument.schema.json", …],
+                            "file_sha256": {"registry/schemas/instrument.schema.json": "sha256:…"},
+                            "frozen_in": 2, "frozen_at": "…", "ledger_id": "frz_…"}}}</code></pre>
 
   <h3>Freeze protocol</h3>
   <ol class="tight">
-    <li><code>viveka registry validate</code> checks schemas, cross-references (every prompt names a schema; every filter list names a commitment) and that no fitted value is null.</li>
-    <li><code>viveka registry freeze --reason "…"</code> computes SHA-256 over every file under <code>registry/</code> except <code>FROZEN.json</code>, writes the manifest, appends a change-ledger entry, commits, and creates the git tag <code>registry-v&lt;N&gt;</code>.</li>
+    <li><code>viveka registry validate [component…]</code> checks syntax, the JSON Schemas, orphan files and cross-references: a prompt's front matter names an existing schema, a filter list names a claim with an events file, and every <code>source_run</code> has a run manifest. Formats for events, filters, predictions and redaction arrive with their milestones; until then those files need only be YAML mappings with a <code>format</code> key.</li>
+    <li><code>viveka registry freeze &lt;component…&gt; --reason "…"</code> refuses unless validation passes and: no thresholds value is null; every fitted or simulated value has a <code>source_run</code>; each component has files and differs from what is already frozen; every upstream component is frozen or frozen in the same call; already-frozen components still verify; and the tag is free. It then writes the manifest atomically, appends a <code>freeze</code> record to the change ledger, commits exactly the newly frozen files, the manifest and the ledger (a pathspec commit that leaves other staged work alone), and creates the annotated tag <code>registry-v&lt;N&gt;</code>. <code>--no-git</code> exists for development and tests only.</li>
     <li>Optionally, the manifest hash is deposited with an external timestamp (<span class="tag dec">decision D-5</span>). The git tag alone is a guardrail against accident, not proof against a determined rewrite.</li>
-    <li>Every stage <span class="tag req">must</span> call <code>registry.verify()</code> at start: recompute the hashes and refuse to run if they differ from <code>FROZEN.json</code>, unless the stage is explicitly a development-fold stage run against a draft.</li>
+    <li>Every stage runs inside <code>RunContext</code> (§12), which calls <code>require_frozen(components, fold)</code>: it verifies the named components and everything upstream of them, refuses drafts outside the development fold, and refuses a frozen component whose files no longer match in every fold, including development.</li>
   </ol>
 
   <h3>Version rules</h3>
   <ul class="tight">
-    <li>Any change after freezing is made by <code>viveka registry bump</code>, which copies the frozen version to a draft, records the reason and the result that prompted it, and requires a new freeze.</li>
-    <li>Contested cases scored under an earlier version are marked <code>superseded</code> and re-registered, never rescored in place, as the framework requires.</li>
-    <li>Parts of the registry freeze at different times: thresholds after calibration, filter lists after S5 for each commitment, redaction after S6. <code>FROZEN.json</code> therefore records a hash per component, and each stage verifies only the components it depends on plus everything upstream of them.</li>
+    <li>Any change after freezing is made by <code>viveka registry bump &lt;component…&gt; --reason "…" --prompted-by "&lt;run or result&gt;"</code>. It returns the components, and every frozen component downstream of them, to draft; appends a <code>bump</code> record holding their old hashes, the cascade, the reason and what prompted it; and requires a new freeze. It refuses to bump a component whose frozen files have already been changed: restore them from the tag first. The old version stays retrievable at its <code>registry-v&lt;N&gt;</code> tag.</li>
+    <li>Contested cases scored under an earlier version are marked <code>superseded</code> and re-registered, never rescored in place, as the framework requires (built with scoring, M9).</li>
+    <li>Parts of the registry freeze at different times: thresholds after calibration, filter lists after S5 for each commitment, redaction after S6. <code>FROZEN.json</code> therefore records a hash per component, <code>version</code> rises by one on every freeze, and each component keeps the <code>frozen_in</code> version of the freeze that included it.</li>
   </ul>
 </section>
 
@@ -607,6 +628,8 @@ Framework: docs/evidence-that-cuts-both-ways.html. Harness spec: docs/viveka-har
       "Bash(uv run pytest *)",
       "Bash(uv run viveka status *)",
       "Bash(uv run viveka registry validate *)",
+      "Bash(uv run viveka registry verify *)",
+      "Bash(uv run viveka ledger verify *)",
       "Bash(git status *)", "Bash(git diff *)", "Bash(git log *)"
     ],
     "ask": [
@@ -691,9 +714,9 @@ Report each violated requirement with file:line and the requirement it breaks. D
     <table>
       <thead><tr><th>Skill</th><th>What it does</th><th>Invocation</th></tr></thead>
       <tbody>
-        <tr><td>/stage-status</td><td>Summarises run manifests: last stage per case, registry version, spend to date, failed gates. Added at M1.</td><td>User or model</td></tr>
+        <tr><td>/stage-status</td><td>Runs <code>viveka status</code> and explains it: registry version and integrity, draft components, unset thresholds, ledger integrity, recent runs, open decisions. Spend and failed gates join it when stages exist. Built at M1.</td><td>User or model</td></tr>
         <tr><td>/run-stage &lt;stage&gt; &lt;case&gt;</td><td>Validates prerequisites, shows the cost estimate, and runs the stage after the user confirms. Added with the first stage (M4).</td><td><code>disable-model-invocation: true</code></td></tr>
-        <tr><td>/freeze-registry</td><td>Runs validate, shows the diff since the last freeze, asks for a reason, freezes and tags. Added at M1.</td><td><code>disable-model-invocation: true</code></td></tr>
+        <tr><td>/freeze-registry</td><td>Runs validate, shows the diff since the last registry tag, asks the user for the reason, then runs <code>viveka registry freeze</code>, which commits and tags. Built at M1.</td><td><code>disable-model-invocation: true</code></td></tr>
         <tr><td>/log-decision</td><td>Runs <code>scripts/log_decision.py</code>: appends a reason record covering this session's unexplained registry changes, and optionally a dated line in <code>ledger/decisions.md</code> (<code>--resolve</code> marks a decision DECIDED). Built at M0.</td><td>User or model</td></tr>
       </tbody>
     </table>
@@ -706,25 +729,24 @@ Report each violated requirement with file:line and the requirement it breaks. D
   <h2>Run manifests and content addressing</h2>
   <p class="lede">Any verdict must be traceable to the exact code, registry, inputs and coders that produced it, and re-derivable from archived raw outputs without calling a model again.</p>
 
-<pre><code>// runs/2026-10-02T1412Z-s8-coldfusion-7c1e/manifest.json
+<pre><code>// runs/2026-10-02T1412Z-s8-coldfusion-7c1e/manifest.json  (validated by src/viveka/schemas/run_manifest.schema.json)
 {
   "run_id": "2026-10-02T1412Z-s8-coldfusion-7c1e",
-  "stage": "S8", "case": "coldfusion", "fold": "pilot",
+  "stage": "S8", "case": "coldfusion", "fold": "pilot", "status": "ok", "error": null,
   "git_commit": "…", "git_dirty": false,
-  "registry": {"version": 3, "components": {"thresholds": "sha256:…", "prompts": "sha256:…", "filters/cf-p1": "sha256:…"}},
-  "inputs":  [{"table": "redacted_items", "sha256": "…", "rows": 18342}],
-  "coders":  [{"coder_id": "anthropic:claude-opus-5", "family": "anthropic", "effort": "…",
-               "batch_ids": ["msgbatch_…"], "raw": "data/raw/coders/…/results.jsonl", "sha256": "…"}],
-  "outputs": [{"table": "stance_labels", "sha256": "…", "rows": 18342, "missing": 41}],
-  "seed": 20261002, "started": "…", "ended": "…",
-  "usage": {"input_tokens": 0, "cache_read_input_tokens": 0, "output_tokens": 0},
-  "confirmed_spend_by": "session …"
+  "registry": {"version": 3, "components": {"codebook": "sha256:…", "prompts": "sha256:…", "schemas": "sha256:…"}},
+  "inputs":  [{"path": "data/derived/ab/ab12….parquet", "sha256": "sha256:…"}],
+  "outputs": [{"path": "data/derived/cd/cd34….parquet", "sha256": "sha256:…", "rows": 18342}],
+  "coders":  [],   // filled from M6: coder_id, family, effort, batch_ids, raw archive path and hash
+  "usage":   {},   // filled from M6: input, cache-read and output tokens; confirmed spend
+  "seed": 20261002, "params": {}, "started": "…", "ended": "…", "viveka_version": "0.1.0"
 }</code></pre>
   <ul class="tight">
-    <li>Derived tables are written under a path containing their content hash; a run never overwrites a previous output (H3).</li>
-    <li><code>viveka verify &lt;run_id&gt;</code> recomputes every hash, and re-parses raw coder outputs to confirm the stored labels.</li>
-    <li><code>viveka rederive &lt;verdict_id&gt;</code> rebuilds a verdict from archived labels and the recorded registry version, and must reproduce it exactly given the recorded seed.</li>
-    <li>A run with <code>git_dirty: true</code> may be used for development folds only; S10–S12 refuse it for pilot, held-out or contested cases.</li>
+    <li><strong>One manifest per run, written once.</strong> <code>RunContext(stage, case, fold, components, seed)</code> mints the run id (<code>YYYY-MM-DDTHHMMZ-&lt;stage&gt;-&lt;case&gt;-&lt;4 hex&gt;</code>), verifies the registry on entry, and on exit writes the manifest with an exclusive create, whether the run succeeded or failed. A failed run records <code>status: "failed"</code> and the error. Draft components used by a development run are recorded as <code>draft:&lt;hash&gt;</code>.</li>
+    <li><strong>Content-addressed artefacts.</strong> <code>store_artifact</code> writes to <code>data/derived/&lt;first two hex&gt;/&lt;hash&gt;.&lt;ext&gt;</code>; an existing file is checked against its hash and never overwritten (H3).</li>
+    <li><strong>Clean trees for strict folds.</strong> Folds <code>pilot</code>, <code>heldout</code> and <code>contested</code> refuse to start outside git or with uncommitted changes. Pipeline output under <code>runs/</code> and <code>data/</code> does not count as a change, so one run's manifest does not block the next.</li>
+    <li><code>viveka verify &lt;run_id&gt;</code> recomputes the hash of every recorded input and output (built in M1); from M6 it also re-parses raw coder outputs to confirm the stored labels.</li>
+    <li><code>viveka rederive &lt;verdict_id&gt;</code> rebuilds a verdict from archived labels and the recorded registry version, and must reproduce it exactly given the recorded seed (built with verdicts, M2 onwards).</li>
   </ul>
 </section>
 
@@ -798,7 +820,7 @@ Report each violated requirement with file:line and the requirement it breaks. D
       <thead><tr><th>Milestone</th><th>Delivers</th><th>Exit criterion</th><th>Blocked by</th></tr></thead>
       <tbody>
         <tr><td>M0 · scaffold <span class="tag req">done 14 Sep 2026</span></td><td><code>git init</code>, uv project, <code>docs/</code>, CLAUDE.md, settings, hooks, empty registry with schemas</td><td>Hook tests pass; a frozen dummy file cannot be edited through Claude Code. Met: 67 tests pass; a live Edit on a frozen probe was blocked by <code>guard_frozen.py</code> in a Claude Code session.</td><td>—</td></tr>
-        <tr><td>M1 · registry and ledger</td><td><code>viveka registry validate | freeze | verify | bump</code>, change ledger, run manifests</td><td>§15 registry tests pass</td><td>—</td></tr>
+        <tr><td>M1 · registry and ledger <span class="tag req">done 14 Sep 2026</span></td><td><code>viveka registry validate | freeze | verify | bump</code>, change ledger, run manifests</td><td>§15 registry tests pass. Met: 137 tests pass, including a Hypothesis test that freezing is deterministic; an end-to-end run through the CLI on a throwaway copy passed all 13 checks (freeze, tag, one-byte tamper detection, bump and refreeze with v1 retrievable from its tag, ledger rewrite detection, strict-fold refusal on a dirty tree).</td><td>—</td></tr>
         <tr><td>M2 · verdict engine</td><td><code>viveka.measures</code> on in-memory inputs, gates, stability logic, field summaries, triggers</td><td>§15 engine, orientation and measure tests pass</td><td>—</td></tr>
         <tr><td>M3 · simulator</td><td>Generative model, planted-truth fixtures, <i>m</i> and <i>v</i> simulation, pilot power tool</td><td>Planted verdicts recovered; <i>m</i>, <i>v</i> written to a draft registry with source runs</td><td>—</td></tr>
         <tr><td>M4 · corpus and census</td><td>OpenAlex snapshot loader, Semantic Scholar contexts, venue ingestion, census</td><td>Census report for both pilot cases, the reserve pair and every calibration candidate</td><td>D-8 for venue archives</td></tr>

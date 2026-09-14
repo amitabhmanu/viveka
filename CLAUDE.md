@@ -14,7 +14,10 @@ Harness spec: `docs/viveka-harness-spec.html`. Where the spec and the framework 
 - Any change to `registry/` needs a reason: run `/log-decision` before finishing.
 
 ## Current milestone
-M0 (scaffold) is in place. No pipeline stages exist yet; the only CLI command is `uv run viveka status`.
+M0 (guardrails) and M1 (registry, ledger, run manifests) are in place. No pipeline stages exist yet.
+- Read-only: `uv run viveka status`, `uv run viveka registry validate|verify`, `uv run viveka ledger verify`, `uv run viveka verify <run_id>`.
+- Research acts, user-initiated only: `viveka registry freeze` (via `/freeze-registry`) and `viveka registry bump`. Never freeze or bump on your own initiative.
+- Every future stage runs inside `viveka.provenance.RunContext`, which verifies the registry components it declares.
 The guardrails live in `.claude/settings.json` and `.claude/hooks/`; changing them always needs the user's approval.
 
 ## Working
