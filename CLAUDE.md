@@ -14,7 +14,8 @@ Harness spec: `docs/viveka-harness-spec.html`. Where the spec and the framework 
 - Any change to `registry/` needs a reason: run `/log-decision` before finishing.
 
 ## Current milestone
-M0 (guardrails) and M1 (registry, ledger, run manifests) are in place. No pipeline stages exist yet.
+M0 (guardrails), M1 (registry, ledger, run manifests), M2 (verdict engine) and M3 (simulator, D-7 thresholds) are in place. No pipeline stages that touch real data exist yet; next is M4.
+- Simulator: `uv run viveka sim thresholds` (the registered run that sets δ, c, k, t, h, m, v; `--write-draft` only at registered settings), `viveka sim recover` and `viveka sim pilot` (diagnostics; `--n` stands in for n until it is fitted and is never written).
 - Read-only: `uv run viveka status`, `uv run viveka registry validate|verify`, `uv run viveka ledger verify`, `uv run viveka verify <run_id>`.
 - Research acts, user-initiated only: `viveka registry freeze` (via `/freeze-registry`) and `viveka registry bump`. Never freeze or bump on your own initiative.
 - Every future stage runs inside `viveka.provenance.RunContext`, which verifies the registry components it declares.
