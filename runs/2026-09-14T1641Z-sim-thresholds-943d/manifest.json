@@ -1,0 +1,49 @@
+{
+  "run_id": "2026-09-14T1641Z-sim-thresholds-943d",
+  "stage": "SIM",
+  "case": "thresholds",
+  "fold": "dev",
+  "status": "ok",
+  "error": null,
+  "git_commit": "d0a7279c57960c3046f0ffe2a4d54b2af7f40cbb",
+  "git_dirty": true,
+  "registry": {
+    "version": 0,
+    "components": {
+      "schemas": "draft:sha256:6aa966ab9e269ff2e8982647788b043f14b57b7f7040e78ea64a67d3cd535161",
+      "simulation": "draft:sha256:023b19de18fdfee8943f9eb4f94ce35e86714ebc60312eefbcb151948c5d8083"
+    }
+  },
+  "inputs": [],
+  "outputs": [
+    {
+      "path": "data/derived/50/503ec175f7a261c9edbcb1b7ada8a3cbde905529d088ee091505d6d8ea195e0d.json",
+      "sha256": "sha256:503ec175f7a261c9edbcb1b7ada8a3cbde905529d088ee091505d6d8ea195e0d",
+      "rows": 2400
+    },
+    {
+      "path": "data/derived/89/89c287ceb949014b1eadbf6bd6e3073315c5e0cbb82fd27caf58a1c93f67eb17.json",
+      "sha256": "sha256:89c287ceb949014b1eadbf6bd6e3073315c5e0cbb82fd27caf58a1c93f67eb17",
+      "rows": null
+    }
+  ],
+  "coders": [],
+  "usage": {},
+  "seed": 20260914,
+  "params": {
+    "replicates": 200,
+    "bootstrap_draws": 2000,
+    "workers": 4,
+    "members_grid": [
+      5,
+      10,
+      20,
+      40,
+      80,
+      160
+    ]
+  },
+  "started": "2026-09-14T16:41:10+00:00",
+  "ended": "2026-09-14T16:57:52+00:00",
+  "viveka_version": "0.1.0"
+}

@@ -22,17 +22,17 @@ parameters:
     symbol: "m"
     used_in: gate 1
     meaning: Minimum members of C
-    value: null
+    value: 160
     status: simulated
-    source_run: null
+    source_run: 2026-09-14T1641Z-sim-thresholds-943d
 
   v_min_citations:
     symbol: "v"
     used_in: gate 1
     meaning: Minimum citations by C bearing on p per sub-window; below it an engaged lineage is closed
-    value: null
+    value: 389
     status: simulated
-    source_run: null
+    source_run: 2026-09-14T1641Z-sim-thresholds-943d
 
   r_min_coverage:
     symbol: "r"
@@ -54,25 +54,25 @@ parameters:
     symbol: "δ"
     used_in: gate 2
     meaning: Smallest asymmetry treated as real, for Δ and Ω alike
-    value: null
+    value: 0.119744
     status: simulated
-    source_run: null
+    source_run: 2026-09-14T1641Z-sim-thresholds-943d
 
   c_max_insulating_share:
     symbol: "c"
     used_in: gate 2
     meaning: Largest share of insulating responses compatible with S
-    value: null
+    value: 1.0
     status: simulated
-    source_run: null
+    source_run: 2026-09-14T1641Z-sim-thresholds-943d
 
   k_min_loop:
     symbol: "k"
     used_in: gate 2
     meaning: Shortest insulating loop compatible with A
-    value: null
+    value: 3
     status: simulated
-    source_run: null
+    source_run: 2026-09-14T1641Z-sim-thresholds-943d
 
   j_idle_round_years:
     symbol: "j"
@@ -94,17 +94,17 @@ parameters:
     symbol: "t"
     used_in: gate 3
     meaning: Threshold for tie retention
-    value: null
+    value: 0.8
     status: simulated
-    source_run: null
+    source_run: 2026-09-14T1641Z-sim-thresholds-943d
 
   h_honoured_threshold:
     symbol: "h"
     used_in: gate 3
     meaning: Threshold for honoured rate
-    value: null
+    value: 1.0
     status: simulated
-    source_run: null
+    source_run: 2026-09-14T1641Z-sim-thresholds-943d
 
   h0_min_met_conditions:
     symbol: "h₀"
