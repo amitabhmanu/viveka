@@ -797,7 +797,7 @@ Report each violated requirement with file:line and the requirement it breaks. D
     <table class="wide">
       <thead><tr><th>Milestone</th><th>Delivers</th><th>Exit criterion</th><th>Blocked by</th></tr></thead>
       <tbody>
-        <tr><td>M0 · scaffold</td><td><code>git init</code>, uv project, <code>docs/</code>, CLAUDE.md, settings, hooks, empty registry with schemas</td><td>Hook tests pass; a frozen dummy file cannot be edited through Claude Code</td><td>—</td></tr>
+        <tr><td>M0 · scaffold <span class="tag req">done 14 Sep 2026</span></td><td><code>git init</code>, uv project, <code>docs/</code>, CLAUDE.md, settings, hooks, empty registry with schemas</td><td>Hook tests pass; a frozen dummy file cannot be edited through Claude Code. Met: 67 tests pass; a live Edit on a frozen probe was blocked by <code>guard_frozen.py</code> in a Claude Code session.</td><td>—</td></tr>
         <tr><td>M1 · registry and ledger</td><td><code>viveka registry validate | freeze | verify | bump</code>, change ledger, run manifests</td><td>§15 registry tests pass</td><td>—</td></tr>
         <tr><td>M2 · verdict engine</td><td><code>viveka.measures</code> on in-memory inputs, gates, stability logic, field summaries, triggers</td><td>§15 engine, orientation and measure tests pass</td><td>—</td></tr>
         <tr><td>M3 · simulator</td><td>Generative model, planted-truth fixtures, <i>m</i> and <i>v</i> simulation, pilot power tool</td><td>Planted verdicts recovered; <i>m</i>, <i>v</i> written to a draft registry with source runs</td><td>—</td></tr>
