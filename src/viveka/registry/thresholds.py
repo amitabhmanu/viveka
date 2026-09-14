@@ -41,6 +41,8 @@ PARAMETERS: tuple[str, ...] = (
     "q_min_coders",
     "g_max_leakage_pp",
     "s_max_label_change_share",
+    "bootstrap_draws",
+    "omega_prominence_strata",
 )
 
 _CORE_KEYS = {"symbol", "used_in", "meaning", "value", "status", "source_run"}

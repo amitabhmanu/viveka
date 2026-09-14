@@ -17,7 +17,7 @@
         "interval_level", "t_tau_threshold", "h_honoured_threshold", "h0_min_met_conditions",
         "w_window_years", "o_min_overlap", "sweep", "e_max_error_share",
         "i_max_indeterminate_share", "kappa_min", "q_min_coders", "g_max_leakage_pp",
-        "s_max_label_change_share"
+        "s_max_label_change_share", "bootstrap_draws", "omega_prominence_strata"
       ],
       "properties": {
         "n_min_disconfirmations": {"$ref": "#/$defs/parameter"},
@@ -41,7 +41,9 @@
         "kappa_min": {"$ref": "#/$defs/parameter"},
         "q_min_coders": {"$ref": "#/$defs/parameter"},
         "g_max_leakage_pp": {"$ref": "#/$defs/parameter"},
-        "s_max_label_change_share": {"$ref": "#/$defs/share"}
+        "s_max_label_change_share": {"$ref": "#/$defs/share"},
+        "bootstrap_draws": {"$ref": "#/$defs/count"},
+        "omega_prominence_strata": {"$ref": "#/$defs/count"}
       }
     }
   },
@@ -57,6 +59,12 @@
         "status": {"enum": ["fitted", "simulated", "convention"]},
         "source_run": {"type": ["string", "null"]}
       }
+    },
+    "count": {
+      "allOf": [
+        {"$ref": "#/$defs/parameter"},
+        {"properties": {"value": {"type": ["integer", "null"], "minimum": 1}}}
+      ]
     },
     "share": {
       "allOf": [

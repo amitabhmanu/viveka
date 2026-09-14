@@ -192,3 +192,19 @@ parameters:
     value: 0.05
     status: convention
     source_run: null
+
+  bootstrap_draws:
+    symbol: "B"
+    used_in: gates 2-3
+    meaning: Number of bootstrap resamples behind every interval
+    value: 2000
+    status: convention
+    source_run: null
+
+  omega_prominence_strata:
+    symbol: "Ω strata"
+    used_in: gate 2
+    meaning: Number of field-wide prominence quantile strata over which omission asymmetry is averaged
+    value: 5
+    status: convention
+    source_run: null
