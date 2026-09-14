@@ -98,8 +98,8 @@ def test_loader_raises_on_unset_values_and_returns_set_ones(registry_root):
     thresholds = load_thresholds(registry_root)
     assert thresholds["kappa_min"] == 0.6
     assert thresholds.parameter("w_window_years").extra["variants"]["length_years"] == [4, 7]
-    with pytest.raises(UnsetParameter, match="delta"):
-        thresholds.value("delta")
+    with pytest.raises(UnsetParameter, match="n_min_disconfirmations"):
+        thresholds.value("n_min_disconfirmations")  # fitted at calibration, so unset until M8
     with pytest.raises(KeyError):
         thresholds.parameter("not_a_parameter")
-    assert "delta" in thresholds.unset()
+    assert "n_min_disconfirmations" in thresholds.unset()

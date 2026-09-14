@@ -56,6 +56,10 @@ def _copy_registry(root: Path) -> Path:
     (root / "ledger" / "changes.jsonl").write_bytes(b"")
     shutil.copy(REPO / "ledger" / "decisions.md", root / "ledger" / "decisions.md")
     (root / "runs").mkdir()
+    # Run manifests travel with the registry, so source_run references in the copy still resolve.
+    for manifest in (REPO / "runs").glob("*/manifest.json"):
+        (root / "runs" / manifest.parent.name).mkdir()
+        shutil.copy(manifest, root / "runs" / manifest.parent.name / "manifest.json")
     shutil.copy(REPO / ".gitattributes", root / ".gitattributes")
     return root
 

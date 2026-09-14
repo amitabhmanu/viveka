@@ -8,7 +8,8 @@ import time
 from pathlib import Path
 
 from viveka.provenance import RunContext
-from viveka.registry.thresholds import load_thresholds
+from viveka.registry.errors import UnsetParameter
+from viveka.registry.thresholds import Thresholds, load_thresholds
 from viveka.sim.calibrate import PROFILES, derive, measurement_params, recovery, run_grid, simulate_row
 from viveka.sim.config import load_simulation_config
 from viveka.sim.lineages import load_scenarios
@@ -32,10 +33,27 @@ def add_parser(sub: argparse._SubParsersAction, common: argparse.ArgumentParser)
     p.add_argument("--profile", default="healthy")
     p.add_argument("--members", type=int, required=True)
     p.add_argument("--replicates", type=int, default=20)
+    p.add_argument("--n", type=int, help="Gate-1 minimum disconfirmations while n is still unfitted (diagnostic)")
 
     p = ssub.add_parser("pilot", parents=[common], help="Pilot power on lineage scenarios (YAML)")
     p.add_argument("scenarios", type=Path)
     p.add_argument("--replicates", type=int, default=50)
+    p.add_argument("--n", type=int, help="Gate-1 minimum disconfirmations while n is still unfitted (diagnostic)")
+
+
+def _diagnostic_params(thresholds: Thresholds, n: int | None) -> GateParams | None:
+    """Gate parameters for recover and pilot. n is fitted at calibration (M8), so until then --n supplies it.
+
+    The override lives only in this process; nothing is written to the registry.
+    """
+    if n is not None:
+        thresholds = thresholds.overridden(n_min_disconfirmations=n)
+    try:
+        return GateParams.from_thresholds(thresholds)
+    except UnsetParameter as exc:
+        hint = " (pass --n until n is fitted)" if "n_min_disconfirmations" in str(exc) else ""
+        print(f"viveka: {exc}{hint}")
+        return None
 
 
 def run(args: argparse.Namespace, root: Path) -> int:
@@ -83,7 +101,9 @@ def run(args: argparse.Namespace, root: Path) -> int:
             print("written to registry/thresholds.yaml: " + ", ".join(f"{k}={v}" for k, v in written.items()))
         return 0
 
-    params = GateParams.from_thresholds(thresholds)
+    params = _diagnostic_params(thresholds, args.n)
+    if params is None:
+        return 1
     if args.action == "recover":
         counts = recovery(args.profile, args.members, params, config, args.replicates, config.seed)
         for outcome, count in sorted(counts.items(), key=lambda kv: -kv[1]):

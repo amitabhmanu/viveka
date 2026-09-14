@@ -8,7 +8,7 @@ reading a parameter whose value is still null raises instead of returning None.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -79,6 +79,13 @@ class Thresholds:
 
     def unset(self) -> list[str]:
         return [n for n in PARAMETERS if self._parameters[n].value is None]
+
+    def overridden(self, **values: Any) -> Thresholds:
+        """An in-memory copy with some values replaced, for diagnostics; the registry file is untouched."""
+        parameters = dict(self._parameters)
+        for name, value in values.items():
+            parameters[name] = replace(self.parameter(name), value=value, source_run=None)
+        return Thresholds(parameters, version=self.version, state=self.state)
 
 
 def load_thresholds(root: Path) -> Thresholds:
