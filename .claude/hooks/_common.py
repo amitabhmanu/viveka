@@ -15,6 +15,14 @@ import re
 import sys
 from pathlib import Path
 
+# On Windows a piped stdout/stderr defaults to the ANSI code page (cp1252), which
+# cannot encode characters such as δ. A guard whose block message fails to encode
+# would crash with exit code 1 and let the action through, so force UTF-8 and
+# never raise on output.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+
 LEDGER = "ledger/changes.jsonl"
 DECISIONS = "ledger/decisions.md"
 FROZEN = "registry/FROZEN.json"

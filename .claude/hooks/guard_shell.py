@@ -27,7 +27,7 @@ import _common as c  # noqa: E402
 _HARMLESS_REDIRECTS = re.compile(r"\d?>\s*(\$null|/dev/null|nul)\b|\d?>&\d")
 
 _WRITE_PATTERNS = [
-    r">",
+    r"(?<![-=<])>",  # a redirect; "->", "=>" and "<>" in text are not
     r"\brm\b", r"\brmdir\b", r"\bdel\b", r"\berase\b", r"\bunlink\b", r"\btruncate\b",
     r"\bmv\b", r"\bmove\b", r"\bcp\b", r"\bcopy\b", r"\btee\b", r"\bsed\b[^|;&]*\s-i",
     r"\bremove-item\b", r"\bri\b", r"\bmove-item\b", r"\bmi\b", r"\bcopy-item\b", r"\bcpi\b",

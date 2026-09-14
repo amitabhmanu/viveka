@@ -41,8 +41,9 @@ def freeze():
 
 @pytest.fixture
 def hook():
-    def _run(name: str, root: Path, event: dict | None = None, raw: str | None = None):
-        env = {**os.environ, "CLAUDE_PROJECT_DIR": str(root)}
+    def _run(name: str, root: Path, event: dict | None = None, raw: str | None = None,
+             extra_env: dict | None = None):
+        env = {**os.environ, "CLAUDE_PROJECT_DIR": str(root), **(extra_env or {})}
         data = raw if raw is not None else json.dumps(event or {})
         return subprocess.run(
             [sys.executable, str(HOOKS / name)],

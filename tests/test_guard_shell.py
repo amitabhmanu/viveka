@@ -38,6 +38,8 @@ def test_blocks_writes_to_immutable_locations(project, hook, command):
         "git add ledger/changes.jsonl",
         "uv run viveka status",
         "uv run pytest -q",
+        "Write-Output 'step -> done'; Get-Content ledger/changes.jsonl",
+        "python -c \"f = lambda x: x\" ; cat ledger/changes.jsonl",
     ],
 )
 def test_allows_reads_and_ordinary_commands(project, freeze, hook, command):

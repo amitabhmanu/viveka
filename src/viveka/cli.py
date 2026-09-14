@@ -10,6 +10,9 @@ from viveka.status import find_root, status_summary
 
 
 def main(argv: list[str] | None = None) -> int:
+    for stream in (sys.stdout, sys.stderr):  # registry text includes δ, κ, ℓ; cp1252 consoles can't encode them
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(prog="viveka", description="Viveka research harness")
     sub = parser.add_subparsers(dest="command", required=True)
 
