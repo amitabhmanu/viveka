@@ -8,13 +8,16 @@ import yaml
 from conftest import HOOKS, REPO
 
 from viveka.cli import main
+from viveka.ledger import decision_status
+
+OPEN_DECISIONS = sum(status == "OPEN" for status, _ in decision_status(REPO).values())
 
 
 def test_status_without_frozen_registry(project, capsys):
     assert main(["status", "--root", str(project)]) == 0
     out = capsys.readouterr().out
     assert "no frozen registry" in out
-    assert "open decisions: 8" in out
+    assert f"open decisions: {OPEN_DECISIONS}" in out
 
 
 def test_status_with_frozen_registry(project, freeze, capsys):
@@ -39,7 +42,7 @@ def test_session_context_falls_back_without_a_project_environment(project, hook)
     result = hook("session_context.py", project, {"hook_event_name": "SessionStart"})
     assert result.returncode == 0
     assert result.stdout.startswith("Viveka status")
-    assert "open decisions: 8" in result.stdout
+    assert f"open decisions: {OPEN_DECISIONS}" in result.stdout
 
 
 @pytest.mark.skipif(shutil.which("uv") is None, reason="uv is not installed")

@@ -20,7 +20,11 @@ from viveka.hashing import sha256_file, tree_hash
 from viveka.paths import FROZEN, REGISTRY
 from viveka.registry.errors import UnknownComponent
 
-SINGLE_FILES = {"thresholds": "registry/thresholds.yaml", "instrument": "registry/instrument.yaml"}
+SINGLE_FILES = {
+    "thresholds": "registry/thresholds.yaml",
+    "instrument": "registry/instrument.yaml",
+    "simulation": "registry/simulation.yaml",
+}
 DIRECTORIES = ("schemas", "codebook", "prompts")
 PER_FILE_DIRS = ("events", "filters", "predictions", "redaction")
 IGNORED_NAMES = frozenset({".gitkeep"})
@@ -31,6 +35,8 @@ _PER_FILE_NAME = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 STATIC_UPSTREAM: dict[str, tuple[str, ...]] = {
     "prompts": ("codebook", "schemas"),
     "instrument": ("schemas",),
+    "simulation": ("schemas",),
+    "thresholds": ("simulation",),  # decision D-7: simulated thresholds come from the simulation settings
 }
 
 

@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/amitabhmanu/viveka/registry/schemas/simulation.schema.json",
+  "title": "Viveka simulation registry",
+  "type": "object",
+  "required": ["version", "state", "control", "grid", "rates", "evidence", "profiles", "coders"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {"type": "integer", "minimum": 0},
+    "state": {"enum": ["draft", "frozen"]},
+    "control": {
+      "type": "object",
+      "required": ["alpha", "power", "replicates", "seed"],
+      "additionalProperties": false,
+      "properties": {
+        "alpha": {"$ref": "#/$defs/open_probability"},
+        "power": {"$ref": "#/$defs/open_probability"},
+        "replicates": {"type": "integer", "minimum": 2},
+        "seed": {"type": "integer", "minimum": 0}
+      }
+    },
+    "grid": {
+      "type": "object",
+      "required": ["members"],
+      "additionalProperties": false,
+      "properties": {
+        "members": {"type": "array", "minItems": 1, "items": {"type": "integer", "minimum": 1}, "uniqueItems": true}
+      }
+    },
+    "rates": {
+      "type": "object",
+      "required": ["results_per_member", "qualifying_breaks_per_member", "baseline_changes_per_member",
+                   "ties_per_member", "disconfirmations_per_window", "met_conditions_per_window"],
+      "additionalProperties": false,
+      "properties": {
+        "results_per_member": {"type": "number", "exclusiveMinimum": 0},
+        "qualifying_breaks_per_member": {"type": "number", "minimum": 0},
+        "baseline_changes_per_member": {"type": "number", "minimum": 0},
+        "ties_per_member": {"type": "number", "exclusiveMinimum": 0},
+        "disconfirmations_per_window": {"type": "integer", "minimum": 0},
+        "met_conditions_per_window": {"type": "integer", "minimum": 0}
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["support_share", "filter_property_probability", "window_end", "window_length_years"],
+      "additionalProperties": false,
+      "properties": {
+        "support_share": {"$ref": "#/$defs/open_probability"},
+        "filter_property_probability": {"$ref": "#/$defs/probability"},
+        "window_end": {"type": "integer"},
+        "window_length_years": {"type": "integer", "minimum": 1}
+      }
+    },
+    "profiles": {
+      "type": "object",
+      "required": ["healthy", "insulated"],
+      "additionalProperties": {"$ref": "#/$defs/profile"}
+    },
+    "coders": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "kind", "flip_rate"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "kind": {"enum": ["human", "automated"]},
+          "flip_rate": {"$ref": "#/$defs/probability"}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "probability": {"type": "number", "minimum": 0, "maximum": 1},
+    "open_probability": {"type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 1},
+    "profile": {
+      "type": "object",
+      "required": ["cite_favourable", "cite_unfavourable", "discount_favourable", "discount_unfavourable",
+                   "uncheckable_unfavourable", "ledger", "rounds", "retention_after_break",
+                   "retention_after_baseline", "honoured"],
+      "additionalProperties": false,
+      "properties": {
+        "cite_favourable": {"$ref": "#/$defs/probability"},
+        "cite_unfavourable": {"$ref": "#/$defs/probability"},
+        "discount_favourable": {"$ref": "#/$defs/probability"},
+        "discount_unfavourable": {"$ref": "#/$defs/probability"},
+        "uncheckable_unfavourable": {"$ref": "#/$defs/probability"},
+        "ledger": {
+          "type": "object", "required": ["A", "B", "C", "D"], "additionalProperties": false,
+          "properties": {"A": {"$ref": "#/$defs/probability"}, "B": {"$ref": "#/$defs/probability"},
+                         "C": {"$ref": "#/$defs/probability"}, "D": {"$ref": "#/$defs/probability"}}
+        },
+        "rounds": {
+          "type": "object", "required": ["success", "fail_debit", "fail_no_debit", "open"], "additionalProperties": false,
+          "properties": {"success": {"$ref": "#/$defs/probability"}, "fail_debit": {"$ref": "#/$defs/probability"},
+                         "fail_no_debit": {"$ref": "#/$defs/probability"}, "open": {"$ref": "#/$defs/probability"}}
+        },
+        "retention_after_break": {"$ref": "#/$defs/probability"},
+        "retention_after_baseline": {"$ref": "#/$defs/probability"},
+        "honoured": {"$ref": "#/$defs/probability"}
+      }
+    }
+  }
+}

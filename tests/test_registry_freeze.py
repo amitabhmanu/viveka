@@ -96,11 +96,19 @@ def test_freeze_is_deterministic(tree):
 )
 def test_thresholds_need_values_and_provenance(registry_root, setup, message):
     setup(registry_root)
+    # Thresholds are simulated (D-7), so the simulation settings and their schemas freeze with them.
+    names = ["schemas", "simulation", "thresholds"]
     if message:
         with pytest.raises(FreezeRefused, match=message):
-            freeze(registry_root, ["thresholds"], "calibrated", use_git=False)
+            freeze(registry_root, names, "calibrated", use_git=False)
     else:
-        assert freeze(registry_root, ["thresholds"], "calibrated", use_git=False).version == 1
+        assert freeze(registry_root, names, "calibrated", use_git=False).version == 1
+
+
+def test_thresholds_cannot_freeze_before_their_simulation_settings(registry_root):
+    _complete_thresholds(registry_root)
+    with pytest.raises(FreezeRefused, match="upstream component simulation is not frozen"):
+        freeze(registry_root, ["thresholds"], "too early", use_git=False)
 
 
 def test_fitted_value_without_source_run_is_refused(registry_root):
@@ -109,8 +117,8 @@ def test_fitted_value_without_source_run_is_refused(registry_root):
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
     data["parameters"]["delta"]["source_run"] = None
     write_lf(path, yaml.safe_dump(data, allow_unicode=True, sort_keys=False))
-    with pytest.raises(FreezeRefused, match="delta is fitted but has no source_run"):
-        freeze(registry_root, ["thresholds"], "calibrated", use_git=False)
+    with pytest.raises(FreezeRefused, match="delta is simulated but has no source_run"):
+        freeze(registry_root, ["schemas", "simulation", "thresholds"], "calibrated", use_git=False)
 
 
 def test_other_refusals(registry_root, git_project):

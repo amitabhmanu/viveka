@@ -128,6 +128,20 @@ def _check_instrument(root: Path, rel: str) -> list[str]:
     return problems or _against_schema(root, rel, data, "instrument")
 
 
+def _check_simulation(root: Path, rel: str) -> list[str]:
+    data, problems = _load_yaml(root, rel)
+    if problems:
+        return problems
+    problems = _against_schema(root, rel, data, "simulation")
+    if not problems:
+        for name, profile in data["profiles"].items():
+            for mix in ("ledger", "rounds"):
+                total = sum(profile[mix].values())
+                if abs(total - 1.0) > 1e-9:
+                    problems.append(f"{rel}: profiles.{name}.{mix} probabilities sum to {total}, not 1")
+    return problems
+
+
 def _check_schema_file(root: Path, rel: str) -> list[str]:
     if not rel.endswith(".schema.json"):
         return [f"{rel}: files in {SCHEMA_DIR}/ must be named <name>.schema.json"]
@@ -180,6 +194,7 @@ def _check_per_file(root: Path, rel: str) -> list[str]:
 _CHECKERS = {
     "thresholds": _check_thresholds,
     "instrument": _check_instrument,
+    "simulation": _check_simulation,
     "schemas": _check_schema_file,
     "codebook": _check_codebook,
     "prompts": _check_prompt,

@@ -44,7 +44,7 @@ def test_invalid_names(name):
 
 def test_discover_and_orphans(registry_root):
     write_lf(registry_root / "registry" / "notes.txt", "x")
-    assert set(comp.discover(registry_root)) == {"thresholds", "instrument", "schemas"}
+    assert set(comp.discover(registry_root)) == {"thresholds", "instrument", "schemas", "simulation"}
     assert comp.orphans(registry_root) == ["registry/notes.txt"]
 
 

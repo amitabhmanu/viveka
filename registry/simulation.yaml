@@ -1,0 +1,66 @@
+# Viveka simulation registry (decision D-7, 14 Sep 2026).
+# Source: docs/evidence-that-cuts-both-ways.html, "Parameter registry"; docs/viveka-harness-spec.html §10.
+#
+# The thresholds δ, c, k, t, h and the sizes m, v are set by simulation from the
+# settings below, before any real data. Every threshold is the value at which the
+# reading it guards against happens by noise alone at a rate of at most alpha, at
+# every grid size. m and v are the smallest grid sizes at which Δ (and τ, for m)
+# separate the profiles with probability at least `power`.
+#
+# The coder model is a placeholder until stage S7 measures real confusion matrices;
+# replacing it is a version bump followed by a re-simulation.
+
+version: 0
+state: draft
+
+control:
+  alpha: 0.05
+  power: 0.8
+  replicates: 200
+  seed: 20260914
+
+grid:
+  members: [5, 10, 20, 40, 80, 160]
+
+rates:
+  results_per_member: 4            # results bearing on the claim per member per window
+  qualifying_breaks_per_member: 0.1
+  baseline_changes_per_member: 0.2
+  ties_per_member: 6
+  disconfirmations_per_window: 10
+  met_conditions_per_window: 4
+
+evidence:
+  support_share: 0.6                # share of results bearing on the claim that support p: a community holding p sees evidence tilted toward it
+  filter_property_probability: 0.4  # chance a result has the checkable filter's property, independent of direction
+  window_end: 2000
+  window_length_years: 5
+
+profiles:
+  healthy:
+    cite_favourable: 0.8
+    cite_unfavourable: 0.8
+    discount_favourable: 0.3
+    discount_unfavourable: 0.3
+    uncheckable_unfavourable: 0.0
+    ledger: {A: 0.40, B: 0.50, C: 0.05, D: 0.05}
+    rounds: {success: 0.5, fail_debit: 0.4, fail_no_debit: 0.1, open: 0.0}
+    retention_after_break: 0.85
+    retention_after_baseline: 0.85
+    honoured: 0.8
+  insulated:
+    cite_favourable: 0.8
+    cite_unfavourable: 0.32
+    discount_favourable: 0.3
+    discount_unfavourable: 0.8
+    uncheckable_unfavourable: 0.3
+    ledger: {A: 0.05, B: 0.15, C: 0.50, D: 0.30}
+    rounds: {success: 0.05, fail_debit: 0.10, fail_no_debit: 0.80, open: 0.05}
+    retention_after_break: 0.30
+    retention_after_baseline: 0.85
+    honoured: 0.2
+
+coders:
+  - {name: human-1, kind: human, flip_rate: 0.10}
+  - {name: model-a, kind: automated, flip_rate: 0.10}
+  - {name: model-b, kind: automated, flip_rate: 0.10}

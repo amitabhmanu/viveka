@@ -12,3 +12,4 @@ Add entries with `/log-decision`; never edit or delete earlier lines.
 - 2026-09-14 · D-6 · OPEN · Budget ceiling and per-run cap
 - 2026-09-14 · D-7 · OPEN · Null-simulated thresholds for δ, c, k, t, h
 - 2026-09-14 · D-8 · OPEN · Use of community archives: confirm each source's terms
+- 2026-09-14 · D-7 · DECIDED · Adopted (user, M3 plan 14 Sep 2026): delta, c, k, t, h are set by simulation before any real data, each at the value where the reading it guards against happens by noise alone at rate alpha at every grid size; m and v follow from power; calibration tests the thresholds. Adds the registered simulation component (upstream of thresholds) and marks the five thresholds simulated.

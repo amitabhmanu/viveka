@@ -10,6 +10,7 @@ dependencies = [
     "jsonschema>=4.20",
     "numpy>=1.26",
     "pyyaml>=6.0",
+    "ruamel.yaml>=0.18",
 ]
 
 [project.scripts]
@@ -28,7 +29,8 @@ build-backend = "uv_build"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q"
+addopts = "-q -m 'not slow'"
+markers = ["slow: grid-scale simulation tests; run with -m slow"]
 
 [tool.ruff]
 line-length = 120

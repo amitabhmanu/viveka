@@ -55,7 +55,7 @@ parameters:
     used_in: gate 2
     meaning: Smallest asymmetry treated as real, for Δ and Ω alike
     value: null
-    status: fitted
+    status: simulated
     source_run: null
 
   c_max_insulating_share:
@@ -63,7 +63,7 @@ parameters:
     used_in: gate 2
     meaning: Largest share of insulating responses compatible with S
     value: null
-    status: fitted
+    status: simulated
     source_run: null
 
   k_min_loop:
@@ -71,7 +71,7 @@ parameters:
     used_in: gate 2
     meaning: Shortest insulating loop compatible with A
     value: null
-    status: fitted
+    status: simulated
     source_run: null
 
   j_idle_round_years:
@@ -95,7 +95,7 @@ parameters:
     used_in: gate 3
     meaning: Threshold for tie retention
     value: null
-    status: fitted
+    status: simulated
     source_run: null
 
   h_honoured_threshold:
@@ -103,7 +103,7 @@ parameters:
     used_in: gate 3
     meaning: Threshold for honoured rate
     value: null
-    status: fitted
+    status: simulated
     source_run: null
 
   h0_min_met_conditions:
