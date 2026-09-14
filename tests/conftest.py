@@ -32,11 +32,66 @@ def project(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def freeze():
-    def _freeze(root: Path, files: list[str], version: int = 1) -> None:
-        manifest = {"version": version, "components": {"test": {"sha256": "sha256:0", "files": files}}}
+    """Write a format-1 FROZEN.json directly (hook tests); real freezes use viveka.registry.freeze."""
+
+    def _freeze(root: Path, files: list[str], version: int = 1, name: str = "thresholds") -> None:
+        from viveka.hashing import tree_hash
+
+        file_sha = {f: sha(root / f) if (root / f).is_file() else "sha256:" + "0" * 64 for f in files}
+        manifest = {
+            "format": 1,
+            "version": version,
+            "components": {name: {"sha256": tree_hash(file_sha), "files": files, "file_sha256": file_sha,
+                                  "frozen_in": version, "frozen_at": "2026-09-14T00:00:00+00:00",
+                                  "ledger_id": "frz_0"}},
+        }
         (root / "registry" / "FROZEN.json").write_text(json.dumps(manifest), encoding="utf-8")
 
     return _freeze
+
+
+def _copy_registry(root: Path) -> Path:
+    shutil.copytree(REPO / "registry", root / "registry")
+    (root / "ledger").mkdir(parents=True)
+    (root / "ledger" / "changes.jsonl").write_bytes(b"")
+    shutil.copy(REPO / "ledger" / "decisions.md", root / "ledger" / "decisions.md")
+    (root / "runs").mkdir()
+    shutil.copy(REPO / ".gitattributes", root / ".gitattributes")
+    return root
+
+
+@pytest.fixture
+def registry_root(tmp_path: Path) -> Path:
+    """A copy of the real registry and ledger outside git."""
+    return _copy_registry(tmp_path / "reg")
+
+
+def git(root: Path, *args: str) -> str:
+    result = subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True,
+                            encoding="utf-8", check=True)
+    return result.stdout
+
+
+@pytest.fixture
+def git_project(tmp_path: Path) -> Path:
+    """A copy of the real registry and ledger in a fresh git repository with one commit."""
+    if shutil.which("git") is None:
+        pytest.skip("git is not installed")
+    root = _copy_registry(tmp_path / "repo")
+    git(root, "init", "-q", "-b", "main")
+    git(root, "config", "user.name", "Viveka Test")
+    git(root, "config", "user.email", "test@example.invalid")
+    git(root, "config", "core.autocrlf", "false")
+    git(root, "config", "commit.gpgsign", "false")
+    git(root, "config", "tag.gpgsign", "false")
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "initial")
+    return root
+
+
+def write_lf(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(text.encode("utf-8"))
 
 
 @pytest.fixture

@@ -1,4 +1,4 @@
-"""Viveka command line. Milestone M0 provides `status` only."""
+"""Viveka command line."""
 
 from __future__ import annotations
 
@@ -6,31 +6,131 @@ import argparse
 import sys
 from pathlib import Path
 
-from viveka.status import find_root, status_summary
+from viveka import ledger
+from viveka.paths import find_root
+from viveka.provenance import ProvenanceError, verify_run
+from viveka.registry import manifest as mf
+from viveka.registry import verify as vf
+from viveka.registry.errors import RegistryError
+from viveka.registry.freeze import bump, freeze
+from viveka.registry.validate import validate
+from viveka.status import status_summary
+
+
+def _short(sha: str) -> str:
+    return sha.removeprefix("sha256:")[:12]
+
+
+def _parser() -> argparse.ArgumentParser:
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--root", type=Path, default=None, help="Project root (default: search upwards)")
+
+    parser = argparse.ArgumentParser(prog="viveka", description="Viveka research harness")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    sub.add_parser("status", parents=[common], help="Registry, ledger, run and decision status (read-only)")
+
+    registry = sub.add_parser("registry", help="Validate, freeze, verify or bump registry components")
+    rsub = registry.add_subparsers(dest="action", required=True)
+    p = rsub.add_parser("validate", parents=[common], help="Check registry files (read-only)")
+    p.add_argument("components", nargs="*")
+    p = rsub.add_parser("verify", parents=[common], help="Check frozen components against FROZEN.json (read-only)")
+    p.add_argument("components", nargs="*")
+    p = rsub.add_parser("freeze", parents=[common], help="Freeze components, record, commit and tag")
+    p.add_argument("components", nargs="+")
+    p.add_argument("--reason", required=True)
+    p.add_argument("--no-git", action="store_true", help="Development only: do not commit or tag")
+    p = rsub.add_parser("bump", parents=[common], help="Return frozen components to draft")
+    p.add_argument("components", nargs="+")
+    p.add_argument("--reason", required=True)
+    p.add_argument("--prompted-by", required=True, help="The run or result that prompted the change")
+
+    led = sub.add_parser("ledger", help="Change-ledger tools")
+    lsub = led.add_subparsers(dest="action", required=True)
+    lsub.add_parser("verify", parents=[common], help="Check the change ledger's integrity (read-only)")
+
+    p = sub.add_parser("verify", parents=[common], help="Check a run's recorded inputs and outputs (read-only)")
+    p.add_argument("run_id")
+    return parser
+
+
+def _cmd_registry(args: argparse.Namespace, root: Path) -> int:
+    if args.action == "validate":
+        problems = validate(root, args.components or None)
+        if problems:
+            print("registry validation failed:")
+            print("\n".join(f"  - {p}" for p in problems))
+            return 1
+        print("registry valid")
+        return 0
+
+    if args.action == "verify":
+        frozen = mf.read(root)["components"]
+        not_frozen = [n for n in args.components if n not in frozen]
+        mismatches = vf.check(root, args.components or None)
+        for name in not_frozen:
+            print(f"  - {name}: not frozen")
+        for name, issues in sorted(mismatches.items()):
+            print(f"  - {name}: {'; '.join(issues)}")
+        if not_frozen or mismatches:
+            return 1
+        checked = args.components or sorted(frozen)
+        print(f"{len(checked)} frozen component(s) verify" if checked else "no frozen components")
+        return 0
+
+    if args.action == "freeze":
+        result = freeze(root, args.components, args.reason, use_git=not args.no_git)
+        print(f"froze registry version {result.version}:")
+        for name, sha in result.components.items():
+            print(f"  - {name} {_short(sha)}")
+        print(f"ledger {result.ledger_id}" + (f"; tag {result.tag}" if result.tag else "; no git"))
+        return 0
+
+    result = bump(root, args.components, args.reason, args.prompted_by)
+    print(f"returned to draft from version {result.from_version}: {', '.join(result.components)}")
+    if result.cascaded:
+        print(f"cascaded (downstream): {', '.join(result.cascaded)}")
+    print(f"ledger {result.ledger_id}")
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
     for stream in (sys.stdout, sys.stderr):  # registry text includes δ, κ, ℓ; cp1252 consoles can't encode them
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8", errors="replace")
-    parser = argparse.ArgumentParser(prog="viveka", description="Viveka research harness")
-    sub = parser.add_subparsers(dest="command", required=True)
+    args = _parser().parse_args(argv)
 
-    status = sub.add_parser("status", help="Show registry, ledger, run and decision status (read-only)")
-    status.add_argument("--root", type=Path, default=None, help="Project root (default: search upwards)")
+    try:
+        root = args.root.resolve() if args.root else find_root(Path.cwd())
+    except FileNotFoundError as exc:
+        print(f"viveka: {exc}", file=sys.stderr)
+        return 1
 
-    args = parser.parse_args(argv)
-
-    if args.command == "status":
-        try:
-            root = args.root.resolve() if args.root else find_root(Path.cwd())
-        except FileNotFoundError as exc:
-            print(f"viveka: {exc}", file=sys.stderr)
-            return 1
-        print(status_summary(root))
-        return 0
-
-    parser.error(f"unknown command {args.command!r}")
+    try:
+        if args.command == "status":
+            print(status_summary(root))
+            return 0
+        if args.command == "registry":
+            return _cmd_registry(args, root)
+        if args.command == "ledger":
+            problems = ledger.verify(root)
+            if problems:
+                print("ledger problems:")
+                print("\n".join(f"  - {p}" for p in problems))
+                return 1
+            print(f"ledger intact ({len(ledger.records(root))} records)")
+            return 0
+        if args.command == "verify":
+            problems = verify_run(root, args.run_id)
+            if problems:
+                print(f"run {args.run_id} does not verify:")
+                print("\n".join(f"  - {p}" for p in problems))
+                return 1
+            print(f"run {args.run_id} verifies")
+            return 0
+    except (RegistryError, ledger.LedgerError, ProvenanceError) as exc:
+        print(f"viveka: {exc}", file=sys.stderr)
+        return 1
     return 2
 
 

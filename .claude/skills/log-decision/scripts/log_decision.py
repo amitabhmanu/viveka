@@ -4,6 +4,7 @@ Both ledgers are append-only: this script never rewrites an existing line.
 
 * A reason record covers every change record from the given session that has
   no reason yet: {"id", "type": "reason", "time", "session_id", "for", "reason", "decision"}.
+  It is validated against the ledger record schema before it is written.
 * A decision line is appended to ledger/decisions.md. With --resolve its status
   is DECIDED; without it the decision keeps its current status and the line is a note.
 """
@@ -14,12 +15,10 @@ import argparse
 import datetime as dt
 import os
 import sys
-import uuid
 from pathlib import Path
 
-HOOKS_DIR = Path(__file__).resolve().parents[3] / "hooks"
-sys.path.insert(0, str(HOOKS_DIR))
-import _common as c  # noqa: E402
+from viveka import ledger
+from viveka.paths import DECISIONS
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -31,47 +30,44 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--root", type=Path, help="Project root (default: CLAUDE_PROJECT_DIR or the script's project)")
     args = parser.parse_args(argv)
 
-    root = (args.root or Path(os.environ.get("CLAUDE_PROJECT_DIR") or HOOKS_DIR.parents[1])).resolve()
+    default_root = os.environ.get("CLAUDE_PROJECT_DIR") or Path(__file__).resolve().parents[4]
+    root = Path(args.root or default_root).resolve()
     reason = " ".join(args.reason.split())
     if not reason:
         parser.error("--reason must not be empty")
     if args.resolve and not args.decision:
         parser.error("--resolve requires --decision")
 
-    decisions = c.decision_status(root)
+    decisions = ledger.decision_status(root)
     if args.decision and args.decision not in decisions:
         parser.error(f"unknown decision {args.decision!r}; known: {', '.join(sorted(decisions)) or 'none'}")
 
-    pending = c.unreasoned_changes(c.ledger_records(root), args.session)
+    pending = ledger.unreasoned(ledger.records(root), args.session)
     if not pending and not args.decision:
         print("Nothing to record: this session has no registry changes without a reason, and no decision was given.")
         return 1
 
     if pending:
-        c.append_jsonl(
-            root / c.LEDGER,
-            {
-                "id": "rsn_" + uuid.uuid4().hex,
-                "type": "reason",
-                "time": c.now_iso(),
-                "session_id": args.session,
-                "for": pending,
-                "reason": reason,
-                "decision": args.decision,
-            },
-        )
+        ledger.append(root, {
+            "id": ledger.new_id("rsn"),
+            "type": "reason",
+            "time": ledger.now_iso(),
+            "session_id": args.session,
+            "for": pending,
+            "reason": reason,
+            "decision": args.decision,
+        })
         print(f"Recorded a reason for {len(pending)} change(s): {', '.join(pending)}")
 
     if args.decision:
         status = "DECIDED" if args.resolve else decisions[args.decision][0]
-        path = root / c.DECISIONS
+        path = root / DECISIONS
         existing = path.read_bytes()
         prefix = b"" if existing.endswith(b"\n") or not existing else b"\n"
-        today = dt.datetime.now(dt.UTC).date().isoformat()
-        line = f"- {today} · {args.decision} · {status} · {reason}\n"
+        line = f"- {dt.datetime.now(dt.UTC).date().isoformat()} · {args.decision} · {status} · {reason}\n"
         with open(path, "ab") as fh:
             fh.write(prefix + line.encode("utf-8"))
-        print(f"Appended to {c.DECISIONS}: {line.strip()}")
+        print(f"Appended to {DECISIONS}: {line.strip()}")
 
     return 0
 

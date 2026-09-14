@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/amitabhmanu/viveka/src/viveka/schemas/ledger_record.schema.json",
+  "title": "Viveka change-ledger record",
+  "type": "object",
+  "required": ["id", "type", "time"],
+  "properties": {
+    "type": {"enum": ["change", "reason", "freeze", "bump"]},
+    "time": {"type": "string", "minLength": 1}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"type": {"const": "change"}}},
+      "then": {
+        "required": ["session_id", "tool", "path", "sha_before", "sha_after"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^chg_[0-9a-f]+$"},
+          "session_id": {"type": ["string", "null"]},
+          "tool": {"type": ["string", "null"]},
+          "path": {"type": "string", "pattern": "^registry/"},
+          "sha_before": {"type": ["string", "null"], "pattern": "^sha256:[0-9a-f]{64}$"},
+          "sha_after": {"type": ["string", "null"], "pattern": "^sha256:[0-9a-f]{64}$"}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"type": {"const": "reason"}}},
+      "then": {
+        "required": ["session_id", "for", "reason"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^rsn_[0-9a-f]+$"},
+          "session_id": {"type": ["string", "null"]},
+          "for": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^chg_[0-9a-f]+$"}},
+          "reason": {"type": "string", "minLength": 1},
+          "decision": {"type": ["string", "null"], "pattern": "^D-[0-9]+$"}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"type": {"const": "freeze"}}},
+      "then": {
+        "required": ["version", "components", "manifest_sha256", "reason", "git_commit", "tag"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^frz_[0-9a-f]+$"},
+          "version": {"type": "integer", "minimum": 1},
+          "components": {
+            "type": "object", "minProperties": 1,
+            "additionalProperties": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+          },
+          "manifest_sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+          "reason": {"type": "string", "minLength": 1},
+          "git_commit": {"type": ["string", "null"]},
+          "tag": {"type": ["string", "null"]}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"type": {"const": "bump"}}},
+      "then": {
+        "required": ["from_version", "components", "cascaded", "reason", "prompted_by"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^bmp_[0-9a-f]+$"},
+          "from_version": {"type": "integer", "minimum": 1},
+          "components": {
+            "type": "object", "minProperties": 1,
+            "additionalProperties": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+          },
+          "cascaded": {"type": "array", "items": {"type": "string"}},
+          "reason": {"type": "string", "minLength": 1},
+          "prompted_by": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  ]
+}

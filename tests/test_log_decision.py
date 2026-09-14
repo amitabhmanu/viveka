@@ -2,7 +2,7 @@ import json
 
 from conftest import read_ledger
 
-from viveka.status import decision_status
+from viveka.ledger import decision_status
 
 
 def _seed_change(root, change_id="chg_1", session="s1"):

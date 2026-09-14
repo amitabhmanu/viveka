@@ -1,79 +1,77 @@
-"""Read-only project status.
-
-M0 stand-in for the registry tooling that arrives in M1. The same summary is
-produced by `.claude/hooks/_common.py` for session context; the hooks keep
-their own copy because they must not depend on the project environment.
-"""
+"""Read-only project status for `viveka status` and session context."""
 
 from __future__ import annotations
 
-import json
-import re
 from pathlib import Path
 
-LEDGER = "ledger/changes.jsonl"
-DECISIONS = "ledger/decisions.md"
-FROZEN = "registry/FROZEN.json"
-
-_DECISION_LINE = re.compile(r"^- (\S+) · (D-\d+) · ([A-Z]+) · (.*)$")
-
-
-def find_root(start: Path) -> Path:
-    """Nearest directory at or above ``start`` that contains a Viveka registry."""
-    start = start.resolve()
-    for candidate in (start, *start.parents):
-        if (candidate / "registry").is_dir() and (candidate / "pyproject.toml").is_file():
-            return candidate
-    raise FileNotFoundError(f"no Viveka project found at or above {start}")
+from viveka import ledger
+from viveka.provenance import recent_runs
+from viveka.registry import components as comp
+from viveka.registry import manifest as mf
+from viveka.registry import verify as vf
+from viveka.registry.errors import RegistryError
+from viveka.registry.thresholds import PARAMETERS, load_thresholds
 
 
-def ledger_records(root: Path) -> list[dict]:
-    path = root / LEDGER
-    if not path.exists():
-        return []
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
-
-
-def unreasoned_changes(records: list[dict]) -> list[str]:
-    covered = {cid for r in records if r.get("type") == "reason" for cid in r.get("for", [])}
-    return [r["id"] for r in records if r.get("type") == "change" and r.get("id") not in covered]
-
-
-def decision_status(root: Path) -> dict[str, tuple[str, str]]:
-    path = root / DECISIONS
-    status: dict[str, tuple[str, str]] = {}
-    if not path.exists():
-        return status
-    for line in path.read_text(encoding="utf-8").splitlines():
-        m = _DECISION_LINE.match(line.strip())
-        if m:
-            _, did, st, text = m.groups()
-            status[did] = (st, text)
-    return status
-
-
-def status_summary(root: Path) -> str:
-    lines = ["Viveka status"]
-    manifest_path = root / FROZEN
-    if manifest_path.exists():
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        comps = ", ".join(sorted(manifest.get("components", {}))) or "none"
-        lines.append(f"- registry: frozen version {manifest.get('version')} (components: {comps})")
+def _registry_lines(root: Path) -> list[str]:
+    try:
+        manifest = mf.read(root)
+    except RegistryError as exc:
+        return [f"- registry: FROZEN.json unreadable ({exc})"]
+    frozen = mf.frozen_names(manifest)
+    drafts = sorted(set(comp.discover(root)) - set(frozen))
+    if not frozen:
+        lines = ["- registry: no frozen registry (drafts only)"]
     else:
-        lines.append("- registry: no frozen registry (drafts only)")
-    records = ledger_records(root)
-    lines.append(
-        f"- change ledger: {len(records)} records, {len(unreasoned_changes(records))} changes without a reason"
-    )
+        try:
+            mismatches = vf.check(root)
+        except RegistryError as exc:
+            mismatches = {"manifest": [str(exc)]}
+        state = "all verify" if not mismatches else "MISMATCH in " + ", ".join(sorted(mismatches))
+        lines = [f"- registry: version {manifest['version']}; frozen: {', '.join(frozen)} ({state})"]
+    lines.append(f"- draft components: {', '.join(drafts) if drafts else 'none'}")
+    try:
+        unset = load_thresholds(root).unset()
+        lines.append(f"- thresholds: {len(PARAMETERS) - len(unset)} of {len(PARAMETERS)} set")
+    except (RegistryError, OSError) as exc:
+        lines.append(f"- thresholds: unreadable ({exc})")
+    return lines
+
+
+def _ledger_lines(root: Path) -> list[str]:
+    try:
+        recs = ledger.records(root)
+    except ledger.LedgerError as exc:
+        return [f"- change ledger: unreadable ({exc})"]
+    problems = ledger.verify(root)
+    integrity = "intact" if not problems else f"{len(problems)} problem(s), run `viveka ledger verify`"
+    pending = len(ledger.unreasoned(recs))
+    return [f"- change ledger: {len(recs)} records, {pending} changes without a reason; {integrity}"]
+
+
+def _run_lines(root: Path) -> list[str]:
+    runs = recent_runs(root)
     runs_dir = root / "runs"
-    run_count = sum(1 for p in runs_dir.iterdir() if p.is_dir()) if runs_dir.exists() else 0
-    lines.append(f"- runs: {run_count}")
-    decisions = decision_status(root)
+    count = sum(1 for p in runs_dir.iterdir() if p.is_dir()) if runs_dir.is_dir() else 0
+    lines = [f"- runs: {count}"]
+    lines.extend(f"  - {r['run_id']} ({r['fold']}, {r['status']})" for r in runs)
+    return lines
+
+
+def _decision_lines(root: Path) -> list[str]:
+    decisions = ledger.decision_status(root)
     open_items = [
         f"{did} ({text})"
         for did, (st, text) in sorted(decisions.items(), key=lambda kv: int(kv[0][2:]))
         if st == "OPEN"
     ]
-    lines.append(f"- open decisions: {len(open_items)}")
-    lines.extend(f"  - {item}" for item in open_items)
+    return [f"- open decisions: {len(open_items)}", *(f"  - {item}" for item in open_items)]
+
+
+def status_summary(root: Path) -> str:
+    lines = ["Viveka status"]
+    lines += _registry_lines(root)
+    lines += _ledger_lines(root)
+    lines += _run_lines(root)
+    lines += _decision_lines(root)
     return "\n".join(lines)

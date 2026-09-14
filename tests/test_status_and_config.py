@@ -1,5 +1,6 @@
 import json
 import re
+import shutil
 
 import jsonschema
 import pytest
@@ -19,7 +20,14 @@ def test_status_without_frozen_registry(project, capsys):
 def test_status_with_frozen_registry(project, freeze, capsys):
     freeze(project, ["registry/thresholds.yaml"])
     assert main(["status", "--root", str(project)]) == 0
-    assert "frozen version 1 (components: test)" in capsys.readouterr().out
+    assert "version 1; frozen: thresholds (all verify)" in capsys.readouterr().out
+
+
+def test_status_reports_a_changed_frozen_file(project, freeze, capsys):
+    freeze(project, ["registry/thresholds.yaml"])
+    (project / "registry" / "thresholds.yaml").write_bytes(b"version: 99\n")
+    assert main(["status", "--root", str(project)]) == 0
+    assert "MISMATCH in thresholds" in capsys.readouterr().out
 
 
 def test_status_on_the_real_repository(capsys):
@@ -27,10 +35,18 @@ def test_status_on_the_real_repository(capsys):
     assert "Viveka status" in capsys.readouterr().out
 
 
-def test_session_context_matches_cli(project, hook, capsys):
-    main(["status", "--root", str(project)])
-    cli_out = capsys.readouterr().out.strip()
+def test_session_context_falls_back_without_a_project_environment(project, hook):
     result = hook("session_context.py", project, {"hook_event_name": "SessionStart"})
+    assert result.returncode == 0
+    assert result.stdout.startswith("Viveka status")
+    assert "open decisions: 8" in result.stdout
+
+
+@pytest.mark.skipif(shutil.which("uv") is None, reason="uv is not installed")
+def test_session_context_uses_the_full_cli_in_the_repository(hook, capsys):
+    main(["status", "--root", str(REPO)])
+    cli_out = capsys.readouterr().out.strip()
+    result = hook("session_context.py", REPO, {"hook_event_name": "SessionStart"})
     assert result.returncode == 0
     assert result.stdout.strip() == cli_out
 
