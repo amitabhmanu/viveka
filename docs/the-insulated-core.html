@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  html{color-scheme:light dark}
+  body{margin:0;font:14px/1.5 system-ui,sans-serif}
+  img{max-width:100%}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<title>The Insulated Core</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+:root{
+  --ground:#EDEFEE;
+  --surface:#F8F9F8;
+  --ink:#16202A;
+  --ink-2:#3C4C55;
+  --muted:#63737A;
+  --rule:#D2D9D6;
+  --rule-strong:#B6C1BD;
+  --accent:#15566E;        /* science / depth */
+  --accent-soft:#15566E14;
+  --brass:#8A6512;         /* doctrine / accretion */
+  --brass-soft:#8A651214;
+
+  --f-display:"Newsreader",Georgia,"Times New Roman",serif;
+  --f-body:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif;
+  --f-mono:"IBM Plex Mono","SFMono-Regular",Menlo,Consolas,monospace;
+
+  --measure:68ch;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#101619; --surface:#161E22;
+    --ink:#E3EAE7; --ink-2:#BCC9C7; --muted:#8FA0A3;
+    --rule:#26333A; --rule-strong:#3A4A51;
+    --accent:#6FB6D2; --accent-soft:#6FB6D218;
+    --brass:#D7AC48; --brass-soft:#D7AC4818;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#101619; --surface:#161E22;
+  --ink:#E3EAE7; --ink-2:#BCC9C7; --muted:#8FA0A3;
+  --rule:#26333A; --rule-strong:#3A4A51;
+  --accent:#6FB6D2; --accent-soft:#6FB6D218;
+  --brass:#D7AC48; --brass-soft:#D7AC4818;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--ground);color:var(--ink);
+  font-family:var(--f-body);font-size:16.5px;line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+.page{max-width:1080px;margin:0 auto;padding-inline:24px;padding-block:0 96px}
+.col{max-width:var(--measure)}
+a{color:var(--accent);text-underline-offset:.18em;text-decoration-thickness:.06em}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+header.mast{padding-block:72px 40px;border-bottom:1px solid var(--rule-strong);display:flex;flex-direction:column;gap:22px}
+.kicker{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--f-display);font-weight:500;font-size:clamp(2.5rem,6.4vw,4.1rem);line-height:1.04;letter-spacing:-.018em;margin:0;text-wrap:balance;max-width:15ch}
+.standfirst{font-family:var(--f-display);font-size:clamp(1.12rem,2.2vw,1.36rem);line-height:1.5;color:var(--ink-2);max-width:58ch;margin:0}
+.standfirst em{color:var(--ink);font-style:italic}
+.byline{font-family:var(--f-mono);font-size:11.5px;color:var(--muted);letter-spacing:.05em}
+
+section{padding-block:56px;border-bottom:1px solid var(--rule)}
+section:last-of-type{border-bottom:none}
+.sec-label{font-family:var(--f-mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin-bottom:14px}
+h2{font-family:var(--f-display);font-weight:500;font-size:clamp(1.7rem,3.4vw,2.3rem);line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;max-width:24ch}
+h3{font-family:var(--f-display);font-weight:600;font-size:1.24rem;line-height:1.25;margin:0 0 8px}
+h4{font-family:var(--f-mono);font-weight:500;font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+p{margin:0 0 1.05em;max-width:var(--measure)}
+section > p:last-child{margin-bottom:0}
+.lede{font-size:1.06rem;color:var(--ink-2)}
+strong{font-weight:600}
+
+/* numbered propositions */
+.prop{border-top:1px solid var(--rule);padding-block:30px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 26px;align-items:start}
+.prop:first-of-type{border-top:1px solid var(--rule-strong)}
+.prop-n{font-family:var(--f-display);font-size:2.3rem;line-height:1;color:var(--accent);font-weight:500;font-variant-numeric:tabular-nums}
+.prop-body p{max-width:62ch}
+.prop-claim{font-family:var(--f-display);font-size:1.3rem;line-height:1.34;color:var(--ink);margin:0 0 14px;max-width:44ch;text-wrap:balance}
+@media (max-width:620px){
+  .prop{grid-template-columns:minmax(0,1fr);gap:10px}
+  .prop-n{font-size:1.5rem}
+}
+
+/* callouts */
+.note{border-left:2px solid var(--brass);background:var(--brass-soft);padding:14px 18px;border-radius:0 3px 3px 0;margin:22px 0;max-width:64ch}
+.note p{margin:0;font-size:14.8px;line-height:1.56;color:var(--ink-2)}
+.note h4{color:var(--brass)}
+.keyline{border-left:2px solid var(--accent);background:var(--accent-soft);padding:14px 18px;border-radius:0 3px 3px 0;margin:22px 0;max-width:64ch}
+.keyline p{margin:0;font-size:14.8px;line-height:1.56;color:var(--ink-2)}
+.keyline h4{color:var(--accent)}
+
+.pull{font-family:var(--f-display);font-size:clamp(1.25rem,2.8vw,1.6rem);line-height:1.32;color:var(--ink);border-left:2px solid var(--accent);padding:4px 0 4px 22px;margin:34px 0;max-width:46ch;text-wrap:balance}
+
+figure{margin:34px 0;max-width:100%}
+figure svg{display:block;width:100%;max-width:100%;height:auto;color:var(--ink)}
+.figframe{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:22px 20px;overflow-x:auto}
+figcaption{font-size:13.5px;line-height:1.5;color:var(--muted);margin-top:12px;max-width:64ch}
+figcaption b{color:var(--ink-2);font-weight:600}
+
+.tablewrap{overflow-x:auto;margin:28px 0 10px;border:1px solid var(--rule-strong);border-radius:4px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:860px;font-size:13.6px}
+th,td{text-align:left;padding:12px 14px;vertical-align:top;border-top:1px solid var(--rule)}
+thead th{border-top:none;border-bottom:1px solid var(--rule-strong);font-family:var(--f-mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);font-weight:500;white-space:nowrap}
+tbody tr td:first-child{font-weight:600}
+td.verdict-d{color:var(--brass);font-family:var(--f-mono);font-size:12px}
+td.verdict-s{color:var(--accent);font-family:var(--f-mono);font-size:12px}
+td.verdict-o{color:var(--muted);font-family:var(--f-mono);font-size:12px}
+
+ol.steps{counter-reset:s;list-style:none;padding:0;margin:24px 0;max-width:var(--measure)}
+ol.steps li{counter-increment:s;position:relative;padding-left:38px;margin-bottom:18px}
+ol.steps li::before{content:counter(s);position:absolute;left:0;top:1px;font-family:var(--f-mono);font-size:11px;color:var(--accent);border:1px solid var(--rule-strong);border-radius:2px;width:24px;height:22px;display:grid;place-items:center}
+ol.steps b{display:block;font-weight:600;margin-bottom:2px}
+
+ul.tight{margin:0 0 1.05em;padding-left:1.15em;max-width:var(--measure)}
+ul.tight li{margin-bottom:.45em}
+ul.tight li::marker{color:var(--rule-strong)}
+
+.refs{font-size:13.8px;line-height:1.62;color:var(--ink-2)}
+.refs p{margin-bottom:.62em;max-width:76ch;text-indent:-1.4em;padding-left:1.4em}
+footer{padding-block:44px 0;color:var(--muted);font-size:13px;border-top:1px solid var(--rule-strong)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="page">
+
+<header class="mast">
+  <div class="kicker">Demarcation · a position</div>
+  <h1>The Insulated Core</h1>
+  <p class="standfirst">Demarcation fails as a property of sentences and succeeds as a property of <em>commitments</em>. What separates a science from a pseudoscience is not what it claims, nor whether it experiments, but whether there exists a precept its own methods are not permitted to overturn.</p>
+  <div class="byline">A framework in three criteria and one failure mode</div>
+</header>
+
+<!-- ============================================ 1 -->
+<section>
+  <div class="sec-label">Why the usual approach fails</div>
+  <h2>The criterion was looking at the wrong object</h2>
+
+  <p class="lede">Sixty years of formal work tried to locate demarcation in the <em>theory</em> — in its logical form, its probability, its description length, its capacity. Each attempt failed in a characteristic way, and the failures share a cause.</p>
+
+  <p>Popper's falsifiability dies three deaths. <strong>Duhem–Quine</strong>: a theory never faces evidence alone, so a refutation lands on the conjunction of theory, auxiliaries and initial conditions, and logic will not say which conjunct to drop. <strong>Statistical theories</strong>: no finite sample strictly contradicts a probabilistic hypothesis, so on the strict reading most of modern medicine and biology is unfalsifiable. And the <strong>empirical record</strong>: astrology is not unfalsifiable. Shawn Carlson tested astrologers double-blind in <em>Nature</em> in 1985 and they performed at chance. Astrology makes testable claims, has been tested, and failed. Popper's criterion classifies it as a science.</p>
+
+  <p>The later formalisms — Bayesian Ockham factors, minimum description length, severity, VC capacity — each recover something real, and each needs a quantity nobody can compute without first fixing a partition: a prior volume, a description language, a hypothesis class, a plausible range. None of them fixes its own partition.</p>
+
+  <p>All of these share an assumption worth naming: that demarcation is a property something has <em>at a moment</em>, readable off the thing itself. That assumption is what fails. The Neptune and Vulcan hypotheses were the identical logical move, proposed by the same astronomer against the same theory; one found a planet and one is a byword for a failed patch. Nothing in either sentence distinguished them. Only the community's subsequent conduct did.</p>
+
+  <p class="pull">So look at the conduct.</p>
+</section>
+
+<!-- ============================================ 2 -->
+<section>
+  <div class="sec-label">The three criteria</div>
+  <h2>What to measure instead</h2>
+
+  <p class="lede">Three properties of a research community over time. All three are diachronic, none requires allocating blame for any single anomaly, and all three leave traces in the public record.</p>
+
+  <div class="prop">
+    <div class="prop-n">1</div>
+    <div class="prop-body">
+      <h4>Generative depth</h4>
+      <p class="prop-claim">Do the field's settled results become the explananda of deeper work?</p>
+      <p>Maxwell's equations have not changed since 1865. They did not stagnate — they were <em>explained</em>. They are now the classical limit of quantum electrodynamics, which sits inside a gauge theory, which raises the question of why the gauge group is what it is. Thermodynamics tells the same story: phenomenological laws in the 1850s, then Boltzmann asking what temperature <em>is</em>, then the measure problem, then black hole entropy. Every settlement turned into a question one level down.</p>
+      <p>This is what dissolves the objection that mature theories look stagnant. <strong>Stability at one level is purchased by activity at the next.</strong> The right unit is not the theory but the domain, and a healthy domain converts its own answers into new questions.</p>
+      <p>Homeopathy has no downward direction. Potentization is a rule, not a phenomenon awaiting explanation. When mechanisms do appear — water memory, nanoparticle accounts — they are imported wholesale, constrain nothing, and no homeopathic practice would change if they were withdrawn. The layers sit <em>beside</em> the core, not beneath it.</p>
+      <div class="keyline">
+        <h4>Relation to Lakatos</h4>
+        <p>This is close to what Lakatos called a programme's <em>positive heuristic</em> — the plan that tells practitioners what to build next. His observation was that degenerating programmes retain only a negative heuristic, a set of rules about what must not be given up. Generative depth improves on it in one respect that matters: "what does this result make it possible to ask?" is answerable about a living field, whereas Lakatos's progressiveness is legible only in retrospect.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="prop">
+    <div class="prop-n">2</div>
+    <div class="prop-body">
+      <h4>Articulable revision conditions</h4>
+      <p class="prop-claim">Can practitioners state what would make them abandon the core?</p>
+      <p>The tempting formulation — that in science everything is open to questioning — is a norm, not a practice, and the gap is embarrassing. Physics journals reject perpetual-motion papers unread. Conservation of energy, the second law, the constancy of <em>c</em> function as untouchable in daily work. Continental drift was ridiculed for fifty years; Barry Marshall had to swallow <em>H. pylori</em> himself in 1984 to get ulcers taken seriously; Prusiner was treated as a crank over prions. Planck's remark that science advances one funeral at a time is not a joke.</p>
+      <p>So scientific cores <em>are</em> defended, sometimes disgracefully. The distinction is not whether a core is defended. It is whether anyone can state the conditions under which it would be surrendered.</p>
+      <p>A physicist can tell you precisely what observation would overturn conservation of energy, will add that they do not expect it, and will demand extraordinary evidence — but the counterfactual is articulable, and articulable <em>by the defenders</em>. Ask a homeopath what result would retire potentization and there is no answer, and the absence is not an oversight. A membership condition cannot have refutation conditions. That is what makes it a membership condition.</p>
+      <div class="keyline">
+        <h4>What this recovers</h4>
+        <p>This is falsifiability, relocated from the sentence to the community — and in that form it survives all three deaths above. Duhem–Quine does not bite, because nothing here requires allocating blame for a single anomaly. Statistical theories are fine, because the stated counterfactual may be probabilistic. And astrology now fails <em>correctly</em>: not because its claims rule nothing out, but because its practitioners have no account of what would retire the framework — which was always the thing actually wrong with it.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="prop">
+    <div class="prop-n">3</div>
+    <div class="prop-body">
+      <h4>The reward structure for core revision</h4>
+      <p class="prop-claim">Is a successful challenger of the core promoted, or expelled?</p>
+      <p>Einstein overturned Newton and became the most celebrated figure in the discipline. Wegener was vindicated and is now credited with founding one. Marshall collected a Nobel Prize twenty-one years after drinking the bacterium. <strong>In a science, successful core revision is a promotion.</strong></p>
+      <p>Jung challenged Freud's core and was expelled. So, in their turn, were Adler, Klein and Lacan — each core revision producing a rival institute, a rival journal, and mutual excommunication. Intelligent design separated from creation science on the same pattern. <strong>In a doctrine, successful core revision is a schism.</strong></p>
+      <p>Same event, opposite institutional response. This criterion has a practical virtue the other two lack: it does not require you to define "the core" in advance. You look at what the community did to the person who attacked it.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================ 3 -->
+<section>
+  <div class="sec-label">The mechanism</div>
+  <h2>Depth and accretion are different shapes</h2>
+
+  <p class="lede">The three criteria describe one underlying structural difference, and it is easiest to see drawn. A living domain grows <em>downward</em>: each settled result becomes something to be explained. A doctrine grows <em>outward</em>: the centre is fixed, so every anomaly is absorbed by a new peripheral layer.</p>
+
+  <figure>
+    <div class="figframe">
+      <svg viewBox="0 0 900 430" role="img" aria-label="Two diagrams side by side. Left: a science grows downward, each settled result becoming the explanandum of a deeper theory, with open questions at the bottom. Right: a doctrine grows outward, with a fixed core precept surrounded by successive protective layers that absorb incoming anomalies before they reach the centre.">
+        <defs>
+          <marker id="dn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
+          </marker>
+          <marker id="bounce" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--brass)"/>
+          </marker>
+        </defs>
+
+        <!-- ============ LEFT: science ============ -->
+        <text x="14" y="22" font-family="IBM Plex Mono, monospace" font-size="10.5" letter-spacing="1.4" fill="var(--accent)">SCIENCE · DEPTH</text>
+
+        <g font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">
+          <rect x="14" y="40" width="270" height="40" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+          <text x="149" y="65" text-anchor="middle">Maxwell 1865 — settled</text>
+
+          <rect x="14" y="122" width="270" height="40" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <text x="149" y="147" text-anchor="middle">quantum electrodynamics</text>
+
+          <rect x="14" y="204" width="270" height="40" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <text x="149" y="229" text-anchor="middle">gauge structure</text>
+
+          <rect x="14" y="286" width="270" height="40" rx="2" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="4 3"/>
+          <text x="149" y="311" text-anchor="middle">why this gauge group?</text>
+        </g>
+
+        <g stroke="var(--accent)" stroke-width="1.4" fill="none" marker-end="url(#dn)">
+          <path d="M149,80 V118"/>
+          <path d="M149,162 V200"/>
+          <path d="M149,244 V282"/>
+        </g>
+        <g font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">
+          <text x="160" y="104">becomes the explanandum of</text>
+          <text x="160" y="186">becomes the explanandum of</text>
+          <text x="160" y="268">becomes the explanandum of</text>
+        </g>
+
+        <text x="14" y="360" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--accent)">stability at the top is bought</text>
+        <text x="14" y="376" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--accent)">by activity underneath</text>
+        <text x="14" y="400" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">dashed = open question</text>
+
+        <!-- divider -->
+        <line x1="356" y1="14" x2="356" y2="416" stroke="var(--rule-strong)" stroke-width="1"/>
+
+        <!-- ============ RIGHT: doctrine ============ -->
+        <text x="392" y="22" font-family="IBM Plex Mono, monospace" font-size="10.5" letter-spacing="1.4" fill="var(--brass)">DOCTRINE · ACCRETION</text>
+
+        <g transform="translate(636,196)">
+          <circle r="150" fill="none" stroke="var(--brass)" stroke-width="1" stroke-dasharray="3 4" opacity=".55"/>
+          <circle r="110" fill="none" stroke="var(--brass)" stroke-width="1.1" stroke-dasharray="3 4" opacity=".7"/>
+          <circle r="70" fill="none" stroke="var(--brass)" stroke-width="1.2" stroke-dasharray="3 4" opacity=".85"/>
+          <circle r="36" fill="var(--brass-soft)" stroke="var(--brass)" stroke-width="2"/>
+          <text y="-3" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--brass)">core</text>
+          <text y="11" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--brass)">precept</text>
+        </g>
+
+        <g font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)" text-anchor="middle">
+          <text x="636" y="147">potentization rule · 1796</text>
+          <text x="636" y="109">water memory · 1988</text>
+          <text x="636" y="69">nanoparticles, quantum talk · 2010s</text>
+        </g>
+
+        <!-- anomalies deflected -->
+        <g stroke="var(--brass)" stroke-width="1.4" fill="none" marker-end="url(#bounce)">
+          <path d="M876,300 C 820,290 790,272 772,258"/>
+          <path d="M410,318 C 470,318 500,300 524,282"/>
+          <path d="M636,400 C 636,384 636,370 636,352"/>
+        </g>
+        <g font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--brass)">
+          <text x="872" y="322" text-anchor="end">failed trial</text>
+          <text x="400" y="340">null result</text>
+          <text x="636" y="418" text-anchor="middle">absent mechanism</text>
+        </g>
+
+        <text x="392" y="376" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--brass)">anomalies are absorbed by outer</text>
+        <text x="392" y="392" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--brass)">layers; the centre is never reached</text>
+      </svg>
+    </div>
+    <figcaption><b>Two topologies, one distinction.</b> The scientific structure is vertical — settled results are consumed as explananda by deeper theory, and the open questions sit at the bottom. The doctrinal structure is concentric — the precept at the centre is fixed by membership, so adaptive pressure is displaced outward into successive protective layers. Note what the right-hand picture predicts and the left does not: <b>accretion without deletion.</b> Nothing is ever removed, only wrapped.</figcaption>
+  </figure>
+
+  <p>That last observation is a consequence worth stating on its own, because it is checkable. Scientific canons delete: phlogiston is gone, the luminiferous aether is gone, the 1950s account of the gene is gone, and successive textbook editions record the removals. Doctrinal canons do not delete. Astrology went psychological around 1900 under Alan Leo and again under Rudhyar in the 1930s without discarding the Hellenistic apparatus; it simply layered Jung over Ptolemy. Homeopathy did not retract Hahnemann when it acquired nanoparticles.</p>
+</section>
+
+<!-- ============================================ 4 -->
+<section>
+  <div class="sec-label">The unification</div>
+  <h2>There is only one failure mode</h2>
+
+  <p class="lede">The obvious objection to a doctrine-based account is that some pseudosciences do not look like doctrines at all. They run controlled experiments, use inferential statistics, publish peer-reviewed meta-analyses, and ask nobody to simply believe. The objection dissolves once you notice where the belief actually sits.</p>
+
+  <p>Empirical pseudosciences begin with scientific intent. Rhine in the 1930s was doing science. Fleischmann and Pons in 1989 were doing science. When the experiments return a negative verdict, the correct outcome is a dead theory — and for most of the community that is exactly what happens. What makes the residue pseudoscientific is that some practitioners go on holding the core precept, at which point the precept has changed status: it is no longer a hypothesis under test but a commitment the tests are not permitted to touch.</p>
+
+  <p><strong>The apparatus is a layer, not a difference in kind.</strong> Parapsychology's core — that anomalous information transfer occurs — has survived roughly 140 years of failed replication without once being placed at risk. What changed instead were the surrounding layers: the experimenter effect, psi-conducive states, the sheep–goat effect, and most tellingly the <em>decline effect</em>, the doctrine that psi weakens under scrutiny. That last is a device for converting failed replication into confirmation. Structurally it is indistinguishable from potentization.</p>
+
+  <div class="note">
+    <h4>One correction to the obvious phrasing</h4>
+    <p>It is tempting to call this pretence research, and that makes the wrong charge. Parapsychological method has often been rigorous — the field pioneered pre-registration in Ganzfeld work, and Bem's 2011 precognition paper is arguably the most productive paper of the replication crisis, because it used impeccably standard psychology to establish something absurd and thereby indicted the standard methods. They were not faking the science. <b>They did the science and refused the verdict.</b> That is a worse failing and a far more detectable one: proving pretence requires catching fakery, whereas proving insulation requires only observing the insulation.</p>
+  </div>
+
+  <h3 style="margin-top:34px">The fork after a disconfirming result</h3>
+  <p>Three things can happen when a result goes against a core commitment. Only one of them is pseudoscience, and it is identifiable by its shape: it is the only branch that closes into a loop.</p>
+
+  <figure>
+    <div class="figframe">
+      <svg viewBox="0 0 900 340" role="img" aria-label="Diagram: a disconfirming result forks three ways. The theory is abandoned and becomes a dead theory; or the anomaly is adopted as the field's problem, generating directed work that either resolves it or leaves it open; or the core is insulated and a new protective layer is added, which loops back to the same state. Only the looping branch is pseudoscience.">
+        <defs>
+          <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+          </marker>
+          <marker id="a3b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--brass)"/>
+          </marker>
+        </defs>
+
+        <rect x="14" y="140" width="150" height="48" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+        <text x="89" y="162" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="currentColor">disconfirming</text>
+        <text x="89" y="177" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="currentColor">result</text>
+
+        <g stroke="currentColor" stroke-width="1.2" fill="none" marker-end="url(#a3)">
+          <path d="M164,156 C 196,156 200,60 232,60"/>
+          <path d="M164,164 H232"/>
+        </g>
+        <path d="M164,172 C 196,172 200,266 232,266" stroke="var(--brass)" stroke-width="1.5" fill="none" marker-end="url(#a3b)"/>
+
+        <!-- branch A -->
+        <rect x="236" y="38" width="184" height="44" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/>
+        <text x="328" y="65" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="currentColor">core abandoned</text>
+        <path d="M420,60 H492" stroke="currentColor" stroke-width="1.2" fill="none" marker-end="url(#a3)"/>
+        <rect x="496" y="38" width="184" height="44" rx="2" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text x="588" y="65" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="var(--muted)">dead theory</text>
+        <text x="696" y="65" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--accent)">healthy · terminates</text>
+
+        <!-- branch B -->
+        <rect x="236" y="142" width="184" height="44" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/>
+        <text x="328" y="163" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="currentColor">anomaly adopted</text>
+        <text x="328" y="177" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="currentColor">as the problem</text>
+        <path d="M420,164 H492" stroke="currentColor" stroke-width="1.2" fill="none" marker-end="url(#a3)"/>
+        <rect x="496" y="142" width="184" height="44" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+        <text x="588" y="163" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="currentColor">directed work at</text>
+        <text x="588" y="177" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="currentColor">the gap</text>
+        <text x="696" y="206" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--accent)">healthy · progresses</text>
+        <text x="236" y="206" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">continental drift 1912–1965 · prions · H. pylori</text>
+
+        <!-- branch C -->
+        <rect x="236" y="244" width="184" height="44" rx="2" fill="none" stroke="var(--brass)" stroke-width="1.4"/>
+        <text x="328" y="265" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="var(--brass)">core insulated;</text>
+        <text x="328" y="279" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="var(--brass)">anomaly explained away</text>
+        <path d="M420,266 H492" stroke="var(--brass)" stroke-width="1.5" fill="none" marker-end="url(#a3b)"/>
+        <rect x="496" y="244" width="184" height="44" rx="2" fill="var(--brass-soft)" stroke="var(--brass)" stroke-width="1.4"/>
+        <text x="588" y="271" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11.5" fill="var(--brass)">new outer layer</text>
+
+        <!-- the loop -->
+        <path d="M588,288 C 588,320 560,326 480,326 C 300,326 178,320 120,300 C 100,293 92,206 89,192"
+              stroke="var(--brass)" stroke-width="1.5" fill="none" stroke-dasharray="5 4" marker-end="url(#a3b)"/>
+        <text x="360" y="312" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--brass)" text-anchor="middle">awaits the next disconfirmation · nothing deleted</text>
+        <text x="696" y="308" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--brass)">pseudoscience · loops</text>
+      </svg>
+    </div>
+    <figcaption><b>The loop is the diagnosis.</b> Abandonment terminates. Adoption of the anomaly as a problem progresses, however long it takes — Wegener's defenders treated the missing mechanism as the thing to find, and someone found it. Insulation returns the system to its starting state with one more layer, which is why the duration of a field's survival under disconfirmation is the wrong thing to measure. What matters is <b>what the persistence is spent on.</b></figcaption>
+  </figure>
+
+  <p class="pull">Pseudoscience is what remains of a research programme after its community has been given permission to stop.</p>
+
+  <p>One consequence deserves emphasis because it is counterintuitive and, I think, correct: <strong>demarcation attaches to the commitment, not to the claim.</strong> "Psi exists" was never a pseudoscientific hypothesis; it was a reasonable thing to investigate in 1882. Palladium-deuterium fusion was a reasonable thing to investigate in March 1989. Neither proposition changed. What changed was that a verdict arrived, and part of the community declined to be bound by it. The line does not run between fields, and it does not run between sentences. It runs between people, at the moment a hypothesis becomes an allegiance.</p>
+</section>
+
+<!-- ============================================ 5 -->
+<section>
+  <div class="sec-label">The cases</div>
+  <h2>Applying it, including where it stings</h2>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>Case</th><th>Core precept</th><th>Verdict returned</th><th>What the persistence was spent on</th><th>Diagnosis</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Astrology</td>
+          <td>Natal configuration shapes character and events</td>
+          <td>Carlson 1985, double-blind: chance</td>
+          <td>Reframing toward psychology; Uranus, Neptune, Pluto absorbed on discovery; Hellenistic apparatus retained intact</td>
+          <td class="verdict-d">doctrine</td>
+        </tr>
+        <tr>
+          <td>Homeopathy</td>
+          <td>Like cures like; dilution potentiates</td>
+          <td>No effect beyond placebo; no mechanism</td>
+          <td>Water memory, then nanoparticles, then quantum vocabulary — each layered on, none retracted</td>
+          <td class="verdict-d">doctrine</td>
+        </tr>
+        <tr>
+          <td>Psychoanalysis</td>
+          <td>Repression, unconscious drives, infantile sexuality</td>
+          <td>Weak clinical evidence; core not stated testably</td>
+          <td>Core challengers expelled — Jung, Adler, Klein, Lacan — each founding a rival institute</td>
+          <td class="verdict-d">doctrine · schism signature</td>
+        </tr>
+        <tr>
+          <td>Parapsychology</td>
+          <td>Anomalous information transfer occurs</td>
+          <td>~140 years, no replicable protocol</td>
+          <td>Experimenter effect, psi-conducive states, decline effect — layers that convert failure into confirmation</td>
+          <td class="verdict-d">doctrine · scientific apparatus</td>
+        </tr>
+        <tr>
+          <td>Cold fusion / LENR</td>
+          <td>Palladium-deuterium fusion at room temperature</td>
+          <td>1989–91 replication failure; field verdict reached</td>
+          <td>Community split; residue persists 35 years with no shared protocol</td>
+          <td class="verdict-d">doctrine · post-verdict residue</td>
+        </tr>
+        <tr>
+          <td>Continental drift</td>
+          <td>Continents move</td>
+          <td>No mechanism; evidence contested for 50 years</td>
+          <td>The missing mechanism was adopted as the problem — paleomagnetism, then seafloor spreading, 1960s</td>
+          <td class="verdict-s">science · control case</td>
+        </tr>
+        <tr>
+          <td>Supersymmetry</td>
+          <td>Superpartners near the electroweak scale</td>
+          <td>LHC null through Run 2</td>
+          <td>Some abandoned naturalness publicly; some raised the mass bound again</td>
+          <td class="verdict-o">cuts both ways, within physics</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p style="margin-top:22px">The last row is the point at which the framework earns its keep or loses it. Raising a mass bound after a null result is, formally, adding a protective layer. Applying the criteria honestly means they cut <em>inside</em> institutionally respectable physics — and they should, because that is exactly the territory of the live dispute over whether string theory and supersymmetry can be supported non-empirically. A demarcation criterion that respects departmental boundaries is not measuring anything.</p>
+
+  <p>Note also that the criteria return the <em>right</em> verdict on continental drift, which is the case that embarrasses most rivals. Fifty years of persistence under disconfirmation looks identical to obstinacy until you ask what the persistence was spent on — and Wegener's defenders spent it hunting the missing mechanism rather than explaining away its absence.</p>
+</section>
+
+<!-- ============================================ 6 -->
+<section>
+  <div class="sec-label">Operationalization</div>
+  <h2>Five things you could actually measure</h2>
+
+  <p class="lede">The chief practical advantage over the formal tradition: every quantity below is recoverable from the public record. None requires choosing a prior, a description language, or a plausible range.</p>
+
+  <ol class="steps">
+    <li><b>Citation age distribution</b>
+      In a living field, foundational results become so standard they stop being cited — what Merton called obliteration by incorporation. Physicists do not cite Newton; molecular biologists do not cite Watson and Crick. References cluster in the last five to ten years. In a static literature the founder stays permanently at the top of the citation list because there is nothing newer to cite. The Price index — the share of references under five years old — already exists as a bibliometric measure, and the separation should be large and clean.</li>
+
+    <li><b>Deletion across canonical editions</b>
+      Track whether a field's textbooks ever <em>remove</em> content. Science deletes phlogiston, the aether, the 1950s gene. Accretion without deletion is the concentric signature made countable — diff successive editions and measure the removed fraction.</li>
+
+    <li><b>Schism versus promotion</b>
+      For each documented challenge to a field's core, code what became of the challenger: elevated, ignored, or expelled. Fully recoverable from historical record, and it requires no prior definition of "the core" — the community's response identifies the core for you.</li>
+
+    <li><b>Counterfactual articulability</b>
+      Do the field's own texts state refutation conditions? Science textbooks do this constantly and explicitly. Doctrinal texts do not, and the absence is systematic rather than incidental. This is a text-classification task on a field's canonical literature.</li>
+
+    <li><b>Depth ratio</b>
+      Classify citations to the field's settled results by context: is the result being <em>invoked</em> as a tool, or taken as the <em>explanandum</em> of the citing work? A healthy field accumulates the second kind. Citation-context classification is the hardest of the five to automate but the most direct measurement of generative depth.</li>
+  </ol>
+</section>
+
+<!-- ============================================ 7 -->
+<section>
+  <div class="sec-label">Positioning and objections</div>
+  <h2>What is borrowed, what is new, what is unresolved</h2>
+
+  <h3>Borrowed</h3>
+  <p>The shift of unit from theory to research tradition is Lakatos and Laudan; generative depth is a forward-facing reformulation of Lakatos's positive heuristic. The insistence that a definition of pseudoscience must include the manufacture of an impression of warrant is Hansson's third clause; the catalogue of core-protecting devices is Boudry's work on immunizing strategies. Thagard's 1978 criterion — a field is pseudoscientific if it has failed to progress over a long period while its practitioners make little attempt to develop it or compare it with alternatives — is the nearest existing statement of the whole position.</p>
+
+  <h3>New, as far as I can establish</h3>
+  <ul class="tight">
+    <li><strong>The reward structure for core revision</strong> as a stated criterion. Promotion versus schism is the most operationalizable element here and I have not found it named as a demarcation test in this form.</li>
+    <li><strong>The unification of empirical and doctrinal pseudoscience</strong> via core insulation — the claim that experimental apparatus is a protective layer rather than a category difference, so there is one failure mode rather than two.</li>
+    <li><strong>Articulable revision conditions</strong> as the repair that lets falsifiability survive at community level the three objections that kill it at sentence level.</li>
+  </ul>
+
+  <h3>Unresolved</h3>
+  <p>The framework inherits the residue that defeats every other approach: <strong>it requires someone to say what the core is</strong>, and the verdict depends on how coarsely the core is drawn. Draw evolutionary biology's core as "descent with modification" and it has never changed; draw it finely and it moved through the Modern Synthesis, neutral theory and evo-devo. This is the same partition-relativity that sinks minimum description length, Bayesian Ockham factors and Meehl's Spielraum. Criterion 3 partially escapes it, since the community's treatment of challengers identifies the core empirically rather than by stipulation — but only partially.</p>
+
+  <p>Two further open edges. The framework is <strong>non-instantaneous</strong>: it cannot assess a proposal that has no history, which is when a verdict is often most wanted. And the <strong>reward structure is confounded by field size</strong> — a discipline with three practitioners cannot promote anyone, so the criterion may not discriminate on small or young research communities.</p>
+
+  <p>What it buys in exchange is worth the cost. It trades partitions nobody can measure for one that has textbook editions, citation records and documented careers attached to it, and it returns the right verdicts on the four cases — astrology, continental drift, parapsychology, supersymmetry — where the standard criteria disagree with each other or with everyone's considered judgement.</p>
+</section>
+
+<!-- ============================================ REFS -->
+<section>
+  <div class="sec-label">Background</div>
+  <h2>Sources</h2>
+  <div class="refs">
+    <p>Carlson, S. (1985). "A double-blind test of astrology." <em>Nature</em> 318. The controlled test of natal astrology referenced throughout.</p>
+    <p>Hansson, S. O. "Science and Pseudo-Science." <em>Stanford Encyclopedia of Philosophy</em>. <a href="https://plato.stanford.edu/entries/pseudo-science/">plato.stanford.edu/entries/pseudo-science</a> — for Lakatos, Laudan, Thagard, Bunge, Mahner, Boudry, and the multi-criterial tradition.</p>
+    <p>Lakatos, I. (1970). "Falsification and the Methodology of Scientific Research Programmes" — hard core, protective belt, positive and negative heuristic.</p>
+    <p>Laudan, L. (1977). <em>Progress and Its Problems</em>, on research traditions whose core assumptions may rationally change; and (1983) "The Demise of the Demarcation Problem."</p>
+    <p>Merton, R. K., on obliteration by incorporation — the disappearance of foundational citations in mature fields.</p>
+    <p>Bem, D. (2011). "Feeling the Future." <em>JPSP</em> 100(3) — the precognition paper whose methodological orthodoxy became an argument against that orthodoxy.</p>
+    <p>Companion document: <em>The Demarcation Ledger</em>, on the six families of formal criteria and the content-over-flexibility ratio they share.</p>
+  </div>
+</section>
+
+<footer>
+  A position developed in conversation, September 2026. The three criteria and the single-failure-mode unification are Amitabh's; the literature positioning and counter-cases are annotations on them.
+</footer>
+
+</div>
+
+</body>
+</html>

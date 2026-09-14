@@ -1,0 +1,1069 @@
+<title>Evidence That Cuts Both Ways</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+:root{
+  --ground:#EDEFEE;
+  --surface:#F8F9F8;
+  --ink:#16202A;
+  --ink-2:#3C4C55;
+  --muted:#63737A;
+  --rule:#D2D9D6;
+  --rule-strong:#B6C1BD;
+  --accent:#15566E;        /* symmetric · science */
+  --accent-soft:#15566E14;
+  --brass:#8A6512;         /* asymmetric · doctrine */
+  --brass-soft:#8A651214;
+
+  --f-display:"Newsreader",Georgia,"Times New Roman",serif;
+  --f-body:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif;
+  --f-mono:"IBM Plex Mono","SFMono-Regular",Menlo,Consolas,monospace;
+
+  --measure:68ch;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#101619; --surface:#161E22;
+    --ink:#E3EAE7; --ink-2:#BCC9C7; --muted:#8FA0A3;
+    --rule:#26333A; --rule-strong:#3A4A51;
+    --accent:#6FB6D2; --accent-soft:#6FB6D218;
+    --brass:#D7AC48; --brass-soft:#D7AC4818;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#101619; --surface:#161E22;
+  --ink:#E3EAE7; --ink-2:#BCC9C7; --muted:#8FA0A3;
+  --rule:#26333A; --rule-strong:#3A4A51;
+  --accent:#6FB6D2; --accent-soft:#6FB6D218;
+  --brass:#D7AC48; --brass-soft:#D7AC4818;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--ground);color:var(--ink);
+  font-family:var(--f-body);font-size:16.5px;line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+.page{max-width:1080px;margin:0 auto;padding-inline:24px;padding-block:0 96px}
+a{color:var(--accent);text-underline-offset:.18em;text-decoration-thickness:.06em}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+/* masthead */
+header.mast{padding-block:72px 44px;display:flex;flex-direction:column;gap:22px}
+.kicker{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--f-display);font-weight:500;font-size:clamp(2.5rem,6.4vw,4.1rem);line-height:1.04;letter-spacing:-.018em;margin:0;text-wrap:balance;max-width:14ch}
+.standfirst{font-family:var(--f-display);font-size:clamp(1.12rem,2.2vw,1.36rem);line-height:1.5;color:var(--ink-2);max-width:58ch;margin:0}
+.standfirst em{color:var(--ink)}
+.byline{font-family:var(--f-mono);font-size:11.5px;color:var(--muted);letter-spacing:.05em}
+
+/* the specification panel — the one lifted object on the page */
+.spec{background:var(--surface);border:1px solid var(--rule-strong);border-radius:4px;margin-bottom:8px}
+.spec-head{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap;padding:16px 22px;border-bottom:1px solid var(--rule-strong)}
+.spec-head span{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.clause{display:grid;grid-template-columns:4.2rem minmax(0,1fr);gap:0 18px;padding:18px 22px;border-top:1px solid var(--rule)}
+.clause:first-of-type{border-top:none}
+.clause-id{font-family:var(--f-mono);font-size:13px;font-weight:500;color:var(--accent);padding-top:3px}
+.clause-name{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:0 0 4px}
+.clause-text{font-family:var(--f-display);font-size:1.16rem;line-height:1.42;margin:0;max-width:60ch}
+.clause.principle{background:var(--accent-soft)}
+@media (max-width:560px){.clause{grid-template-columns:minmax(0,1fr);gap:4px}}
+
+nav.contents{display:flex;flex-wrap:wrap;gap:6px 20px;padding:18px 0 0;font-family:var(--f-mono);font-size:12px}
+nav.contents a{color:var(--ink-2);text-decoration:none}
+nav.contents a:hover{color:var(--accent);text-decoration:underline}
+
+/* sections */
+section{padding-block:56px;border-top:1px solid var(--rule)}
+section.first{border-top:1px solid var(--rule-strong);margin-top:40px}
+.sec-label{font-family:var(--f-mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin-bottom:14px}
+h2{font-family:var(--f-display);font-weight:500;font-size:clamp(1.7rem,3.4vw,2.3rem);line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;max-width:24ch}
+h3{font-family:var(--f-display);font-weight:600;font-size:1.24rem;line-height:1.25;margin:36px 0 10px;text-wrap:balance}
+h4{font-family:var(--f-mono);font-weight:500;font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+p{margin:0 0 1.05em;max-width:var(--measure)}
+.lede{font-size:1.06rem;color:var(--ink-2)}
+strong{font-weight:600}
+.ref{font-family:var(--f-mono);font-size:.82em;color:var(--accent);white-space:nowrap}
+.sym{font-family:var(--f-display);font-style:italic;font-size:1.06em}
+.code{font-family:var(--f-mono);font-size:.82em;color:var(--muted);white-space:nowrap}
+
+/* callouts */
+.note,.keyline{padding:14px 18px;border-radius:0 3px 3px 0;margin:24px 0;max-width:64ch}
+.note{border-left:2px solid var(--brass);background:var(--brass-soft)}
+.keyline{border-left:2px solid var(--accent);background:var(--accent-soft)}
+.note p,.keyline p{margin:0;font-size:14.8px;line-height:1.56;color:var(--ink-2)}
+.note p + p,.keyline p + p{margin-top:.6em}
+.note h4{color:var(--brass)}
+.keyline h4{color:var(--accent)}
+
+.pull{font-family:var(--f-display);font-size:clamp(1.25rem,2.8vw,1.6rem);line-height:1.32;color:var(--ink);border-left:2px solid var(--accent);padding:4px 0 4px 22px;margin:34px 0;max-width:46ch;text-wrap:balance}
+
+.formula{font-family:var(--f-display);font-size:1.22rem;margin:22px 0;padding:14px 0;border-block:1px solid var(--rule);max-width:64ch;overflow-x:auto;white-space:nowrap}
+.formula i{font-style:italic}
+
+/* trace list */
+ol.trace{list-style:none;padding:0;margin:24px 0;max-width:var(--measure);border-top:1px solid var(--rule)}
+ol.trace li{display:grid;grid-template-columns:minmax(0,1fr) 7.5rem;gap:16px;padding:12px 0;border-bottom:1px solid var(--rule);font-size:15px}
+ol.trace .lvl{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;text-align:right;padding-top:3px}
+ol.trace .lvl.c{color:var(--accent)}
+ol.trace .lvl.p{color:var(--brass)}
+
+/* ladder */
+ol.ladder{list-style:none;padding:0;margin:22px 0;max-width:var(--measure);display:grid;gap:0}
+ol.ladder li{display:grid;grid-template-columns:2.2rem minmax(0,1fr);gap:14px;padding:12px 0;border-top:1px solid var(--rule)}
+ol.ladder li:last-child{border-bottom:1px solid var(--rule)}
+ol.ladder .n{font-family:var(--f-display);font-size:1.5rem;line-height:1;color:var(--accent);font-variant-numeric:tabular-nums}
+ol.ladder li.insul .n{color:var(--brass)}
+ol.ladder b{display:block;font-weight:600}
+
+/* steps */
+ol.steps{counter-reset:s;list-style:none;padding:0;margin:24px 0;max-width:var(--measure)}
+ol.steps li{counter-increment:s;position:relative;padding-left:38px;margin-bottom:18px}
+ol.steps li::before{content:counter(s);position:absolute;left:0;top:1px;font-family:var(--f-mono);font-size:11px;color:var(--accent);border:1px solid var(--rule-strong);border-radius:2px;width:24px;height:22px;display:grid;place-items:center}
+ol.steps b{display:block;font-weight:600;margin-bottom:2px}
+
+ul.tight{margin:0 0 1.05em;padding-left:1.15em;max-width:var(--measure)}
+ul.tight li{margin-bottom:.5em}
+ul.tight li::marker{color:var(--rule-strong)}
+
+/* figures */
+figure{margin:34px 0;max-width:100%}
+figure svg{display:block;width:100%;min-width:640px;height:auto;color:var(--ink)}
+.figframe{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:22px 20px;overflow-x:auto}
+figcaption{font-size:13.5px;line-height:1.5;color:var(--muted);margin-top:12px;max-width:66ch}
+figcaption b{color:var(--ink-2);font-weight:600}
+
+/* tables */
+.tablewrap{overflow-x:auto;margin:26px 0 10px;border:1px solid var(--rule-strong);border-radius:4px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:720px;font-size:13.6px;line-height:1.5}
+table.wide{min-width:900px}
+th,td{text-align:left;padding:11px 14px;vertical-align:top;border-top:1px solid var(--rule)}
+thead th{border-top:none;border-bottom:1px solid var(--rule-strong);font-family:var(--f-mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:500;white-space:nowrap}
+tbody td:first-child{font-weight:600}
+td.mono{font-family:var(--f-mono);font-size:12px}
+td.v-s{color:var(--accent);font-family:var(--f-mono);font-size:12px}
+td.v-d{color:var(--brass);font-family:var(--f-mono);font-size:12px}
+td.v-o{color:var(--muted);font-family:var(--f-mono);font-size:12px}
+.sym-cell{font-family:var(--f-display);font-style:italic;font-size:1.05rem;font-weight:400}
+
+.cols3{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:28px;margin-top:10px}
+.cols3 h3{margin-top:0}
+.cols3 ul{padding-left:1.1em;margin:0;font-size:15px}
+.cols3 li{margin-bottom:.6em}
+.cols3 li::marker{color:var(--rule-strong)}
+
+.refs{font-size:13.8px;line-height:1.62;color:var(--ink-2)}
+.refs p{margin-bottom:.62em;max-width:78ch;text-indent:-1.4em;padding-left:1.4em}
+footer{padding-block:44px 0;color:var(--muted);font-size:13px;border-top:1px solid var(--rule-strong);max-width:78ch}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="page">
+
+<header class="mast">
+  <div class="kicker">Demarcation · a proposed framework</div>
+  <h1>Evidence That Cuts Both Ways</h1>
+  <p class="standfirst">A community-level solution to the demarcation problem. A science is a community whose evidence is <em>allowed to count against</em> its own commitments; a doctrine is one where evidence counts in only one direction. This document states that as a principle, locates the community in a network, and specifies how to measure both.</p>
+  <div class="byline">Companion to <i>The Insulated Core</i> · September 2026</div>
+</header>
+
+<div class="spec" aria-label="The framework in six clauses">
+  <div class="spec-head"><span>The framework</span><span>6 clauses · cross-referenced below</span></div>
+
+  <div class="clause">
+    <div class="clause-id">D1</div>
+    <div><p class="clause-name">Unit</p>
+    <p class="clause-text">A verdict attaches to a <b>commitment</b>: a core presupposition <span class="sym">p</span>, held by a subcommunity <span class="sym">C</span>, over a time window <span class="sym">W</span>. Fields are not judged; commitments are.</p></div>
+  </div>
+  <div class="clause">
+    <div class="clause-id">D2</div>
+    <div><p class="clause-name">Core</p>
+    <p class="clause-text">The core of <span class="sym">C</span> is the set of presuppositions its work relies on without testing. No proposition is classified by its logical content.</p></div>
+  </div>
+  <div class="clause principle">
+    <div class="clause-id">P</div>
+    <div><p class="clause-name">Evidential symmetry</p>
+    <p class="clause-text">If <span class="sym">C</span> cites results of type <span class="sym">E</span> as support for <span class="sym">p</span>, results of type not-<span class="sym">E</span> must count against <span class="sym">p</span>, under the same quality standards. Insulation is a persistent asymmetry.</p></div>
+  </div>
+  <div class="clause">
+    <div class="clause-id">R1</div>
+    <div><p class="clause-name">Community</p>
+    <p class="clause-text"><span class="sym">C</span> is detected on the social network — who works with, cites and publishes beside whom — and never on stance toward <span class="sym">p</span>.</p></div>
+  </div>
+  <div class="clause">
+    <div class="clause-id">R2</div>
+    <div><p class="clause-name">Levels</p>
+    <p class="clause-text">A commitment's revision trigger may be observational or comparative. Symmetry governs both: a framework that takes credit for its hypotheses' successes must take debit for their failures.</p></div>
+  </div>
+  <div class="clause">
+    <div class="clause-id">V</div>
+    <div><p class="clause-name">Verdict</p>
+    <p class="clause-text">A dated verdict for each commitment — healthy, insulated, or indeterminate with its reason — reached by a fixed procedure and reported only when it survives the choice of network partition and time window. Fields receive a summary, not a verdict.</p></div>
+  </div>
+</div>
+
+<nav class="contents" aria-label="Contents">
+  <a href="#constraint">Constraint</a>
+  <a href="#pull">The propositional pull</a>
+  <a href="#symmetry">Symmetry</a>
+  <a href="#network">Community</a>
+  <a href="#instruments">Instruments</a>
+  <a href="#verdict">Verdict</a>
+  <a href="#cases">Cases</a>
+  <a href="#pilot">Pilot</a>
+  <a href="#validation">Validation</a>
+  <a href="#positioning">Borrowed · new · open</a>
+</nav>
+
+<!-- ============================================ constraint -->
+<section class="first" id="constraint">
+  <div class="sec-label">Starting point</div>
+  <h2>The constraint any solution has to meet</h2>
+
+  <p class="lede"><i>The Insulated Core</i> argued that demarcation fails as a property of sentences and succeeds as a property of commitments. It moved falsifiability from the proposition to the community: the question is not whether a claim rules something out, but whether its defenders can say what would make them give it up.</p>
+
+  <p>That move was what let the position survive the three objections that kill Popper's criterion. <strong>Duhem–Quine</strong> does not bite if no one has to decide whether a single failure belongs to the theory or to an auxiliary. <strong>Statistical theories</strong> are fine if the relevant counterfactual may itself be probabilistic. And <strong>astrology</strong> — testable, tested, failed — is caught for the right reason: not because its claims rule nothing out, but because its community has no account of what would retire them.</p>
+
+  <p>The lesson is a design constraint, and this framework is built to respect it:</p>
+
+  <p class="pull">No criterion may depend on the logical content of an individual proposition.</p>
+
+  <p>It is harder to keep than it sounds. The next section records the point in the development of this framework where it was broken, because the way it was broken is instructive.</p>
+</section>
+
+<!-- ============================================ pull -->
+<section id="pull">
+  <div class="sec-label">A wrong turn, recorded</div>
+  <h2>The propositional pull</h2>
+
+  <p class="lede">Defining the core as a community's fundamental presuppositions <span class="ref">D2</span> was a clean step. The trouble began with the next one: needing an anchor the community could not relabel its way out of.</p>
+
+  <ol class="trace">
+    <li><span>Criterion 2 of <i>The Insulated Core</i>: can practitioners state the conditions under which they would abandon the core?</span><span class="lvl c">Community</span></li>
+    <li><span>Core defined as the community's presuppositions; the test is whether they are held unconditionally or with stated revision conditions.</span><span class="lvl c">Community</span></li>
+    <li><span>To stop a homeopath calling "like cures like" a mere method, presuppositions are classified <em>by content</em>: substantive if it favours some observable outcomes over others.</span><span class="lvl p">Proposition</span></li>
+    <li><span>Therefore: a presupposition is framework only if it is unfalsifiable <em>in principle</em>.</span><span class="lvl p">Proposition</span></li>
+  </ol>
+
+  <p>Step three is Popper's criterion under a different name, adopted for Popper's reason — his worry about the "conventionalist twist," the rescue of a theory by reinterpreting it. And it brings his three objections back with it.</p>
+
+  <ul class="tight">
+    <li><strong>Duhem–Quine returns.</strong> No presupposition favours any outcome on its own. "Like cures like" predicts nothing without potency selection and symptom matching; conservation of energy predicts nothing without an inventory of every form energy takes. Classifying by content either makes everything framework or requires first choosing the auxiliaries — the partition problem again.</li>
+    <li><strong>The statistical problem returns.</strong> "Favours" is softer than "prohibits," but it needs a threshold, a threshold needs likelihoods, and likelihoods need a partition.</li>
+    <li><strong>It misclassifies real cases.</strong> See below.</li>
+  </ul>
+
+  <div class="note">
+    <h4>The neutrino, 1930–1956</h4>
+    <p>Beta decay appeared to violate conservation of energy. Bohr was prepared to abandon the law. Pauli instead proposed an undetectable particle to carry the missing energy, and worried he had proposed something that could never be found. It was detected by Cowan and Reines in 1956.</p>
+    <p>A content-based test — is the rescuing auxiliary independently testable? — codes Pauli's move as <b>insulation</b>, and keeps that code for twenty-six years. A conduct-based reading gets it right: Fermi built a theory of beta decay on the neutrino in 1933–34, and the field treated its detection as a problem to solve. <b>Judged by the proposition, the case fails; judged by the community, it passes.</b></p>
+  </div>
+
+  <div class="keyline">
+    <h4>What the wrong turn established</h4>
+    <p>First, the pull is structural. Any demarcation effort needs an anchor the community cannot manipulate, and logical content is the nearest one to hand. Naming the hazard is part of the framework.</p>
+    <p>Second, under Duhem–Quine every theory is "all framework" when its propositions are taken one at a time. The only recourse is the revisability of the commitment system as a whole — which is a property of the community that holds it. The anchor has to be found there.</p>
+  </div>
+</section>
+
+<!-- ============================================ symmetry -->
+<section id="symmetry">
+  <div class="sec-label">The principle · P</div>
+  <h2>Evidential symmetry</h2>
+
+  <p class="lede">The anchor is the community's own evidential practice. A community that cites a kind of result as support for a commitment has, by that act, declared that such results bear on it. It cannot then refuse the converse.</p>
+
+  <p>This is the whole move. Nothing about <span class="sym">p</span>'s logical content is analysed; what counts as relevant evidence is fixed by what <span class="sym">C</span> itself has cited. A homeopath may call "like cures like" anything they like. If homeopathy cites positive trials, negative trials count.</p>
+
+  <p>The principle has a formal counterpart that does not need a prior. By the law of total probability,</p>
+
+  <div class="formula"><i>P</i>(<i>H</i>) = <i>P</i>(<i>H</i> | <i>E</i>) · <i>P</i>(<i>E</i>) + <i>P</i>(<i>H</i> | ¬<i>E</i>) · <i>P</i>(¬<i>E</i>)</div>
+
+  <p>so if observing <span class="sym">E</span> would raise confidence in <span class="sym">H</span>, observing not-<span class="sym">E</span> must lower it — the <em>conservation of expected evidence</em>. Symmetry uses only this <strong>direction</strong>, never the magnitudes, and so needs no prior volume, description language or plausible range: none of the partitions that sank the formal criteria.</p>
+
+  <figure>
+    <div class="figframe">
+      <svg viewBox="0 0 900 330" role="img" aria-label="Two panels. Left, symmetric: a supporting result and a disconfirming result both pass through the same quality standard, then credit and debit the commitment respectively. Right, asymmetric: the supporting result passes straight to credit, while only the disconfirming result meets a filter such as the decline effect or experimenter effect, and is routed to an excused box so the commitment is never debited.">
+        <defs>
+          <marker id="f1a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker>
+          <marker id="f1b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--brass)"/></marker>
+          <marker id="f1c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+        </defs>
+
+        <!-- LEFT: symmetric -->
+        <text x="14" y="22" font-family="IBM Plex Mono, monospace" font-size="10.5" letter-spacing="1.4" fill="var(--accent)">SYMMETRIC</text>
+        <g font-family="IBM Plex Mono, monospace" font-size="11.5" fill="currentColor" text-anchor="middle">
+          <rect x="14" y="68" width="130" height="44" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <text x="79" y="87">supporting</text><text x="79" y="102">result</text>
+          <rect x="14" y="188" width="130" height="44" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <text x="79" y="207">disconfirming</text><text x="79" y="222">result</text>
+        </g>
+        <rect x="196" y="56" width="14" height="188" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text x="203" y="264" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">one standard,</text>
+        <text x="203" y="278" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">both lanes</text>
+        <g stroke="currentColor" stroke-width="1.2" fill="none" marker-end="url(#f1c)">
+          <path d="M144,90 H192"/><path d="M144,210 H192"/>
+        </g>
+        <g stroke="var(--accent)" stroke-width="1.4" fill="none" marker-end="url(#f1a)">
+          <path d="M210,90 H296"/><path d="M210,210 H296"/>
+        </g>
+        <g font-family="IBM Plex Mono, monospace" font-size="11.5" text-anchor="middle">
+          <rect x="300" y="68" width="124" height="44" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+          <text x="362" y="95" fill="currentColor">credit to p</text>
+          <rect x="300" y="188" width="124" height="44" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+          <text x="362" y="215" fill="currentColor">debit to p</text>
+        </g>
+        <text x="14" y="316" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--accent)">failures are able to cost p something</text>
+
+        <line x1="448" y1="14" x2="448" y2="316" stroke="var(--rule-strong)" stroke-width="1"/>
+
+        <!-- RIGHT: asymmetric -->
+        <text x="472" y="22" font-family="IBM Plex Mono, monospace" font-size="10.5" letter-spacing="1.4" fill="var(--brass)">ASYMMETRIC</text>
+        <g font-family="IBM Plex Mono, monospace" font-size="11.5" fill="currentColor" text-anchor="middle">
+          <rect x="472" y="68" width="130" height="44" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <text x="537" y="87">supporting</text><text x="537" y="102">result</text>
+          <rect x="472" y="188" width="130" height="44" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <text x="537" y="207">disconfirming</text><text x="537" y="222">result</text>
+        </g>
+        <path d="M602,90 H752" stroke="currentColor" stroke-width="1.2" fill="none" marker-end="url(#f1c)"/>
+        <text x="677" y="82" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">no filter</text>
+        <path d="M602,210 H650" stroke="currentColor" stroke-width="1.2" fill="none" marker-end="url(#f1c)"/>
+        <rect x="654" y="176" width="16" height="68" rx="2" fill="var(--brass-soft)" stroke="var(--brass)" stroke-width="1.4"/>
+        <text x="662" y="264" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--brass)">decline effect ·</text>
+        <text x="662" y="278" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--brass)">experimenter effect</text>
+        <path d="M670,210 H752" stroke="var(--brass)" stroke-width="1.4" fill="none" stroke-dasharray="5 4" marker-end="url(#f1b)"/>
+        <g font-family="IBM Plex Mono, monospace" font-size="11.5" text-anchor="middle">
+          <rect x="756" y="68" width="130" height="44" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+          <text x="821" y="95" fill="currentColor">credit to p</text>
+          <rect x="756" y="188" width="130" height="44" rx="2" fill="var(--brass-soft)" stroke="var(--brass)" stroke-width="1.4"/>
+          <text x="821" y="207" fill="var(--brass)">excused;</text><text x="821" y="222" fill="var(--brass)">p untouched</text>
+        </g>
+        <text x="472" y="316" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--brass)">only successes are ever counted</text>
+      </svg>
+    </div>
+    <figcaption><b>What asymmetry looks like.</b> Filtering evidence is legitimate; filtering it in one direction is not. A community may discount a poorly blinded study — but then its poorly blinded successes are discounted too. The decline effect and the experimenter effect are filters that exist only on the failure lane.</figcaption>
+  </figure>
+
+  <h3>Against the three objections</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Objection</th><th>Why it killed sentence-level falsifiability</th><th>Why it does not kill symmetry</th></tr></thead>
+      <tbody>
+        <tr><td>Duhem–Quine</td><td>A failure cannot be pinned on <i>p</i> rather than its auxiliaries</td><td>No blame allocation is required. Blaming an auxiliary is permitted — provided successes may equally be credited to auxiliaries rather than to <i>p</i>. Only the accounting over time must be even.</td></tr>
+        <tr><td>Statistical theories</td><td>No finite sample strictly contradicts a probabilistic hypothesis</td><td>Symmetry needs only the direction in which evidence bears, which probabilistic evidence has. There is no threshold of prohibition to meet.</td></tr>
+        <tr><td>Astrology</td><td>A testable, tested, failed claim passes the logical test</td><td>Astrologers widely cited Gauquelin's "Mars effect" as vindication; Carlson's null result was not allowed to count. Asymmetric — by the community's own standard of relevance.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p style="margin-top:22px"><strong>The requirement is equal standards, not equal counts.</strong> One rigorous positive result can legitimately outweigh several careless nulls. What symmetry forbids is a quality filter applied to one direction only.</p>
+
+  <h3>What counts as citing evidence</h3>
+  <p>P applies to any community that appeals to observation as support, and observation includes anecdotes, case reports, testimonials and practitioners' hit rates as much as trials. A tradition that offers a successful reading as support has declared that readings bear on its commitments, so failed readings must count against them. A tradition that appeals only to authority or revelation claims no empirical warrant. The framework does not apply to it, and it is reported as out of scope, not as healthy.</p>
+
+  <h3>The same principle at the framework level <span class="ref">R2</span></h3>
+  <p>Some commitments are methodological — adaptationism's "look for adaptive function," for example — and are never confronted by a single result. They are held accountable through the hypotheses they generate. A framework that takes credit when its hypotheses succeed must take debit when they fail. The characteristic failure is <strong>substitution without debit</strong>: a failed hypothesis is replaced by another from the same framework, and the framework itself never pays. That is asymmetry, one level up, and it needs no separate criterion.</p>
+
+  <p>Framework-level commitments can then be ranked by how accountable the community has made them:</p>
+  <ol class="ladder">
+    <li><span class="n">1</span><span><b>Operationalized</b> The commitment has been converted into a test. Bell's 1964 inequality turned local realism from metaphysics into an experiment; Aspect's 1982 tests and the loophole-free tests of 2015 revised it.</span></li>
+    <li><span class="n">2</span><span><b>Comparatively accountable</b> A named rival exists, is actually developed, and there are shared tests between them. Neutral theory against adaptationism in molecular evolution: dN/dS ratios and the McDonald–Kreitman test measure the adaptive fraction, and the field accepted that much change is neutral.</span></li>
+    <li class="insul"><span class="n">3</span><span><b>Stated but idle</b> Revision conditions exist on paper, but no rival is developed and failed hypotheses are not debited.</span></li>
+    <li class="insul"><span class="n">4</span><span><b>Unconditional</b> No revision trigger at all.</span></li>
+  </ol>
+  <p>Levels 3 and 4 are insulation at the framework level.</p>
+</section>
+
+<!-- ============================================ network -->
+<section id="network">
+  <div class="sec-label">Locating the community · R1</div>
+  <h2>Subcommunities from network structure</h2>
+
+  <p class="lede">Symmetry is a property of a community's practice, so the framework needs a principled answer to "which community?" — especially when a field splits over a result and its parts behave differently. The answer is to derive subcommunities from the network of individuals and their public evidential acts.</p>
+
+  <p>Belief positions are not observable; citations, co-authorships and venues are. The framework builds two graphs over the same people.</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Layer</th><th>Nodes</th><th>Edges</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td>Social</td><td>Researchers</td><td>Co-authorship, citation, shared venues and institutions</td><td>Bibliographic databases</td></tr>
+        <tr><td>Epistemic</td><td>Researchers and evidence items (results, trials, datasets)</td><td>Signed: <b>+</b> cites as support · <b>−</b> cites as counting against · <b>×</b> cites and discounts</td><td>Citation-context classification</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="keyline">
+    <h4>The rule that prevents circularity</h4>
+    <p>Detect communities on the <b>social</b> layer; measure symmetry on the <b>epistemic</b> layer. A cluster defined by belief in <i>p</i> would look uniform on <i>p</i> by construction, and the test would contain its own answer. Keeping input and outcome on separate layers is what makes the relationship between them informative.</p>
+  </div>
+
+  <figure>
+    <div class="figframe">
+      <svg viewBox="0 0 900 370" role="img" aria-label="Left panel: a social network of six researchers forms two clusters, A and B, detected from co-authorship and citation. An arrow carries cluster membership, but not stance, to the right panel. Right panel: the same researchers linked to three evidence items. Cluster A cites one result as support and others as counting against. Cluster B cites the first result as support and discounts the other two.">
+        <defs>
+          <marker id="f2c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+        </defs>
+
+        <!-- LEFT: social layer -->
+        <text x="14" y="22" font-family="IBM Plex Mono, monospace" font-size="10.5" letter-spacing="1.4" fill="currentColor">SOCIAL LAYER</text>
+        <text x="14" y="38" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">detect communities here</text>
+
+        <ellipse cx="125" cy="150" rx="78" ry="66" fill="none" stroke="var(--rule-strong)" stroke-width="1.2" stroke-dasharray="4 4"/>
+        <ellipse cx="312" cy="185" rx="78" ry="66" fill="none" stroke="var(--rule-strong)" stroke-width="1.2" stroke-dasharray="4 4"/>
+        <g stroke="currentColor" stroke-width="1.1" opacity=".7">
+          <line x1="90" y1="130" x2="160" y2="115"/><line x1="90" y1="130" x2="125" y2="195"/><line x1="160" y1="115" x2="125" y2="195"/>
+          <line x1="275" y1="165" x2="345" y2="150"/><line x1="275" y1="165" x2="310" y2="235"/><line x1="345" y1="150" x2="310" y2="235"/>
+          <line x1="160" y1="115" x2="275" y2="165"/>
+        </g>
+        <g fill="var(--surface)" stroke="currentColor" stroke-width="1.5">
+          <circle cx="90" cy="130" r="8"/><circle cx="160" cy="115" r="8"/><circle cx="125" cy="195" r="8"/>
+          <circle cx="275" cy="165" r="8"/><circle cx="345" cy="150" r="8"/><circle cx="310" cy="235" r="8"/>
+        </g>
+        <g font-family="IBM Plex Mono, monospace" font-size="11.5" fill="currentColor" text-anchor="middle">
+          <text x="125" y="238">cluster A</text>
+          <text x="312" y="274">cluster B</text>
+        </g>
+        <text x="14" y="310" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">edges: co-authorship, citation,</text>
+        <text x="14" y="324" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">shared venues — stance not used</text>
+
+        <!-- carry-over arrow -->
+        <path d="M404,180 H478" stroke="currentColor" stroke-width="1.3" fill="none" marker-end="url(#f2c)"/>
+        <text x="441" y="160" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">membership</text>
+        <text x="441" y="200" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">carried over</text>
+
+        <!-- RIGHT: epistemic layer -->
+        <text x="500" y="22" font-family="IBM Plex Mono, monospace" font-size="10.5" letter-spacing="1.4" fill="currentColor">EPISTEMIC LAYER</text>
+        <text x="500" y="38" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">measure symmetry here</text>
+        <g font-family="IBM Plex Mono, monospace" font-size="11.5" fill="currentColor" text-anchor="middle">
+          <text x="545" y="80">A</text><text x="845" y="80">B</text>
+        </g>
+
+        <!-- A edges -->
+        <g stroke="var(--accent)" stroke-width="1.4" fill="none">
+          <line x1="545" y1="120" x2="695" y2="110"/>
+          <line x1="545" y1="240" x2="695" y2="110"/>
+          <line x1="545" y1="120" x2="695" y2="180" stroke-dasharray="6 4"/>
+          <line x1="545" y1="180" x2="695" y2="180" stroke-dasharray="6 4"/>
+          <line x1="545" y1="240" x2="695" y2="250" stroke-dasharray="6 4"/>
+        </g>
+        <!-- B edges -->
+        <g stroke-width="1.4" fill="none">
+          <line x1="845" y1="120" x2="695" y2="110" stroke="var(--accent)"/>
+          <line x1="845" y1="180" x2="695" y2="110" stroke="var(--accent)"/>
+          <line x1="845" y1="120" x2="695" y2="180" stroke="var(--brass)" stroke-dasharray="1.5 3.5" stroke-linecap="round" stroke-width="2"/>
+          <line x1="845" y1="180" x2="695" y2="180" stroke="var(--brass)" stroke-dasharray="1.5 3.5" stroke-linecap="round" stroke-width="2"/>
+          <line x1="845" y1="240" x2="695" y2="250" stroke="var(--brass)" stroke-dasharray="1.5 3.5" stroke-linecap="round" stroke-width="2"/>
+        </g>
+        <g fill="var(--surface)" stroke="currentColor" stroke-width="1.5">
+          <circle cx="545" cy="120" r="8"/><circle cx="545" cy="180" r="8"/><circle cx="545" cy="240" r="8"/>
+          <circle cx="845" cy="120" r="8"/><circle cx="845" cy="180" r="8"/><circle cx="845" cy="240" r="8"/>
+          <rect x="680" y="96" width="30" height="28" rx="2"/>
+          <rect x="680" y="166" width="30" height="28" rx="2"/>
+          <rect x="680" y="236" width="30" height="28" rx="2"/>
+        </g>
+        <g font-family="IBM Plex Mono, monospace" font-size="10.5" fill="currentColor" text-anchor="middle">
+          <text x="695" y="114">E1</text><text x="695" y="184">E2</text><text x="695" y="254">E3</text>
+        </g>
+        <text x="500" y="296" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--accent)">A: failures counted</text>
+        <text x="886" y="296" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--brass)">B: failures discounted</text>
+
+        <!-- legend -->
+        <g font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">
+          <line x1="500" y1="338" x2="528" y2="338" stroke="var(--accent)" stroke-width="1.4"/>
+          <text x="534" y="342">+ support</text>
+          <line x1="618" y1="338" x2="646" y2="338" stroke="var(--accent)" stroke-width="1.4" stroke-dasharray="6 4"/>
+          <text x="652" y="342">− against</text>
+          <line x1="736" y1="338" x2="764" y2="338" stroke="var(--brass)" stroke-width="2" stroke-dasharray="1.5 3.5" stroke-linecap="round"/>
+          <text x="770" y="342">× discounts</text>
+        </g>
+      </svg>
+    </div>
+    <figcaption><b>Two layers, one set of people.</b> Clusters are found from who works with whom, then carried to the evidence layer unchanged. Both clusters cite E1 as support. Cluster A lets E2 and E3 count against the commitment; cluster B cites them only to discount them. The field is split, and the split is visible without ever asking anyone what they believe.</figcaption>
+  </figure>
+
+  <h3>Four network signatures</h3>
+  <p>Read together, the two layers separate four situations that single-layer measures blur. Consensus and controversy are already recoverable from citation modularity; the fourth signature is the one this framework adds.</p>
+
+  <figure>
+    <div class="figframe">
+      <svg viewBox="0 0 900 270" role="img" aria-label="Four small network diagrams. Consensus: one connected component. Open controversy: two clusters joined by several critical citation edges. Healthy dissent: a large cluster and a small one, still connected by a few edges. Detached residue: a large cluster and a small dense cluster with no edges between them, outlined in brass.">
+        <g font-family="IBM Plex Mono, monospace" font-size="10.5" letter-spacing="1.2" fill="currentColor">
+          <text x="14" y="22">CONSENSUS</text>
+          <text x="236" y="22">OPEN CONTROVERSY</text>
+          <text x="458" y="22">HEALTHY DISSENT</text>
+          <text x="680" y="22" fill="var(--brass)">DETACHED RESIDUE</text>
+        </g>
+
+        <!-- consensus -->
+        <g transform="translate(14,0)">
+          <g stroke="currentColor" stroke-width="1" opacity=".6">
+            <line x1="50" y1="70" x2="95" y2="55"/><line x1="95" y1="55" x2="140" y2="75"/><line x1="50" y1="70" x2="75" y2="115"/>
+            <line x1="95" y1="55" x2="75" y2="115"/><line x1="95" y1="55" x2="120" y2="120"/><line x1="140" y1="75" x2="120" y2="120"/>
+            <line x1="140" y1="75" x2="170" y2="110"/><line x1="120" y1="120" x2="170" y2="110"/><line x1="75" y1="115" x2="120" y2="120"/>
+            <line x1="75" y1="115" x2="45" y2="150"/><line x1="75" y1="115" x2="100" y2="160"/><line x1="120" y1="120" x2="100" y2="160"/>
+            <line x1="120" y1="120" x2="150" y2="155"/><line x1="170" y1="110" x2="150" y2="155"/><line x1="45" y1="150" x2="100" y2="160"/>
+          </g>
+          <g fill="var(--surface)" stroke="currentColor" stroke-width="1.4">
+            <circle cx="50" cy="70" r="5"/><circle cx="95" cy="55" r="5"/><circle cx="140" cy="75" r="5"/><circle cx="75" cy="115" r="5"/>
+            <circle cx="120" cy="120" r="5"/><circle cx="170" cy="110" r="5"/><circle cx="45" cy="150" r="5"/><circle cx="100" cy="160" r="5"/><circle cx="150" cy="155" r="5"/>
+          </g>
+        </g>
+
+        <!-- controversy -->
+        <g transform="translate(236,0)">
+          <g stroke="currentColor" stroke-width="1" opacity=".6">
+            <line x1="40" y1="75" x2="80" y2="60"/><line x1="40" y1="75" x2="55" y2="120"/><line x1="80" y1="60" x2="90" y2="115"/><line x1="55" y1="120" x2="90" y2="115"/><line x1="55" y1="120" x2="45" y2="160"/><line x1="90" y1="115" x2="45" y2="160"/>
+            <line x1="130" y1="85" x2="175" y2="70"/><line x1="130" y1="85" x2="145" y2="135"/><line x1="175" y1="70" x2="180" y2="125"/><line x1="145" y1="135" x2="180" y2="125"/><line x1="145" y1="135" x2="170" y2="170"/><line x1="180" y1="125" x2="170" y2="170"/>
+          </g>
+          <g stroke="var(--accent)" stroke-width="1.3" stroke-dasharray="5 3" fill="none">
+            <line x1="80" y1="60" x2="130" y2="85"/><line x1="90" y1="115" x2="145" y2="135"/><line x1="90" y1="115" x2="130" y2="85"/><line x1="45" y1="160" x2="170" y2="170"/>
+          </g>
+          <g fill="var(--surface)" stroke="currentColor" stroke-width="1.4">
+            <circle cx="40" cy="75" r="5"/><circle cx="80" cy="60" r="5"/><circle cx="55" cy="120" r="5"/><circle cx="90" cy="115" r="5"/><circle cx="45" cy="160" r="5"/>
+            <circle cx="130" cy="85" r="5"/><circle cx="175" cy="70" r="5"/><circle cx="145" cy="135" r="5"/><circle cx="180" cy="125" r="5"/><circle cx="170" cy="170" r="5"/>
+          </g>
+        </g>
+
+        <!-- dissent -->
+        <g transform="translate(458,0)">
+          <g stroke="currentColor" stroke-width="1" opacity=".6">
+            <line x1="35" y1="75" x2="80" y2="58"/><line x1="80" y1="58" x2="120" y2="85"/><line x1="35" y1="75" x2="55" y2="125"/><line x1="80" y1="58" x2="55" y2="125"/>
+            <line x1="120" y1="85" x2="100" y2="130"/><line x1="55" y1="125" x2="100" y2="130"/><line x1="55" y1="125" x2="70" y2="168"/><line x1="100" y1="130" x2="70" y2="168"/><line x1="80" y1="58" x2="100" y2="130"/>
+            <line x1="160" y1="150" x2="188" y2="130"/><line x1="160" y1="150" x2="188" y2="172"/><line x1="188" y1="130" x2="188" y2="172"/>
+          </g>
+          <g stroke="var(--accent)" stroke-width="1.3" fill="none">
+            <line x1="100" y1="130" x2="160" y2="150"/><line x1="120" y1="85" x2="188" y2="130"/>
+          </g>
+          <g fill="var(--surface)" stroke="currentColor" stroke-width="1.4">
+            <circle cx="35" cy="75" r="5"/><circle cx="80" cy="58" r="5"/><circle cx="120" cy="85" r="5"/><circle cx="55" cy="125" r="5"/><circle cx="100" cy="130" r="5"/><circle cx="70" cy="168" r="5"/>
+            <circle cx="160" cy="150" r="5"/><circle cx="188" cy="130" r="5"/><circle cx="188" cy="172" r="5"/>
+          </g>
+        </g>
+
+        <!-- detached -->
+        <g transform="translate(680,0)">
+          <g stroke="currentColor" stroke-width="1" opacity=".6">
+            <line x1="35" y1="75" x2="80" y2="58"/><line x1="80" y1="58" x2="120" y2="85"/><line x1="35" y1="75" x2="55" y2="125"/><line x1="80" y1="58" x2="55" y2="125"/>
+            <line x1="120" y1="85" x2="100" y2="130"/><line x1="55" y1="125" x2="100" y2="130"/><line x1="55" y1="125" x2="70" y2="168"/><line x1="100" y1="130" x2="70" y2="168"/><line x1="80" y1="58" x2="100" y2="130"/>
+          </g>
+          <ellipse cx="180" cy="150" rx="28" ry="38" fill="var(--brass-soft)" stroke="var(--brass)" stroke-width="1.2" stroke-dasharray="3 3"/>
+          <g stroke="var(--brass)" stroke-width="1.1">
+            <line x1="166" y1="138" x2="192" y2="124"/><line x1="166" y1="138" x2="192" y2="165"/><line x1="166" y1="138" x2="174" y2="176"/>
+            <line x1="192" y1="124" x2="192" y2="165"/><line x1="192" y1="124" x2="174" y2="176"/><line x1="192" y1="165" x2="174" y2="176"/>
+          </g>
+          <g fill="var(--surface)" stroke="currentColor" stroke-width="1.4">
+            <circle cx="35" cy="75" r="5"/><circle cx="80" cy="58" r="5"/><circle cx="120" cy="85" r="5"/><circle cx="55" cy="125" r="5"/><circle cx="100" cy="130" r="5"/><circle cx="70" cy="168" r="5"/>
+          </g>
+          <g fill="var(--surface)" stroke="var(--brass)" stroke-width="1.4">
+            <circle cx="166" cy="138" r="5"/><circle cx="192" cy="124" r="5"/><circle cx="192" cy="165" r="5"/><circle cx="174" cy="176" r="5"/>
+          </g>
+        </g>
+
+        <!-- readouts -->
+        <g font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">
+          <text x="14" y="216">one component</text>
+          <text x="236" y="216">clusters, critical cross-edges</text>
+          <text x="458" y="216">small cluster, still connected</text>
+          <text x="680" y="216">no edges to the mainstream</text>
+        </g>
+        <g font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--accent)">
+          <text x="14" y="232">evidence cuts both ways</text>
+          <text x="236" y="232">symmetric within each</text>
+          <text x="458" y="232">gap treated as a problem</text>
+        </g>
+        <text x="680" y="232" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--brass)">failures discounted</text>
+        <g font-family="IBM Plex Mono, monospace" font-size="10" fill="currentColor">
+          <text x="14" y="256">e.g. thermodynamics</text>
+          <text x="236" y="256">e.g. plate tectonics, 1950s</text>
+          <text x="458" y="256">e.g. Wegener's defenders</text>
+          <text x="680" y="256">e.g. cold fusion after 1991</text>
+        </g>
+      </svg>
+    </div>
+    <figcaption><b>Disagreement is an edge; detachment is its absence.</b> Dashed teal edges in the controversy panel are critical citations — the clusters are arguing, which is healthy. The detached residue has no edges to the mainstream in either direction, its own dense internal ties, and asymmetric evidence handling. <b>Marginality alone is never the diagnosis:</b> the small cluster in the dissent panel is as marginal as the residue, and healthy.</figcaption>
+  </figure>
+
+  <div class="note">
+    <h4>Connectivity is not the same as health</h4>
+    <p>Zollman's models show that densely connected epistemic communities can converge too early on a wrong answer, while sparser ones sometimes do better. So the framework never rewards density. What it measures is whether ties are <b>contingent on stance</b> — whether changing your mind about <i>p</i>, on evidence the community would accept if it pointed the other way, costs you your collaborators.</p>
+  </div>
+</section>
+
+<!-- ============================================ instruments -->
+<section id="instruments">
+  <div class="sec-label">Measurement</div>
+  <h2>The instruments</h2>
+
+  <p class="lede">Every instrument reads conduct from the public record. None requires classifying a proposition by its content, and none requires a prior.</p>
+
+  <h3>The Anomaly Response Ledger</h3>
+  <p>The primary instrument. For a commitment <span class="sym">(p, C, W)</span>, with <i>p</i> the side <i>C</i> favours (<a href="#side">below</a>), a <strong>disconfirming result</strong> is defined without logical analysis. It is a result whose converse <span class="sym">C</span> has cited as support for <span class="sym">p</span>, or a result of the <strong>same design</strong> as one <i>C</i> has cited as support: the same protocol family, judged from methods alone, without the result. <i>C</i> chose the design by citing it, so no counterfactual about what <i>C</i> would cite is needed. Each disconfirming result is coded by what <span class="sym">C</span> did next:</p>
+  <ul class="tight">
+    <li><strong>A · Abandon.</strong> <i>p</i> is given up, or restricted to a domain inside which results are then allowed to count against it. A restriction that no result inside the new domain may challenge codes C.</li>
+    <li><strong>B · Adopt.</strong> The anomaly becomes a recognised open problem and work is directed at it. A B response opens a round, which must close (<a href="#rounds">below</a>). The neutrino codes here.</li>
+    <li><strong>C · Insulate.</strong> The response makes evidential treatment asymmetric: a failure is excused by a filter not applied to successes, or a failed auxiliary is replaced without any debit to <i>p</i>.</li>
+    <li><strong>D · Ignore.</strong> <i>C</i> makes no response within the lag <i>ℓ</i>, while it goes on citing results that favour <i>p</i>. A community that has stopped citing the evidence in both directions is closed, not ignoring (gate 1).</li>
+  </ul>
+  <p>Coding C and D is defined by conduct, not by the logical status of the auxiliary. C and D are the insulating codes. From the ledger come the insulating share and the <strong>loop length</strong> <span class="sym">L</span> — the longest run of consecutive C or D responses with no public statement placing <i>p</i> at risk.</p>
+
+  <h3 id="rounds">Rounds: when adoption becomes insulation</h3>
+  <p>Adopting an anomaly is healthy only while the work it starts can cost something. The rule comes from the Duhem–Quine row of the objections table: blaming an auxiliary is permitted only if successes may equally be credited to it. So each B response opens a round, and every round must close.</p>
+  <ul class="tight">
+    <li><strong>A round names what it tests.</strong> The auxiliary under test is the one <i>C</i> says the work is directed at — "the effect needs high loading," "the particle is hard to detect." That is <i>C</i>'s own statement, not an analysis of content.</li>
+    <li><strong>Success.</strong> The work reports in favour of <i>p</i>, under the same filters <i>C</i> applies to failures. The round closes and the anomaly is resolved, as the neutrino's was in 1956.</li>
+    <li><strong>Failure with debit.</strong> The work reports against, and the auxiliary pays: it is no longer cited to explain successes either. Because the credit went with it, the failure may rest on the auxiliary rather than on <i>p</i>, and the round closes without insulation.</li>
+    <li><strong>Failure without debit.</strong> The work reports against, and <i>C</i> goes on crediting the failed auxiliary for its successes, or replaces it with another without any debit to <i>p</i>. The round closes as C, and the loop extends.</li>
+    <li><strong>Idle.</strong> A round that produces no interim result able to go against <i>p</i> within <i>j</i> years closes as C at the horizon. The neutrino passes: from the mid-1930s, recoil experiments and tests of Fermi's theory, any of which could have gone the other way, ran throughout its wait.</li>
+  </ul>
+
+  <div class="tablewrap">
+    <table class="wide">
+      <thead><tr><th>Instrument</th><th>Symbol</th><th>What it measures</th><th>Serves</th><th>Data</th><th>Usable on a new proposal?</th></tr></thead>
+      <tbody>
+        <tr><td>Anomaly Response Ledger</td><td class="sym-cell">L</td><td>Sequences of A / B / C / D responses and closed rounds; longest insulating loop</td><td>P</td><td>Literature, coded by the coder pool</td><td class="v-o">no</td></tr>
+        <tr><td>Asymmetry index</td><td class="sym-cell">Δ(C, p)</td><td>For each reason <i>C</i> gives for discounting, how often it is invoked against unfavourable results that have the property it names, minus how often against favourable results that have it; combined over reasons. Near 0 is symmetric.</td><td>P</td><td>Epistemic layer, filter applicability</td><td class="v-o">no</td></tr>
+        <tr><td>Omission asymmetry</td><td class="sym-cell">Ω(C, p)</td><td>Of the results bearing on <i>p</i>, matched for prominence across the field, the share of favourable results <i>C</i> cites minus the share of unfavourable results it cites. Near 0 is symmetric.</td><td>P</td><td>Epistemic layer, full corpus</td><td class="v-o">no</td></tr>
+        <tr><td>Honoured rate</td><td class="sym-cell">H</td><td>When a stated revision condition was met, did revision follow?</td><td>P · criterion 2</td><td>Stated conditions vs. later conduct</td><td class="v-o">partly — stated conditions only</td></tr>
+        <tr><td>Tie retention</td><td class="sym-cell">τ</td><td>Ties kept by members who break with the cluster's stance on <i>p</i> on evidence none of the cluster's own filters excludes, relative to tie loss after other visible changes of position. Near 1 is healthy.</td><td>Criterion 3</td><td>Social × epistemic, over time</td><td class="v-o">no</td></tr>
+        <tr><td>Cross-cluster engagement</td><td class="sym-cell">χ</td><td>Share of a cluster's citations, of any sign, that leave it. Near 0 is detachment.</td><td>R1 · signatures</td><td>Social layer</td><td class="v-o">no</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Symmetry reason by reason</h3>
+  <p>"The same quality standards" in P cannot mean a global judgement of which studies are good, because in a contested case the quality of the disputed evidence is the dispute. The standard is read instead from the community's own reasons.</p>
+  <ul class="tight">
+    <li><strong>Filters come from <i>C</i>.</strong> Every discount gives, or implies, a reason: poor calorimetry, low loading, no blinding, a sceptic present. Each distinct reason is a filter. The filters for a commitment are extracted from <i>C</i>'s discounting citations and registered before anything else is coded.</li>
+    <li><strong>Applicability is judged without results.</strong> For every result bearing on <i>p</i>, a coder who sees its methods, but not its result, conclusions or citing context, decides whether it has the property each filter names.</li>
+    <li><strong>Δ compares rates.</strong> A filter invoked against unfavourable results that have its property, and against favourable results that have it, is legitimate however often it is used. Only the difference between the two lanes counts.</li>
+    <li><strong>Uncheckable reasons are one-directional.</strong> A reason whose applicability cannot be decided from methods — "conditions were not right," the decline effect — can never be applied to a success, so every use of it counts as asymmetric.</li>
+    <li><strong>Silence is caught elsewhere.</strong> A community that discounts by not citing at all is measured by Ω and the D code, not by Δ.</li>
+  </ul>
+  <p>This turns the hardest judgement in the framework into narrow questions about methods, which are easier to code reliably and harder to answer from knowing how a field turned out. It also meets the charge that mainstream scepticism is itself insulation, on the framework's own terms: scepticism is healthy when its filters were applied to weak null results as well as to weak positive ones. Shang and colleagues' 2005 comparison of homeopathy trials with matched trials of conventional medicine, under the same quality criteria, is an instance of the symmetric kind.</p>
+
+  <h3 id="side">Which side a community is scored on</h3>
+  <p>Whether a claim is registered as <i>p</i> or as not-<i>p</i> is the analyst's choice, and no verdict may depend on it. Δ and Ω are therefore read in both directions: an interval wholly below −<i>δ</i> is asymmetry in favour of not-<i>p</i>, exactly as one wholly above +<i>δ</i> is asymmetry in favour of <i>p</i>. The ledger, its insulating share and <span class="sym">L</span> are computed for the side <i>C</i> favours, which is the side its citations support on balance. Reversing the registration reverses every sign and changes no verdict. A consequence should be stated plainly: a mainstream that scrutinises a rival's successes more harshly than its own can read insulated, and the framework does not exempt it.</p>
+
+  <h3>Relation to the three criteria</h3>
+  <p><strong>Criterion 2</strong> of <i>The Insulated Core</i>, articulable revision conditions, is replaced by principle P: a community's revision conditions are read from its evidential practice (<span class="sym">Δ</span>, the ledger) and checked against the ones it states (<span class="sym">H</span>). <strong>Criterion 3</strong>, the reward for core revision, becomes tie retention <span class="sym">τ</span>: a challenger of the core is a member who breaks with the cluster's stance on <i>p</i>, so promotion and schism show up as ties kept or lost. Criterion 3 was about <em>successful</em> challengers, though, and τ has to respect that; the definition below says how.</p>
+  <p><strong>Criterion 1</strong>, generative depth, and the accretion signature do not enter the verdict. Insulation can be detected without them. But they are consequences of it — an insulated core should turn none of its results into new questions and should delete nothing — so they appear once, in <a href="#validation">validation</a>, as independent checks with a stated consequence if they disagree.</p>
+
+  <h3>Tie retention without punishing dissent or rewarding error</h3>
+  <p>Healthy sciences drop people who are simply wrong. A physicist who starts publishing perpetual-motion papers will lose collaborators, and physics journals reject such papers unread. A <span class="sym">τ</span> that counted every break with the cluster would find thermodynamics punishing dissent. So <span class="sym">τ</span> counts only <strong>qualifying breaks</strong>, under two controls:</p>
+  <ul class="tight">
+    <li><strong>Evidence held to the cluster's own standard.</strong> A break counts only if none of the filters the cluster applies to evidence in its own favour would exclude the defector's evidence, judged by the same results-blind applicability coding used for <span class="sym">Δ</span>. The perpetual-motion paper does not qualify; Marshall's <i>H. pylori</i> work did. The cluster cannot raise the bar for defectors alone, because the bar is read from how it treats evidence in its own favour.</li>
+    <li><strong>Baseline churn.</strong> Tie loss after a qualifying break is compared with tie loss after other visible changes of position of similar prominence, such as a change of method or subfield, so ordinary turnover in collaboration is not mistaken for sanction.</li>
+  </ul>
+  <p>Later vindication is deliberately not required. It would leave <span class="sym">τ</span> unmeasurable until a dispute is settled, and it would make the eventual majority verdict the standard, which is what the framework exists to avoid.</p>
+
+  <h3 id="coders">Coders are instruments</h3>
+  <p>Every label that enters <span class="sym">Δ</span>, the ledger and <span class="sym">τ</span> comes from a coder, and the intervals in the verdict procedure are only as honest as the coders are independent. A coder that already knows which fields are respectable can be exactly the one-directional filter this framework exists to detect. Coders are therefore held to P like everything else.</p>
+  <ul class="tight">
+    <li><strong>One coder is one independent source of error.</strong> Each trained human is one coder. Every output of one family of language models — any version, prompt or sample — is also one coder, because its errors are shared. Repeated samples from one model measure its consistency, not the disagreement the intervals exist to capture. The pool has at least <i>q</i> coders, at least one of them human, and no model family used in developing this framework serves as the only automated coder.</li>
+    <li><strong>Disagreement anchored to humans.</strong> An anchor set drawn from development folds is coded by every coder. Disagreement is measured between every pair of coders and between each automated coder and the humans, and intervals use the largest of these whenever it exceeds the disagreement observed in the case. Coders that agree with one another more than with people cannot narrow an interval.</li>
+    <li><strong>Blinding by redaction, then tested.</strong> Field-identifying terms are removed by a registered dictionary applied mechanically. Episodes are not rewritten freely, because a rewriter is itself a coder that knows the field. Before coding, every coder is asked to name the field or case from the redacted text. If any does better than chance by more than <i>g</i>, the dictionary is extended and the test repeated; a case that cannot be blinded is withdrawn before it is coded.</li>
+    <li><strong>Each coder audited for its own asymmetry.</strong> A sample of contexts is presented in pairs that are identical except that field-identifying details are exchanged between cases. A coder whose labels change with the exchange on more than a share <i>s</i> of pairs, beyond its own test–retest rate, is removed before coding begins.</li>
+    <li><strong>Filters judged without results.</strong> Whether a result has the property a filter names is decided from its methods alone, with results, conclusions and the citing context removed. A coder who can see which way a study came out lets direction leak into the judgement, and "the same standard" becomes circular.</li>
+  </ul>
+</section>
+
+<!-- ============================================ verdict -->
+<section id="verdict">
+  <div class="sec-label">Decision rule · V</div>
+  <h2>Reaching a verdict</h2>
+
+  <p class="lede">The instruments are not summed: a reassuring average would hide a plain insulating loop. Instead a fixed procedure takes each commitment through four gates. Every path ends in exactly one verdict, and an indeterminate verdict always states why.</p>
+
+  <figure>
+    <div class="figframe">
+      <svg viewBox="0 0 1000 272" role="img" aria-label="Decision procedure. A commitment passes four gates in order: eligibility, primary reading, conduct check, and stability. Failing any gate exits downward to indeterminate with a reason: insufficient data, reading unclear, conduct conflict, or unstable. Passing all four ends in healthy for a symmetric reading or insulated for an asymmetric reading. Cross-cluster engagement chi never enters the procedure and only sets the signature label.">
+        <defs>
+          <marker id="f3c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+          <marker id="f3a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker>
+          <marker id="f3b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--brass)"/></marker>
+          <marker id="f3m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+        </defs>
+
+        <!-- input -->
+        <rect x="10" y="40" width="110" height="66" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/>
+        <g font-family="IBM Plex Mono, monospace" text-anchor="middle" fill="currentColor">
+          <text x="65" y="69" font-size="11">commitment</text>
+          <text x="65" y="86" font-size="11">(p, C, W)</text>
+        </g>
+
+        <!-- gates -->
+        <g fill="none" stroke="currentColor" stroke-width="1.3">
+          <rect x="160" y="40" width="136" height="66" rx="2"/>
+          <rect x="336" y="40" width="136" height="66" rx="2"/>
+          <rect x="512" y="40" width="136" height="66" rx="2"/>
+          <rect x="688" y="40" width="136" height="66" rx="2"/>
+        </g>
+        <g font-family="IBM Plex Mono, monospace" text-anchor="middle" font-size="11" fill="currentColor">
+          <text x="228" y="62">1 · eligible?</text>
+          <text x="404" y="62">2 · primary reading</text>
+          <text x="580" y="62">3 · conduct check</text>
+          <text x="756" y="62">4 · stable?</text>
+        </g>
+        <g font-family="IBM Plex Mono, monospace" text-anchor="middle" font-size="10" fill="var(--muted)">
+          <text x="228" y="80">n events · m members</text><text x="228" y="95">v cites · coverage r</text>
+          <text x="404" y="80">Δ and Ω vs ±δ</text><text x="404" y="95">share and L intervals</text>
+          <text x="580" y="80">τ and H, where</text><text x="580" y="95">measurable</text>
+          <text x="756" y="80">partitions, windows</text><text x="756" y="95">and lineage overlap</text>
+        </g>
+
+        <!-- pass arrows -->
+        <g stroke="currentColor" stroke-width="1.2" fill="none" marker-end="url(#f3c)">
+          <path d="M120,73 H156"/><path d="M296,73 H332"/><path d="M472,73 H508"/><path d="M648,73 H684"/>
+        </g>
+        <g font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)" text-anchor="middle">
+          <text x="314" y="65">pass</text><text x="490" y="65">S/A</text><text x="666" y="65">pass</text>
+        </g>
+
+        <!-- outputs -->
+        <path d="M824,73 C848,73 846,43 868,43" stroke="var(--accent)" stroke-width="1.4" fill="none" marker-end="url(#f3a)"/>
+        <path d="M824,73 C848,73 846,105 868,105" stroke="var(--brass)" stroke-width="1.4" fill="none" marker-end="url(#f3b)"/>
+        <rect x="872" y="22" width="118" height="42" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+        <rect x="872" y="84" width="118" height="42" rx="2" fill="var(--brass-soft)" stroke="var(--brass)" stroke-width="1.4"/>
+        <g font-family="IBM Plex Mono, monospace" text-anchor="middle">
+          <text x="931" y="40" font-size="11.5" fill="var(--accent)">healthy</text>
+          <text x="931" y="55" font-size="10" fill="var(--muted)">reading S</text>
+          <text x="931" y="102" font-size="11.5" fill="var(--brass)">insulated</text>
+          <text x="931" y="117" font-size="10" fill="var(--muted)">reading A</text>
+        </g>
+
+        <!-- exits -->
+        <g stroke="var(--muted)" stroke-width="1.2" fill="none" marker-end="url(#f3m)">
+          <path d="M228,106 V176"/><path d="M404,106 V176"/><path d="M580,106 V176"/><path d="M756,106 V176"/>
+        </g>
+        <g font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">
+          <text x="236" y="146">no</text><text x="412" y="146">unclear</text><text x="588" y="146">conflict</text><text x="764" y="146">no</text>
+        </g>
+        <g fill="none" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="4 3">
+          <rect x="160" y="180" width="136" height="48" rx="2"/>
+          <rect x="336" y="180" width="136" height="48" rx="2"/>
+          <rect x="512" y="180" width="136" height="48" rx="2"/>
+          <rect x="688" y="180" width="136" height="48" rx="2"/>
+        </g>
+        <g font-family="IBM Plex Mono, monospace" text-anchor="middle">
+          <g font-size="11" fill="var(--muted)">
+            <text x="228" y="200">indeterminate</text><text x="404" y="200">indeterminate</text><text x="580" y="200">indeterminate</text><text x="756" y="200">indeterminate</text>
+          </g>
+          <g font-size="10" fill="currentColor">
+            <text x="228" y="216">insufficient data</text><text x="404" y="216">reading unclear</text><text x="580" y="216">conduct conflict</text><text x="756" y="216">unstable</text>
+          </g>
+        </g>
+
+        <!-- chi note -->
+        <g font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">
+          <text x="872" y="200">χ never enters;</text>
+          <text x="872" y="216">sets signature label</text>
+        </g>
+        <text x="10" y="258" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="currentColor">every path ends in exactly one verdict</text>
+      </svg>
+    </div>
+    <figcaption><b>Four gates, one exit each.</b> Failing a gate exits to indeterminate with that gate's reason attached, so no combination of readings is left without an outcome. Healthy and insulated are reached by the same route and must meet the same standard of certainty. A lineage that has let a claim go, and no longer cites the evidence on it, is recorded as closed rather than sent through the gates. Cross-cluster engagement <i>χ</i> appears nowhere on the route; it labels the network signature reported beside the verdict.</figcaption>
+  </figure>
+
+  <h3>The procedure</h3>
+  <p>Each commitment passes the gates in order, once for each dated sub-window. <strong>S</strong> and <strong>A</strong> stand for the symmetric and asymmetric readings. Every threshold named here is fixed in the registry below before any contested case is scored.</p>
+  <ol class="steps">
+    <li><b>Eligibility</b>
+      The sub-window holds at least <i>n</i> disconfirmations old enough to have drawn a response (lag <i>ℓ</i>); <i>C</i> has at least <i>m</i> members; <i>C</i> makes at least <i>v</i> citations bearing on <i>p</i>; and the corpus covers <i>C</i>'s literature to at least <i>r</i>, as measured by the <a href="#validation">coverage census</a>. Otherwise: <span class="code">indeterminate · insufficient data</span>. One case is different. When a lineage that has engaged <i>p</i> falls below <i>v</i> and stays there for the rest of the corpus, its trajectory on <i>p</i> is <span class="code">closed</span>. A community that has let a claim go has nothing left to be judged on, so the sub-windows after closure are not scored, are not indeterminate, and never count toward trigger 1.</li>
+    <li><b>Primary reading</b>
+      <span class="sym">Δ</span>, the insulating share of the ledger and the loop length <span class="sym">L</span> are each estimated with an interval that resamples both evidence items and coders, under the <a href="#coders">coder rules</a>. <span class="sym">L</span> is recomputed on every resampled ledger, because a single disputed code can split a loop in two. Disagreement between coders therefore widens every interval instead of hiding inside one. <span class="sym">Δ</span> and <span class="sym">Ω</span> are on the same scale and are read in both directions, relative to the <a href="#side">side <i>C</i> favours</a>. The reading is <strong>S</strong> if the <span class="sym">Δ</span> and <span class="sym">Ω</span> intervals both lie inside ±<i>δ</i> and the whole interval for the insulating share lies below <i>c</i>. It is <strong>A</strong> if either interval lies wholly beyond <i>δ</i> in favour of <i>C</i>'s side and the whole interval for <span class="sym">L</span> lies at or above <i>k</i>. Every other combination exits as <span class="code">indeterminate · reading unclear</span>: an asymmetry with a short loop, a long loop with both measures near zero, an interval straddling <i>δ</i>. An asymmetry pointing away from the side <i>C</i> favours, a community harsher on its own side than on the other, also exits here, with that noted. It is not insulation.</li>
+    <li><b>Conduct check</b>
+      <span class="sym">τ</span> and <span class="sym">H</span> apply the same principle to people rather than results, so each can point either way. <span class="sym">τ</span> is measurable when the sub-window contains at least one qualifying break; <span class="sym">H</span>, when at least <i>h</i>₀ stated revision conditions were met. Each has its own interval. Wholly below its threshold (<i>t</i> or <i>h</i>) it points to A; wholly above, to S; straddling, it counts for nothing. If any measurable one points against the step-2 reading: <span class="code">indeterminate · conduct conflict</span>. Agreement is recorded beside the verdict as corroboration. A measure that cannot be taken counts neither way.</li>
+    <li><b>Stability</b>
+      Steps 1–3 are repeated across the partition sweep, the range of the lineage-overlap threshold <i>o</i>, and the window variants described below. The reading stands only if it is the same in every run. Otherwise: <span class="code">indeterminate · unstable</span>.</li>
+  </ol>
+  <p>A reading that passes all four gates becomes the verdict: S is <strong>healthy</strong>, A is <strong>insulated</strong>. Each verdict is reported with its commitment, its sub-window, its corroboration or reason code, and its network signature (consensus, controversy, dissent or detached residue), which is read from <span class="sym">χ</span>. The signature is read only where every cluster involved has coverage of at least <i>r</i>; otherwise it is recorded as not measurable, because a literature missing from the corpus looks exactly like detachment.</p>
+
+  <div class="keyline">
+    <h4>Why χ is not in the verdict</h4>
+    <p>An earlier version let any one of <i>τ</i>, <i>χ</i> or <i>H</i> corroborate an insulated verdict. <i>χ</i> is the only one of the three that can almost always be measured, so in practice it would have carried the corroboration. But <i>χ</i> measures marginality, which this framework says is never the diagnosis. The rule also broke the framework's own principle: a measure allowed to count toward insulated must be allowed to count against it, and low <i>χ</i> could only count against a healthy verdict by making isolation a diagnosis. <i>τ</i> and <i>H</i> can cut both ways, so they stay. <i>χ</i> describes the network and does not decide.</p>
+    <p>The caution that corroboration was meant to supply now comes from the intervals in step 2, which demand the same certainty for a healthy verdict as for an insulated one.</p>
+  </div>
+
+  <h3>Parameter registry</h3>
+  <p>An unfixed threshold is a place to adjust the answer after seeing the case. Every quantity the procedure uses is listed here with how it is set.</p>
+  <div class="tablewrap">
+    <table class="wide">
+      <thead><tr><th>Parameter</th><th>Used in</th><th>Meaning</th><th>How it is set</th></tr></thead>
+      <tbody>
+        <tr><td class="sym-cell">n</td><td>Gate 1</td><td>Minimum disconfirmations per sub-window</td><td>Fitted on development folds</td></tr>
+        <tr><td class="sym-cell">m</td><td>Gate 1</td><td>Minimum members of <i>C</i></td><td>Simulated on synthetic networks before any real data: the smallest cluster at which <i>Δ</i> and <i>τ</i> intervals can exclude their thresholds</td></tr>
+        <tr><td class="sym-cell">ℓ</td><td>Gate 1</td><td>Time allowed for a response before a disconfirmation is coded</td><td>Convention, fixed now (proposed: 2 years)</td></tr>
+        <tr><td class="sym-cell">δ</td><td>Gate 2</td><td>Smallest asymmetry treated as real, for <i>Δ</i> and <i>Ω</i> alike</td><td>Fitted on development folds</td></tr>
+        <tr><td class="sym-cell">c</td><td>Gate 2</td><td>Largest share of insulating responses compatible with S</td><td>Fitted on development folds</td></tr>
+        <tr><td class="sym-cell">k</td><td>Gate 2</td><td>Shortest insulating loop compatible with A</td><td>Fitted on development folds</td></tr>
+        <tr><td>Interval level</td><td>Gates 2–3</td><td>Coverage of every interval</td><td>Convention, fixed now (proposed: 95%)</td></tr>
+        <tr><td class="sym-cell">t, h</td><td>Gate 3</td><td>Thresholds for <i>τ</i> and <i>H</i></td><td>Fitted on development folds</td></tr>
+        <tr><td class="sym-cell">h₀</td><td>Gate 3</td><td>Met conditions required before <i>H</i> is measurable</td><td>Convention, fixed now (proposed: 3)</td></tr>
+        <tr><td class="sym-cell">w</td><td>Gate 4</td><td>Sub-window length, and the variants used in the stability check</td><td>Convention, fixed now (proposed: 5 years stepped yearly; variants of 4–7 years, boundaries shifted by up to 2 years)</td></tr>
+        <tr><td>Sweep</td><td>Gate 4</td><td>Resolution range, clustering methods, and the range over which <i>o</i> is varied</td><td>Convention, fixed now (proposed for <i>o</i>: 0.2–0.5)</td></tr>
+        <tr><td class="sym-cell">e, i</td><td>Trigger 1</td><td>Tolerated shares of errors and of indeterminate verdicts on held-out calibration fields</td><td>Convention, fixed now</td></tr>
+        <tr><td class="sym-cell">κ</td><td>Trigger 2</td><td>Minimum agreement between coders</td><td>Convention, fixed now (proposed: 0.6)</td></tr>
+        <tr><td class="sym-cell">v</td><td>Gate 1</td><td>Minimum citations by <i>C</i> bearing on <i>p</i> per sub-window; below it, a lineage that has engaged <i>p</i> is closed</td><td>Simulated with <i>m</i>: the smallest volume at which a <i>Δ</i> interval can exclude ±<i>δ</i></td></tr>
+        <tr><td class="sym-cell">r</td><td>Gate 1 · census</td><td>Minimum coverage: the share of references, in a random sample of <i>C</i>'s own papers, that resolve to items in the corpus</td><td>Convention, fixed now (proposed: 0.7)</td></tr>
+        <tr><td class="sym-cell">o</td><td>Lineages</td><td>Minimum membership overlap linking a cluster to its predecessor in the previous sub-window</td><td>Convention, fixed now (proposed: Jaccard 0.3)</td></tr>
+        <tr><td class="sym-cell">q</td><td>Coders</td><td>Minimum number of independent coders</td><td>Convention, fixed now (proposed: 3, at least one human)</td></tr>
+        <tr><td class="sym-cell">g</td><td>Coders</td><td>Largest tolerated leakage: how far above chance a coder may identify the field or case from redacted text</td><td>Convention, fixed now (proposed: 10 percentage points)</td></tr>
+        <tr><td class="sym-cell">s</td><td>Coders</td><td>Largest tolerated share of exchanged pairs on which a coder's label changes, beyond its test–retest rate</td><td>Convention, fixed now (proposed: 5%)</td></tr>
+        <tr><td class="sym-cell">j</td><td>Ledger</td><td>Horizon after which a round with no interim result able to go against <i>p</i> closes as C</td><td>Convention, fixed now (proposed: 10 years)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p style="margin-top:22px">A threshold is not the only thing that can be adjusted after seeing a case. A codebook can be reworded, a prompt revised, a search query widened. The registry therefore also fixes the instrument itself.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Component</th><th>What is fixed</th><th>When</th></tr></thead>
+      <tbody>
+        <tr><td>Corpus</td><td>Sources and queries; each community's own venues ingested directly (proceedings, society journals, archives); snapshot date</td><td>Before the coverage census</td></tr>
+        <tr><td>Event list</td><td>The dated disconfirmations that anchor <i>W</i> for each <i>p</i></td><td>Before any stance is coded</td></tr>
+        <tr><td>Codebook</td><td>Stance labels (+, −, ×), ledger codes (A, B, C, D), the rules for opening and closing rounds, and the definition of a design family, with worked examples</td><td>Developed on development folds only</td></tr>
+        <tr><td>Filter list</td><td>For each commitment, the reasons <i>C</i> gives for discounting, extracted from its citations</td><td>Before applicability is coded</td></tr>
+        <tr><td>Redaction</td><td>The dictionary of field-identifying terms and the mechanical procedure that applies it</td><td>Before the leakage test</td></tr>
+        <tr><td>Coder pool</td><td>Each coder; for automated coders, the exact model identifier, prompt and settings</td><td>Before coding begins</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="margin-top:22px">Each component is recorded by content hash beside the threshold values, and changing any of them is a change to the registry. The raw output of every coder is archived, so a version can be audited or rerun after the models it used are no longer available. The parameters for coders, coverage and lineages are conventions, not fitted values, so the number of fitted quantities stays at six.</p>
+  <p>Fitted parameters are set on development folds only (see <a href="#validation">validation</a>). The whole registry, fitted and conventional, is published before any held-out or contested case is scored. Changing it afterwards creates a new version of the framework, and contested cases scored under the old version are re-registered rather than quietly rescored.</p>
+
+  <h3>The partition problem, faced openly</h3>
+  <p>Community detection is itself a choice of partition. Modularity depends on a resolution parameter and has a known resolution limit; different algorithms return different clusters. <i>The Insulated Core</i> faulted rival criteria for exactly this dependence, so the framework cannot quietly inherit it. The rule: <strong>sweep the resolution across a range and run at least two methods</strong> (modularity-based Leiden clustering and a hierarchical stochastic block model), and report a verdict only if it holds across them. Otherwise the verdict is <span class="code">indeterminate · unstable</span>.</p>
+  <p>One irony should be stated rather than hidden: block-model selection uses minimum description length, one of the formal criteria the essay rejected. The difference is its role. Here it chooses a clustering of a network; it does not decide what counts as science.</p>
+
+  <h3>Dating the verdict</h3>
+  <p>A community's conduct can change: the cold fusion community of 1990 did not behave like the one of 2000. So the time window is never chosen case by case.</p>
+  <ul class="tight">
+    <li><strong>Anchored by events.</strong> <i>W</i> opens at the first disconfirmation in a pre-registered list of events for <i>p</i>, and runs to the end of the corpus.</li>
+    <li><strong>A verdict per sub-window.</strong> The procedure runs on sub-windows of length <i>w</i>, stepped yearly, so the output is a dated trajectory rather than a single label.</li>
+    <li><strong>Communities followed as lineages.</strong> Clusters are re-detected in each sub-window and linked across time by overlap of membership (at least <i>o</i>), so a residue remains the same <i>C</i> while its members change. Where one cluster links to two successors, the lineage branches, and both branches share its history. Gate 4 varies <i>o</i> across its registered range.</li>
+    <li><strong>Boundaries tested.</strong> Gate 4 reruns each sub-window with its length and boundaries varied across the registered range. A verdict that depends on where the window happens to start is reported as unstable.</li>
+  </ul>
+  <p>The expected trajectory for cold fusion is a mainstream lineage that reads healthy through the replication period and then closes as it stops citing the claim, and a residue lineage, branching from it, that reads insulated afterwards. Whether that appears, and when the change happens, is what the pilot measures.</p>
+
+  <h3>Fields are described, not judged</h3>
+  <p>Verdicts belong to commitments <span class="ref">D1</span>, so "split" is not a fourth verdict. It describes a set of lineages. A <strong>field summary</strong> for <i>p</i> takes every lineage that engaged <i>p</i> within <i>W</i> and descends from the community in which <i>p</i> was first tested:</p>
+  <ul class="tight">
+    <li><strong>Uniform:</strong> every determinate verdict, in every lineage, is the same.</li>
+    <li><strong>Split:</strong> at least one lineage has a healthy verdict and another has an insulated one.</li>
+    <li><strong>Undetermined:</strong> no lineage has a determinate verdict.</li>
+  </ul>
+  <p>The verdicts that make a split need not fall in the same sub-window, but the lineages must share an ancestor. The usual route to a split is sequential. A field tests a claim, reads healthy and lets the claim go, and its trajectory closes. A lineage that branched from it keeps the claim and reads insulated later. Requiring both verdicts in one sub-window would make that pattern, the one the framework most needs to recognise, impossible to report.</p>
+  <p>A split summary is often the most informative output, because it locates the line inside a field instead of drawing it around one.</p>
+
+  <h3>Proposals with no history</h3>
+  <p>The framework is diachronic and cannot judge a proposal at <i>t</i> = 0. What it can do is raise a <strong>warning signal</strong>: did the proposers state, before testing, which results would count against them? This is pre-registration under another description, and it is the one symmetry-relevant act visible before any evidence arrives. It is a flag, never a verdict.</p>
+</section>
+
+<!-- ============================================ cases -->
+<section id="cases">
+  <div class="sec-label">Application</div>
+  <h2>Expected readings on known cases</h2>
+
+  <p class="lede">These are predictions the instruments must reproduce, not results they have produced. Where a case is contested, the framework's contribution is a precise question to put to the record.</p>
+
+  <div class="tablewrap">
+    <table class="wide">
+      <thead><tr><th>Case</th><th>Cited as support</th><th>How failures are handled</th><th>Network reading</th><th>Expected verdict</th></tr></thead>
+      <tbody>
+        <tr><td>Parapsychology</td><td>Ganzfeld and card-guessing hits</td><td>Decline effect, experimenter effect, sheep–goat effect — filters on the failure lane only</td><td>Own journals and societies; low <span class="sym">χ</span></td><td class="v-d">insulated</td></tr>
+        <tr><td>Astrology</td><td>Gauquelin's Mars effect; practitioner hit rates</td><td>Carlson (1985) null not admitted as counting against</td><td>Largely outside academic citation networks</td><td class="v-d">insulated</td></tr>
+        <tr><td>Homeopathy</td><td>Positive trials</td><td>Negative trials attributed to wrong remedy or potency; no reverse scrutiny of positives</td><td>Separate journals and training</td><td class="v-d">insulated</td></tr>
+        <tr><td>Neutrino, 1930–56</td><td>Energy accounting in beta decay</td><td>Detection adopted as a problem (B); theory built on it</td><td>Inside the main component</td><td class="v-s">healthy</td></tr>
+        <tr><td>Continental drift</td><td>Coastline fit, fossils, strata</td><td>Wegener's failed mechanisms dropped; the gap pursued</td><td>Dissent connected to mainstream; pre-digital, hand-coded</td><td class="v-s">healthy · dissent</td></tr>
+        <tr><td>Molecular adaptationism</td><td>Signatures of selection</td><td>dN/dS and McDonald–Kreitman results showing neutral change accepted</td><td>Rival (neutral theory) in the same component</td><td class="v-s">healthy · framework level 2</td></tr>
+        <tr><td>Cold fusion / LENR</td><td>Excess-heat reports</td><td>Failed replications attributed to loading, materials, conditions</td><td>Detachment after 1991; ICCF, own journal</td><td class="v-o">field summary split: mainstream lineage healthy, then closed; residue lineage insulated</td></tr>
+        <tr><td>Supersymmetry</td><td>Naturalness, unification</td><td>Some abandon naturalness; some raise the mass bound again</td><td>Same component; stance clusters may differ</td><td class="v-o">field summary to measure; split possible</td></tr>
+        <tr><td>Evolutionary psychology</td><td>Cross-cultural and experimental confirmations (e.g. Buss 1989; Cosmides 1989)</td><td><b>Open:</b> do failed adaptive hypotheses debit adaptationism, or are they replaced — Gould and Lewontin's charge?</td><td>Is there a shared test against by-product and cultural rivals?</td><td class="v-o">open — question specified</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================ pilot -->
+<section id="pilot">
+  <div class="sec-label">First test</div>
+  <h2>Pilot: the fifth force and cold fusion</h2>
+
+  <p class="lede">A pilot needs two cases that share everything except the outcome under study. The fifth force and cold fusion come close: surprising physical claims from the same era and discipline, both heavily tested, both disconfirmed within a few years, both in a digitised literature. One community let go cleanly. The other left a residue.</p>
+
+  <p>In 1986 Fischbach and colleagues reanalysed the Eötvös experiment and proposed a new, composition-dependent force. Torsion-balance experiments, including those of the Eöt-Wash group, found no such force, and the question was largely closed by the early 1990s with no persisting community. Fleischmann and Pons announced cold fusion in 1989; replication largely failed by 1991; a residue community continued with its own conference series (ICCF, from 1990) and, later, its own journal.</p>
+
+  <ol class="steps">
+    <li><b>Assemble the corpus</b>
+      All papers citing the founding claims and their principal replications, 1986–2010 for the fifth force and 1989–2025 for cold fusion, with full reference lists and citation contexts. Bibliographic databases are supplemented by each community's own venues — for cold fusion, the ICCF proceedings and the residue's journal — and coverage is measured by the census before anything is coded.</li>
+    <li><b>Build the social layer and detect clusters</b>
+      Co-authorship and citation ties in yearly windows; Leiden clustering across a resolution sweep and a hierarchical block model. Record which cluster assignments are stable, and link them into lineages.</li>
+    <li><b>Check eligibility before coding</b>
+      Using only the social layer, the registered event list and the census, with no stance coded, confirm that each case has a lineage meeting <i>m</i>, <i>n</i>, <i>v</i> and <i>r</i> in the sub-windows its predictions need. Citations bearing on <i>p</i> can be counted without knowing their stance. If either case fails, the pair is replaced now by a reserve pair registered with it, which must pass the same check. One candidate is the 17 keV neutrino (1985–1993): a claim from the same era and neighbouring physics that drew positive replications, met repeated null results, and was let go. A pair that could not have been separated is replaced before the test, not excused after it.</li>
+    <li><b>Code the epistemic layer, blind</b>
+      Citation contexts redacted with the registered dictionary, checked for leakage, and coded as support, against, or discounts by a coder pool whose every member has passed the symmetry audit. Report agreement separately for "discounts," the hardest and most consequential label.</li>
+    <li><b>Compute the measures per lineage per sub-window</b>
+      <span class="sym">Δ</span>, <span class="sym">Ω</span>, the insulating share and <span class="sym">L</span> with their intervals; <span class="sym">τ</span>; and <span class="sym">χ</span> for the signature. The ledger of principal disconfirmations is coded by the same pool.</li>
+    <li><b>Score against pre-registered predictions</b>
+      Predictions below are fixed before any measure is computed.</li>
+  </ol>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Measure</th><th>Fifth force (predicted)</th><th>Cold fusion (predicted)</th></tr></thead>
+      <tbody>
+        <tr><td>Engagement <span class="sym-cell">χ</span></td><td>Proponents stay cited by and citing the mainstream, then merge back</td><td>Residue cluster's <span class="sym">χ</span> falls toward 0 after about 1991</td></tr>
+        <tr><td>Asymmetry <span class="sym-cell">Δ</span></td><td>Near 0: null results counted by proponents</td><td>Positive in the residue: failures discounted under standards not applied to successes</td></tr>
+        <tr><td>Tie retention <span class="sym-cell">τ</span></td><td>No tie loss after qualifying breaks beyond baseline churn</td><td>Members who break with the residue on evidence its own filters would not exclude lose ties within it, beyond baseline churn</td></tr>
+        <tr><td>Omission <span class="sym-cell">Ω</span></td><td>Near 0: proponents cite the null results as readily as the positive ones</td><td>Positive in the residue after about 1991: mainstream null results go uncited while positive reports are cited</td></tr>
+        <tr><td>Ledger</td><td>A responses dominate after the null results</td><td>Runs of C and D responses, and rounds closed without debit, in the residue; A in the wider field</td></tr>
+        <tr><td>Verdicts</td><td>The lineage that tested the claim reads healthy, then closes; field summary uniform</td><td>Mainstream lineage reads healthy through replication, then closes; residue lineage reads insulated after about 1991; field summary split</td></tr>
+        <tr><td>Kill condition</td><td colspan="2">The pair is separated only if the two cases receive these different field summaries, each resting on determinate verdicts. An indeterminate verdict where a prediction needs a determinate one counts as not separated. Eligibility was checked before coding, so lack of data cannot be offered as an excuse afterwards. If the pair is not separated, the network operationalization has failed at the one distinction it exists to make: trigger 4.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================ validation -->
+<section id="validation">
+  <div class="sec-label">Validation</div>
+  <h2>The framework applied to itself</h2>
+
+  <p class="lede">A framework built on evidential symmetry has to be symmetric about its own evidence. It will cite calibration successes as support. Its failures must therefore count against it — and the conditions are stated here, in advance.</p>
+
+  <h3>Validation programme</h3>
+  <ul class="tight">
+    <li><strong>Calibration, cross-validated.</strong> Consensus sciences (thermodynamics, plate tectonics, molecular genetics) against consensus pseudosciences (astrology, homeopathy, creation science), enlarged before the pilot so that each side has enough fields to hold some out. Commitments are the scored units, but folds are whole fields, because commitments within one field are not independent. Each field is scored with parameters fitted on the others; the final parameters are then fitted on all fields and frozen. Consensus is used only at these undisputed extremes, as fixed points, the way a thermometer is calibrated at freezing and boiling. It is never the standard for contested cases.</li>
+    <li><strong>Coverage census, before anything is coded.</strong> For every candidate field and every cluster in it, a random sample of the community's papers is drawn from its own venues, and the share of their references that resolve to items in the corpus is measured. A field that cannot reach coverage <i>r</i>, even with its own venues ingested, is replaced, not scored. The census runs on sciences and pseudosciences alike and before any stance is coded, so no field can be excluded after its results are seen. Pseudosciences whose literature lies largely outside indexed journals, astrology most of all, are the likeliest to be replaced, and the calibration set is enlarged with that in mind.</li>
+    <li><strong>Blind coding.</strong> Under the <a href="#coders">coder rules</a>: mechanical redaction, a leakage test before coding, a symmetry audit of every coder, filter applicability judged from methods alone, and agreement reported per label.</li>
+    <li><strong>Confound checks.</strong> Verdicts should not track field size, age or institutional prestige once the measures are controlled for.</li>
+    <li><strong>Matched pairs.</strong> The pilot pair above, and continental drift against parapsychology — decades of persistence under disconfirmation in both, which is what defeats most rival criteria.</li>
+    <li><strong>Pre-registered contested cases.</strong> Psychoanalysis, evolutionary psychology, string theory, nutritional epidemiology — predictions published before scoring.</li>
+  </ul>
+
+  <h3>Independent checks, and who takes the blame</h3>
+  <p>Two measures from <i>The Insulated Core</i> are kept out of the verdict and used only here. They are consequences of insulation rather than ways of detecting it: an insulated commitment should turn none of its results into new questions, and should delete nothing.</p>
+  <ul class="tight">
+    <li><strong>Measured on the subcommunity, not the field.</strong> Depth ratio is computed on the citations made by members of <i>C</i>. Deletion is computed on <i>C</i>'s own canonical texts: its most-cited reviews, handbooks or proceedings, compared across successive periods. A field's textbooks are never used for a cluster's check, because a healthy field can delete material while one of its clusters stays insulated. Where <i>C</i> has no identifiable canonical texts, deletion is recorded as not measurable for that commitment.</li>
+    <li><strong>Blame assigned in advance.</strong> Both checks are first run, at cluster level, on the calibration set. If they fail to separate the consensus cases there, the fault is the checks', and they are dropped before any other case is scored. If they pass calibration and then disagree with the framework's insulated verdicts, the fault is the framework's: trigger 6.</li>
+    <li><strong>Support on the same terms.</strong> Agreement between the checks and the verdicts may be cited in the framework's favour only because, under the rule above, disagreement counts against it.</li>
+  </ul>
+
+  <h3>The framework's own revision triggers</h3>
+  <p>The framework is to be abandoned or restricted if:</p>
+  <ol class="ladder">
+    <li class="insul"><span class="n">1</span><span><b>Calibration fails on held-out fields</b> Scored with parameters fitted without them, consensus fields are misclassified (a science read as insulated, or a pseudoscience as healthy) in more than a share <i>e</i> of commitments, or read as indeterminate in more than a share <i>i</i>. The second condition closes an escape: tuning every case to indeterminate would avoid errors by never answering. Closed trajectories, and fields replaced at the census, are not counted as indeterminate; the census is taken before coding, so it cannot be used to excuse a result.</span></li>
+    <li class="insul"><span class="n">2</span><span><b>Coding is unreliable</b> Agreement on "discounts" stays below an agreed threshold (proposed: κ = 0.6) after coder training, or no pool of <i>q</i> coders can be assembled that passes the leakage test and the symmetry audit.</span></li>
+    <li class="insul"><span class="n">3</span><span><b>Verdicts track confounds</b> Field size, age or prestige predict verdicts after controls.</span></li>
+    <li class="insul"><span class="n">4</span><span><b>Matched pairs are not separated</b> Either pair fails to receive the different field summaries its predictions require, as defined in the <a href="#pilot">pilot</a>. An indeterminate verdict where a determinate one is predicted counts as not separated.</span></li>
+    <li class="insul"><span class="n">5</span><span><b>Robustness decides the answer</b> More than half of all verdicts exit as indeterminate · unstable, because they change across partitions, windows or lineage overlap.</span></li>
+    <li class="insul"><span class="n">6</span><span><b>Independent checks disagree</b> The checks passed calibration, but more than half of the insulated verdicts where they are measurable show a depth ratio or deletion rate within the range of the consensus sciences.</span></li>
+  </ol>
+</section>
+
+<!-- ============================================ positioning -->
+<section id="positioning">
+  <div class="sec-label">Positioning</div>
+  <h2>What is borrowed, what is new, what is open</h2>
+
+  <div class="cols3">
+    <div>
+      <h3>Borrowed</h3>
+      <ul>
+        <li>Research traditions as the unit: Lakatos, Laudan.</li>
+        <li>Pseudoscience as manufacturing an impression of warrant: Hansson.</li>
+        <li>Immunizing strategies: Boudry and Braeckman.</li>
+        <li>Failure to progress plus failure to engage alternatives: Thagard (1978).</li>
+        <li>The conventionalist twist: Popper.</li>
+        <li>The web of belief: Quine. The relativized a priori: Friedman.</li>
+        <li>Consensus read from citation modularity: Shwed and Bearman (2010).</li>
+        <li>Network epistemology: Zollman; O'Connor and Weatherall.</li>
+        <li>Three adaptationisms: Godfrey-Smith (2001).</li>
+        <li>Community detection: Leiden clustering, Traag, Waltman and van Eck (2019); hierarchical block models selected by description length, Peixoto (2014).</li>
+        <li>Communities tracked across time by membership overlap: Palla, Barabási and Vicsek (2007); Greene, Doyle and Cunningham (2010).</li>
+        <li>Pre-registration: Nosek et al. (2018).</li>
+        <li>Chance-corrected agreement between coders: Cohen (1960).</li>
+        <li>Counterfactual swap tests for bias in text classifiers: Garg et al. (2019).</li>
+        <li>Cross-validation with whole groups held out.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>New, as far as we can establish</h3>
+      <ul>
+        <li><b>Evidential symmetry as the demarcation principle</b>, with relevance fixed by the community's own citations rather than logical content.</li>
+        <li><b>The propositional pull</b> named as a structural hazard, with the neutrino as the case where content-based criteria misfire and conduct-based ones don't.</li>
+        <li><b>The two-layer rule</b>: detect on social ties, measure on evidential stance, read insulation from their coupling.</li>
+        <li><b>Detached residue</b> as a network signature distinct from controversy and dissent.</li>
+        <li><b>Schism versus promotion as tie retention</b>, counting only breaks backed by evidence the cluster would accept in its own favour, and measured against baseline churn, so that dropping people who are simply wrong is not read as sanction.</li>
+        <li><b>One principle across levels</b>: a framework's debit is symmetry one level up.</li>
+        <li><b>Symmetry applied to the decision rule.</b> Healthy and insulated face the same standard of certainty, every indeterminate verdict states its reason, and cross-cluster engagement is kept out of the verdict because it could only ever count one way.</li>
+        <li><b>Symmetry applied to the instruments.</b> Each coder is audited for its own asymmetry, a model family counts as one coder, and intervals are anchored to disagreement with people. The techniques are borrowed; holding the instruments to the principle they measure is the contribution.</li>
+        <li><b>Splits located across lineages</b>, so a field that tested a claim and let it go is told apart from the branch that kept it, even when their verdicts fall years apart.</li>
+        <li><b>The framework scored on its own terms</b>: revision triggers stated in advance, blame for disagreeing checks assigned before they are run, and no escape by answering "indeterminate".</li>
+        <li><b>Symmetry read reason by reason</b>, with filters taken from the community's own discounts and judged on results the coder cannot see, so "the same standard" needs no global judgement of quality, and no verdict depends on which way the claim is written.</li>
+        <li><b>Ignoring counted as a response, and adoption made to close</b>, so neither silence nor an endless run of directed work escapes the ledger.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Open</h3>
+      <ul>
+        <li><b>Vague reasons count against.</b> A reason for discounting whose applicability cannot be judged from methods counts as one-directional. A community that states its objections loosely, as some healthy fields do, will have more of its discounts counted that way than one that states them precisely.</li>
+        <li><b>Implied reasons are hard to extract.</b> Filters are read from discounting citations, and a reason that is implied rather than stated is the likeliest to be missed or misread. The "discounts" label, and now the reason attached to it, remains the noisiest to code.</li>
+        <li><b>Partition, window and lineage dependence</b> are reduced by the robustness rule, not eliminated.</li>
+        <li><b>Small and new communities</b> are indeterminate by design; only the <i>t</i> = 0 warning signal applies.</li>
+        <li><b>Pre-digital cases</b> need their corpus assembled by hand and may not reach coverage <i>r</i>. Continental drift, half of the second matched pair, could be replaced at the census, and hand-built corpora are hard to compare with digitised ones.</li>
+        <li><b>Many free parameters.</b> The registry fits six quantities on a small number of calibration fields, beside a longer list of conventions fixed in advance. Holding out whole fields limits overfitting; it cannot rule it out.</li>
+        <li><b>Prominence is not neutral.</b> Ω compares results matched for prominence across the field, but prominence is earned by being cited. A mainstream that ignores a rival's results also makes them less prominent, which can hide its own omission.</li>
+        <li><b>Rounds need a stated purpose.</b> A B response that directs work at an anomaly without saying what the work tests opens no round the ledger can close. How such responses should be coded is not yet fixed.</li>
+        <li><b>"Same design" is a boundary.</b> Whether a modified protocol belongs to the same design family as one <i>C</i> has cited is a judgement, and where the boundary falls changes which results count as disconfirming.</li>
+        <li><b>Automated coders may not qualify.</b> If none passes the leakage test and the symmetry audit, coding falls to people, and the cost that once made these instruments impractical returns.</li>
+        <li><b>Calibration may run short.</b> The census is likeliest to remove the pseudosciences calibration depends on, astrology and creation science among them. Whether enough eligible fields remain to hold some out is not yet known.</li>
+        <li><b>The anchor set may not transfer.</b> Coder disagreement measured on development fields may understate disagreement on contested ones, and the interval rule assumes it does not.</li>
+        <li><b>Clusters without canonical texts</b> cannot take the deletion check, so for some detached residues only depth ratio is available.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================ refs -->
+<section>
+  <div class="sec-label">Background</div>
+  <h2>Sources</h2>
+  <div class="refs">
+    <p>Bell, J. S. (1964). "On the Einstein Podolsky Rosen paradox." <em>Physics</em> 1(3).</p>
+    <p>Boudry, M. &amp; Braeckman, J. (2011). "Immunizing strategies and epistemic defense mechanisms." <em>Philosophia</em> 39.</p>
+    <p>Carlson, S. (1985). "A double-blind test of astrology." <em>Nature</em> 318.</p>
+    <p>Cohen, J. (1960). "A coefficient of agreement for nominal scales." <em>Educational and Psychological Measurement</em> 20(1).</p>
+    <p>Fischbach, E. et al. (1986). "Reanalysis of the Eötvös experiment." <em>Physical Review Letters</em> 56.</p>
+    <p>Friedman, M. (2001). <em>Dynamics of Reason</em>. CSLI.</p>
+    <p>Garg, S., Perot, V., Limtiaco, N., Taly, A., Chi, E. H. &amp; Beutel, A. (2019). "Counterfactual fairness in text classification through robustness." <em>AIES '19</em>.</p>
+    <p>Godfrey-Smith, P. (2001). "Three kinds of adaptationism." In Orzack &amp; Sober (eds.), <em>Adaptationism and Optimality</em>. Cambridge.</p>
+    <p>Gould, S. J. &amp; Lewontin, R. C. (1979). "The spandrels of San Marco and the Panglossian paradigm." <em>Proceedings of the Royal Society B</em> 205.</p>
+    <p>Greene, D., Doyle, D. &amp; Cunningham, P. (2010). "Tracking the evolution of communities in dynamic social networks." <em>ASONAM 2010</em>, IEEE.</p>
+    <p>Hansson, S. O. "Science and Pseudo-Science." <em>Stanford Encyclopedia of Philosophy</em>. <a href="https://plato.stanford.edu/entries/pseudo-science/">plato.stanford.edu/entries/pseudo-science</a></p>
+    <p>McDonald, J. H. &amp; Kreitman, M. (1991). "Adaptive protein evolution at the Adh locus in <em>Drosophila</em>." <em>Nature</em> 351.</p>
+    <p>Nosek, B. A., Ebersole, C. R., DeHaven, A. C. &amp; Mellor, D. T. (2018). "The preregistration revolution." <em>PNAS</em> 115(11).</p>
+    <p>O'Connor, C. &amp; Weatherall, J. O. (2019). <em>The Misinformation Age</em>. Yale.</p>
+    <p>Palla, G., Barabási, A.-L. &amp; Vicsek, T. (2007). "Quantifying social group evolution." <em>Nature</em> 446.</p>
+    <p>Peixoto, T. P. (2014). "Hierarchical block structures and high-resolution model selection in large networks." <em>Physical Review X</em> 4.</p>
+    <p>Popper, K. (1963). <em>Conjectures and Refutations</em>. Routledge.</p>
+    <p>Shang, A. et al. (2005). "Are the clinical effects of homoeopathy placebo effects? Comparative study of placebo-controlled trials of homoeopathy and allopathy." <em>The Lancet</em> 366(9487).</p>
+    <p>Shwed, U. &amp; Bearman, P. S. (2010). "The temporal structure of scientific consensus formation." <em>American Sociological Review</em> 75(6).</p>
+    <p>Small, H. (1973). "Co-citation in the scientific literature." <em>Journal of the American Society for Information Science</em> 24(4).</p>
+    <p>Thagard, P. (1978). "Why astrology is a pseudoscience." <em>PSA 1978</em>.</p>
+    <p>Traag, V. A., Waltman, L. &amp; van Eck, N. J. (2019). "From Louvain to Leiden." <em>Scientific Reports</em> 9.</p>
+    <p>Zollman, K. J. S. (2007). "The communication structure of epistemic communities." <em>Philosophy of Science</em> 74(5).</p>
+    <p>Companion: <em>The Insulated Core</em> — the three criteria and the single failure mode this framework develops.</p>
+  </div>
+</section>
+
+<footer>
+  A framework developed in conversation, September 2026. The definition of the core as a community's presuppositions, the reduction of demarcation to framework revisability, the diagnosis of propositional falsifiability's return, and the derivation of subcommunities from network structure are Amitabh's. Evidential symmetry, the instrument and pilot designs, and the literature positioning were developed in response.
+</footer>
+
+</div>

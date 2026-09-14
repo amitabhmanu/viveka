@@ -1,0 +1,11 @@
+# Registry versions are frozen by hashing file bytes, and the change ledger records
+# hashes too. Every working copy must therefore hold identical bytes on every
+# platform: store and check out text files with LF line endings, always.
+* text=auto eol=lf
+
+# Binary formats
+*.png binary
+*.jpg binary
+*.pdf binary
+*.parquet binary
+*.zip binary

@@ -1,0 +1,865 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Viveka Harness Specification</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#EDEFEE; --surface:#F8F9F8; --ink:#16202A; --ink-2:#3C4C55; --muted:#63737A;
+  --rule:#D2D9D6; --rule-strong:#B6C1BD;
+  --accent:#15566E; --accent-soft:#15566E14; --brass:#8A6512; --brass-soft:#8A651214;
+  --code-bg:#E4E9E7;
+  --f-display:"Newsreader",Georgia,"Times New Roman",serif;
+  --f-body:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif;
+  --f-mono:"IBM Plex Mono","SFMono-Regular",Menlo,Consolas,monospace;
+  --measure:72ch; color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#101619; --surface:#161E22; --ink:#E3EAE7; --ink-2:#BCC9C7; --muted:#8FA0A3;
+    --rule:#26333A; --rule-strong:#3A4A51; --accent:#6FB6D2; --accent-soft:#6FB6D218;
+    --brass:#D7AC48; --brass-soft:#D7AC4818; --code-bg:#1C262B; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#101619; --surface:#161E22; --ink:#E3EAE7; --ink-2:#BCC9C7; --muted:#8FA0A3;
+  --rule:#26333A; --rule-strong:#3A4A51; --accent:#6FB6D2; --accent-soft:#6FB6D218;
+  --brass:#D7AC48; --brass-soft:#D7AC4818; --code-bg:#1C262B; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.page{max-width:1080px;margin:0 auto;padding-inline:24px;padding-block:0 96px}
+a{color:var(--accent);text-underline-offset:.18em;text-decoration-thickness:.06em}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+header.mast{padding-block:72px 44px;display:flex;flex-direction:column;gap:22px}
+.kicker{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--f-display);font-weight:500;font-size:clamp(2.4rem,6vw,3.9rem);line-height:1.04;letter-spacing:-.018em;margin:0;max-width:16ch;text-wrap:balance}
+.standfirst{font-family:var(--f-display);font-size:clamp(1.1rem,2.1vw,1.32rem);line-height:1.5;color:var(--ink-2);max-width:60ch;margin:0}
+.byline{font-family:var(--f-mono);font-size:11.5px;color:var(--muted);letter-spacing:.05em}
+.spec{background:var(--surface);border:1px solid var(--rule-strong);border-radius:4px;margin-bottom:8px}
+.spec-head{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap;padding:16px 22px;border-bottom:1px solid var(--rule-strong)}
+.spec-head span{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.clause{display:grid;grid-template-columns:4.2rem minmax(0,1fr);gap:0 18px;padding:16px 22px;border-top:1px solid var(--rule)}
+.clause:first-of-type{border-top:none}
+.clause-id{font-family:var(--f-mono);font-size:13px;font-weight:500;color:var(--accent);padding-top:3px}
+.clause-name{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:0 0 4px}
+.clause-text{font-family:var(--f-display);font-size:1.12rem;line-height:1.42;margin:0;max-width:62ch}
+@media (max-width:560px){.clause{grid-template-columns:minmax(0,1fr);gap:4px}}
+nav.contents{display:flex;flex-wrap:wrap;gap:6px 18px;padding:18px 0 0;font-family:var(--f-mono);font-size:12px}
+nav.contents a{color:var(--ink-2);text-decoration:none}
+nav.contents a:hover{color:var(--accent);text-decoration:underline}
+section{padding-block:52px;border-top:1px solid var(--rule)}
+section.first{border-top:1px solid var(--rule-strong);margin-top:40px}
+.sec-label{font-family:var(--f-mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin-bottom:14px}
+h2{font-family:var(--f-display);font-weight:500;font-size:clamp(1.6rem,3.2vw,2.2rem);line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;max-width:26ch;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:600;font-size:1.22rem;line-height:1.25;margin:34px 0 10px}
+h4{font-family:var(--f-mono);font-weight:500;font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:22px 0 8px}
+p{margin:0 0 1em;max-width:var(--measure)}
+.lede{font-size:1.05rem;color:var(--ink-2)}
+strong{font-weight:600}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--code-bg);padding:.08em .32em;border-radius:3px}
+pre{font-family:var(--f-mono);font-size:12.6px;line-height:1.55;background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:14px 16px;overflow-x:auto;margin:18px 0;max-width:100%}
+pre code{background:none;padding:0;font-size:inherit}
+.note,.keyline{padding:14px 18px;border-radius:0 3px 3px 0;margin:22px 0;max-width:70ch}
+.note{border-left:2px solid var(--brass);background:var(--brass-soft)}
+.keyline{border-left:2px solid var(--accent);background:var(--accent-soft)}
+.note p,.keyline p{margin:0;font-size:14.6px;line-height:1.56;color:var(--ink-2)}
+.note p + p,.keyline p + p{margin-top:.6em}
+.note h4{color:var(--brass);margin-top:0}
+.keyline h4{color:var(--accent);margin-top:0}
+.tablewrap{overflow-x:auto;margin:22px 0 10px;border:1px solid var(--rule-strong);border-radius:4px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:760px;font-size:13.4px;line-height:1.5}
+table.wide{min-width:940px}
+th,td{text-align:left;padding:10px 13px;vertical-align:top;border-top:1px solid var(--rule)}
+thead th{border-top:none;border-bottom:1px solid var(--rule-strong);font-family:var(--f-mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:500;white-space:nowrap}
+tbody td:first-child{font-weight:600}
+td.mono{font-family:var(--f-mono);font-size:12px;font-weight:500}
+ul.tight,ol.tight{margin:0 0 1em;padding-left:1.2em;max-width:var(--measure)}
+ul.tight li,ol.tight li{margin-bottom:.45em}
+ul.tight li::marker{color:var(--rule-strong)}
+.tag{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;padding:1px 6px;border-radius:2px;white-space:nowrap}
+.tag.req{color:var(--accent);background:var(--accent-soft)}
+.tag.dec{color:var(--brass);background:var(--brass-soft)}
+footer{padding-block:44px 0;color:var(--muted);font-size:13px;border-top:1px solid var(--rule-strong);max-width:78ch}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="mast">
+  <div class="kicker">Viveka · technical specification · draft 1</div>
+  <h1>Viveka Harness Specification</h1>
+  <p class="standfirst">How the framework in <i>Evidence That Cuts Both Ways</i> is built and run as a research harness: Claude Code builds and operates a deterministic, versioned pipeline, and every measurement comes from registered instruments whose outputs are archived and auditable.</p>
+  <div class="byline">Implements <i>Evidence That Cuts Both Ways</i> (revision of 14 September 2026) · companion to <i>The Insulated Core</i></div>
+</header>
+
+<div class="spec" aria-label="Harness principles">
+  <div class="spec-head"><span>Harness principles</span><span>6 clauses · every requirement below traces to one</span></div>
+  <div class="clause"><div class="clause-id">H1</div><div><p class="clause-name">Engineer, not instrument</p>
+    <p class="clause-text">Claude Code writes, runs and maintains the pipeline. No label, measure or verdict is ever produced inside an agent session; they come only from versioned pipeline code and registered coders.</p></div></div>
+  <div class="clause"><div class="clause-id">H2</div><div><p class="clause-name">Frozen before seen</p>
+    <p class="clause-text">Every threshold, rubric, prompt, query and event list is frozen by content hash before the data it governs is coded or scored. A change after freezing is a new registry version.</p></div></div>
+  <div class="clause"><div class="clause-id">H3</div><div><p class="clause-name">Provenance on everything</p>
+    <p class="clause-text">Every artefact records the registry hash, code commit, inputs and coder that produced it. Raw coder output is archived before it is parsed.</p></div></div>
+  <div class="clause"><div class="clause-id">H4</div><div><p class="clause-name">Instruments held to P</p>
+    <p class="clause-text">Coders pass the leakage test, the symmetry audit and the agreement threshold before their labels count. One model family is one coder.</p></div></div>
+  <div class="clause"><div class="clause-id">H5</div><div><p class="clause-name">Deterministic core</p>
+    <p class="clause-text">The verdict procedure is a pure function of measures and registry, tested on synthetic data before it ever sees a real case.</p></div></div>
+  <div class="clause"><div class="clause-id">H6</div><div><p class="clause-name">Revisions are debited</p>
+    <p class="clause-text">Every change to the codebook, prompts or parameters is appended to a change ledger with the result that prompted it. Nothing is edited silently.</p></div></div>
+</div>
+
+<nav class="contents" aria-label="Contents">
+  <a href="#scope">1 Scope</a>
+  <a href="#env">2 Environment</a>
+  <a href="#arch">3 Architecture</a>
+  <a href="#layout">4 Repository</a>
+  <a href="#registry">5 Registry</a>
+  <a href="#data">6 Data model</a>
+  <a href="#stages">7 Stages</a>
+  <a href="#coders">8 Coders</a>
+  <a href="#verdict">9 Verdict engine</a>
+  <a href="#sim">10 Simulator</a>
+  <a href="#cc">11 Claude Code config</a>
+  <a href="#prov">12 Provenance</a>
+  <a href="#cost">13 Cost</a>
+  <a href="#sources">14 Data sources</a>
+  <a href="#tests">15 Testing</a>
+  <a href="#milestones">16 Milestones</a>
+  <a href="#decisions">17 Decisions</a>
+  <a href="#trace">18 Traceability</a>
+</nav>
+
+<!-- ============================================ 1 scope -->
+<section class="first" id="scope">
+  <div class="sec-label">1 · Scope</div>
+  <h2>What the harness does, and what it does not</h2>
+  <p class="lede">The harness turns the framework into a runnable study: it assembles corpora, builds the social and epistemic layers, codes evidence under the coder rules, computes the measures with their intervals, applies the four-gate verdict procedure, and checks the framework against its own revision triggers.</p>
+
+  <h3>In scope</h3>
+  <ul class="tight">
+    <li>The pilot (fifth force against cold fusion), its reserve pair, and the calibration fields named in the framework.</li>
+    <li>Every instrument in the framework: the Anomaly Response Ledger (codes A–D, rounds), Δ read reason by reason, Ω, H, τ, χ, and the independent checks (depth ratio, deletion).</li>
+    <li>The registry, its freeze and versioning protocol, and the change ledger.</li>
+    <li>The coder subsystem: automated coders through batch APIs, human coders through exported packets, and the audits every coder must pass.</li>
+    <li>The simulator that sets <i>m</i> and <i>v</i> and checks whether the pilot can separate its cases at all.</li>
+    <li>Claude Code configuration: project instructions, permissions, hooks, subagents and skills.</li>
+  </ul>
+
+  <h3>Out of scope</h3>
+  <ul class="tight">
+    <li>A user interface beyond generated HTML reports.</li>
+    <li>Scoring contested cases (psychoanalysis, string theory and the rest). The harness supports them, but none is scored until calibration and the pilot have passed.</li>
+    <li>Acquiring any literature by circumventing paywalls, access controls or a source's terms.</li>
+    <li>Changing the framework. Where building exposes a gap in the framework, the harness records it as a decision for the framework document (§17), not a local workaround.</li>
+  </ul>
+
+  <div class="keyline">
+    <h4>Normative language</h4>
+    <p><span class="tag req">must</span> marks a requirement the build is checked against. <span class="tag dec">decision</span> marks a choice that belongs to the project owner and is listed in §17. Parameter values quoted here are the framework's proposed values; the registry, not this document, is authoritative once frozen.</p>
+  </div>
+</section>
+
+<!-- ============================================ 2 environment -->
+<section id="env">
+  <div class="sec-label">2 · Environment</div>
+  <h2>Prerequisites and the one blocking gap</h2>
+  <p class="lede">Checked on the development machine on 14 September 2026.</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Component</th><th>Found</th><th>Required for</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>OS</td><td>Windows 11 Home (26200)</td><td>Everything</td><td>OK for all stages except those below</td></tr>
+        <tr><td>Python</td><td>3.13.3</td><td>Pipeline</td><td>OK; pin <code>requires-python = "&gt;=3.12,&lt;3.14"</code></td></tr>
+        <tr><td>uv</td><td>0.11.32</td><td>Environments, lockfile</td><td>OK</td></tr>
+        <tr><td>git</td><td>installed; project is <b>not</b> a repository</td><td>H2, H3, registry tags</td><td>Run <code>git init</code> at milestone M0</td></tr>
+        <tr><td>Claude Code CLI</td><td>installed</td><td>Orchestration</td><td>OK</td></tr>
+        <tr><td>WSL2</td><td>not installed</td><td><code>graph-tool</code> (hierarchical block model), GROBID</td><td><span class="tag dec">decision D-1</span></td></tr>
+        <tr><td>Docker</td><td>not found</td><td>GROBID, optional graph-tool image</td><td><span class="tag dec">decision D-1</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    <h4>Blocking gap: no Linux runtime</h4>
+    <p>The framework requires community detection by at least two methods, one of them a hierarchical stochastic block model. The reference implementation, <code>graph-tool</code>, does not run natively on Windows; GROBID, used to extract citation contexts from PDFs, is distributed as a Java service normally run in Docker. Until a Linux runtime exists (WSL2, Docker Desktop, or a remote Linux runner), stage S3 can run Leiden clustering only, and every verdict computed without the second method <b>must</b> be marked provisional and cannot pass gate 4. Installing WSL2 changes system settings and is left to the project owner.</p>
+  </div>
+
+  <h3>Credentials</h3>
+  <ul class="tight">
+    <li><code>ANTHROPIC_API_KEY</code> for automated coders (§8).</li>
+    <li>An OpenAlex API key: required for all API calls since 13 February 2026, with usage-based credits. Bulk work uses the free CC0 snapshot instead (§14).</li>
+    <li>A Semantic Scholar API key, for citation contexts at a usable rate.</li>
+    <li>Credentials for the second model family, once chosen (<span class="tag dec">decision D-2</span>).</li>
+  </ul>
+  <p>Credentials live in a git-ignored <code>.env</code> file loaded by the pipeline. Claude Code <span class="tag req">must</span> be denied read access to it (§11).</p>
+</section>
+
+<!-- ============================================ 3 architecture -->
+<section id="arch">
+  <div class="sec-label">3 · Architecture</div>
+  <h2>Four layers, one direction of trust</h2>
+  <p class="lede">The layers differ in what they may do. Orchestration may change code but produces no evidence. The pipeline produces evidence but cannot change the registry. The registry governs both and changes only through its versioning protocol.</p>
+
+  <div class="tablewrap">
+    <table class="wide">
+      <thead><tr><th>Layer</th><th>What it is</th><th>Runs as</th><th>May do</th><th>May not do</th></tr></thead>
+      <tbody>
+        <tr><td>Orchestration</td><td>Claude Code sessions, subagents, skills, hooks</td><td>Interactive sessions; <code>claude --bare -p</code> for scripted maintenance only</td><td>Write and test pipeline code, run stages, draft registry changes, write reports</td><td>Label evidence, edit frozen registry or raw data, alter archived outputs (H1, H2)</td></tr>
+        <tr><td>Pipeline</td><td>The <code>viveka</code> Python package and its CLI</td><td>Deterministic processes launched from the CLI</td><td>Read registry, read and write data stores, call coders, compute measures and verdicts</td><td>Write to <code>registry/</code>; overwrite any existing artefact (content-addressed, §12)</td></tr>
+        <tr><td>Instruments</td><td>Coders: automated (batch API), human (packets)</td><td>Called by pipeline stage S8 and the audits in S6–S7</td><td>Return labels against a registered schema</td><td>See unredacted text, results (for applicability), predictions, or case names</td></tr>
+        <tr><td>Registry</td><td>Thresholds, instrument configuration, codebook, prompts, filters, events</td><td>Files under <code>registry/</code> with a frozen hash manifest</td><td>Change by version bump with a change-ledger entry</td><td>Change in place after freezing</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Why the agent is not an instrument</h3>
+  <p>A Claude Code session is not reproducible, reads the whole repository including the predictions, and has taken part in developing the framework. Any of those disqualifies it as a coder under the framework's own rules. Automated coding therefore runs through fixed prompts sent by pipeline code to a pinned model through the Message Batches API, with outputs archived; the agent builds that code but never stands in for it.</p>
+
+  <h3>Data flow</h3>
+<pre><code>registry (frozen) ─────────────┬──────────────┬──────────────┬─────────────┐
+                               ▼              ▼              ▼             ▼
+sources ─► S1 corpus ─► S2 census ─► S3 social layer ─► S4 eligibility ─► S5 filters
+                                        (clusters,        (no stance       (extract,
+                                         lineages)         coded)           register)
+                                                                               │
+S6 redaction + leakage ─► S7 coder audits ─► S8 coding ─► S9 measures ─► S10 verdicts
+                                              (stance,     (Δ, Ω, L,      (4 gates)
+                                               applicab.,   share, τ, H,      │
+                                               ledger)      χ; intervals)     ▼
+                                                                  S11 stability sweep
+                                                                          │
+                                                   S12 field summaries, triggers, report</code></pre>
+</section>
+
+<!-- ============================================ 4 layout -->
+<section id="layout">
+  <div class="sec-label">4 · Repository</div>
+  <h2>Layout</h2>
+  <p class="lede">One repository holds the framework documents, the registry, the code and the Claude Code configuration. Data too large for git lives in <code>data/</code>, which is git-ignored but hash-tracked by run manifests.</p>
+<pre><code>viveka/
+├── CLAUDE.md                        project rules for every session (§11)
+├── pyproject.toml, uv.lock
+├── .env                             credentials, git-ignored, unreadable by Claude Code
+├── docs/
+│   ├── the-insulated-core.html
+│   ├── evidence-that-cuts-both-ways.html
+│   └── viveka-harness-spec.html     this document
+├── registry/
+│   ├── thresholds.yaml              n, m, ℓ, δ, c, k, t, h, h₀, w, v, r, o, q, g, s, j, e, i, κ, sweep
+│   ├── instrument.yaml              corpus sources and queries, coder pool, snapshot dates
+│   ├── codebook/                    stance, ledger, rounds, design families (markdown + examples)
+│   ├── prompts/                     one file per coder task, versioned
+│   ├── schemas/                     JSON Schemas for every coder task
+│   ├── redaction/                   dictionaries per case
+│   ├── events/                      pre-registered disconfirmation lists, one file per claim
+│   ├── filters/                     filter lists per commitment, frozen after S5
+│   ├── predictions/                 pilot and contested-case predictions
+│   └── FROZEN.json                  hash manifest of the current frozen version
+├── ledger/
+│   ├── changes.jsonl                append-only change ledger (H6)
+│   └── decisions.md                 owner decisions, dated
+├── src/viveka/
+│   ├── cli.py                       `viveka &lt;stage&gt;` entry point
+│   ├── registry.py                  load, validate, hash, freeze, verify
+│   ├── provenance.py                run manifests, content addressing
+│   ├── corpus/                      openalex.py, semanticscholar.py, crossref.py, venues.py, grobid.py
+│   ├── census.py
+│   ├── social/                      graph.py, leiden.py, sbm.py, lineage.py
+│   ├── coders/                      base.py, anthropic_batch.py, human.py, other_family.py, audits.py
+│   ├── tasks/                       stance.py, applicability.py, design_family.py, ledger.py, leakage.py
+│   ├── measures/                    delta.py, omega.py, ledger_stats.py, tau.py, honoured.py, chi.py, bootstrap.py
+│   ├── verdict/                     gates.py, reasons.py, field_summary.py, triggers.py
+│   ├── sim/                         networks.py, behaviour.py, coder_noise.py, power.py
+│   └── report/                      html.py
+├── tests/                           unit, property, golden synthetic fixtures
+├── data/                            git-ignored
+│   ├── raw/                         immutable source downloads and raw coder outputs
+│   ├── derived/                     parquet tables, content-addressed
+│   └── packets/                     human coding packets out and back
+├── runs/                            one directory per run: manifest.json, logs, outputs
+└── .claude/
+    ├── settings.json                permissions and hooks (§11)
+    ├── hooks/                       guard_frozen.py, guard_shell.py, log_change.py, require_reason.py, session_context.py
+    ├── agents/                      pipeline-engineer.md, corpus-engineer.md, invariant-reviewer.md
+    └── skills/                      stage-status, run-stage, freeze-registry, log-decision</code></pre>
+  <p>The two existing framework documents move into <code>docs/</code> at milestone M0. Every path in this specification is relative to the repository root.</p>
+</section>
+
+<!-- ============================================ 5 registry -->
+<section id="registry">
+  <div class="sec-label">5 · Registry</div>
+  <h2>Registry, freezing and versions</h2>
+  <p class="lede">The registry is the framework's "fixed before scoring" made mechanical. The pipeline reads it; nothing writes to a frozen version.</p>
+
+  <h3>Contents</h3>
+  <p>Thresholds and conventions from the framework's parameter registry live in <code>thresholds.yaml</code>, each with its value, its status (<code>fitted</code>, <code>simulated</code>, <code>convention</code>) and, for fitted and simulated values, the run that produced it. Instrument components from the framework's second registry table live in the other directories. The loader <span class="tag req">must</span> reject a registry with any parameter used by code but missing from the file.</p>
+<pre><code># registry/thresholds.yaml (excerpt)
+version: 3
+parameters:
+  l_lag_years:      {symbol: "ℓ", value: 2,    status: convention}
+  interval_level:   {value: 0.95,              status: convention}
+  w_window_years:   {symbol: "w", value: 5,    status: convention,
+                     variants: {length: [4, 7], shift_max: 2}}
+  o_overlap:        {symbol: "o", value: 0.3,  status: convention, sweep: [0.2, 0.5]}
+  j_idle_years:     {symbol: "j", value: 10,   status: convention}
+  kappa_min:        {symbol: "κ", value: 0.6,  status: convention}
+  m_min_members:    {symbol: "m", value: null, status: simulated, source_run: null}
+  delta:            {symbol: "δ", value: null, status: fitted,    source_run: null}</code></pre>
+
+  <h3>Freeze protocol</h3>
+  <ol class="tight">
+    <li><code>viveka registry validate</code> checks schemas, cross-references (every prompt names a schema; every filter list names a commitment) and that no fitted value is null.</li>
+    <li><code>viveka registry freeze --reason "…"</code> computes SHA-256 over every file under <code>registry/</code> except <code>FROZEN.json</code>, writes the manifest, appends a change-ledger entry, commits, and creates the git tag <code>registry-v&lt;N&gt;</code>.</li>
+    <li>Optionally, the manifest hash is deposited with an external timestamp (<span class="tag dec">decision D-5</span>). The git tag alone is a guardrail against accident, not proof against a determined rewrite.</li>
+    <li>Every stage <span class="tag req">must</span> call <code>registry.verify()</code> at start: recompute the hashes and refuse to run if they differ from <code>FROZEN.json</code>, unless the stage is explicitly a development-fold stage run against a draft.</li>
+  </ol>
+
+  <h3>Version rules</h3>
+  <ul class="tight">
+    <li>Any change after freezing is made by <code>viveka registry bump</code>, which copies the frozen version to a draft, records the reason and the result that prompted it, and requires a new freeze.</li>
+    <li>Contested cases scored under an earlier version are marked <code>superseded</code> and re-registered, never rescored in place, as the framework requires.</li>
+    <li>Parts of the registry freeze at different times: thresholds after calibration, filter lists after S5 for each commitment, redaction after S6. <code>FROZEN.json</code> therefore records a hash per component, and each stage verifies only the components it depends on plus everything upstream of them.</li>
+  </ul>
+</section>
+
+<!-- ============================================ 6 data model -->
+<section id="data">
+  <div class="sec-label">6 · Data model</div>
+  <h2>Tables</h2>
+  <p class="lede">Derived data is stored as Parquet and queried with DuckDB or Polars. Every table carries <code>run_id</code>; every row that came from a coder carries <code>coder_id</code> and <code>task_version</code>. Identifiers are OpenAlex IDs where they exist, DOIs as secondary keys, and harness-minted IDs (prefix <code>vk:</code>) for items outside OpenAlex.</p>
+
+  <div class="tablewrap">
+    <table class="wide">
+      <thead><tr><th>Table</th><th>Key</th><th>Principal columns</th><th>Written by</th></tr></thead>
+      <tbody>
+        <tr><td>works</td><td class="mono">work_id</td><td>doi, title, year, venue_id, source (openalex / venue archive / manual), license, full_text_path</td><td>S1</td></tr>
+        <tr><td>authors, authorships</td><td class="mono">author_id; (work_id, author_id)</td><td>disambiguation source and confidence, institution ids, position</td><td>S1</td></tr>
+        <tr><td>citations</td><td class="mono">citation_id</td><td>citing_work, cited_work, context_text, context_source (S2 API / GROBID / manual), section</td><td>S1</td></tr>
+        <tr><td>coverage</td><td class="mono">(cluster_id, window)</td><td>sampled_works, references_sampled, references_resolved, coverage</td><td>S2</td></tr>
+        <tr><td>claims, events</td><td class="mono">claim_id; event_id</td><td>registered wording and orientation; dated disconfirmations with work ids</td><td>Registry, loaded by S0</td></tr>
+        <tr><td>results</td><td class="mono">result_id</td><td>work_id, claim_id, direction (for / against the registered claim), design_family_id, prominence (field-wide citations from outside the citing cluster)</td><td>S5, S8</td></tr>
+        <tr><td>clusters</td><td class="mono">(window, method, resolution, cluster_id)</td><td>author_id membership</td><td>S3</td></tr>
+        <tr><td>lineages</td><td class="mono">(lineage_id, window)</td><td>cluster link, overlap value, branch parent, closed_at</td><td>S3</td></tr>
+        <tr><td>filters</td><td class="mono">filter_id</td><td>commitment_id, property text, checkable (bool), source citation ids</td><td>S5 (frozen)</td></tr>
+        <tr><td>stance_labels</td><td class="mono">(citation_id, coder_id, rep)</td><td>label (+, −, ×, none), reason_span, filter_id (nullable), refusal flag</td><td>S8</td></tr>
+        <tr><td>applicability_labels</td><td class="mono">(result_id, filter_id, coder_id, rep)</td><td>applies (yes / no / cannot_tell)</td><td>S8</td></tr>
+        <tr><td>ledger_entries</td><td class="mono">(event_id, commitment_id, coder_id)</td><td>code (A/B/C/D), round_id, round_event (open / interim / success / fail_debit / fail_no_debit / idle), evidence work ids</td><td>S8</td></tr>
+        <tr><td>measures</td><td class="mono">(commitment_id, lineage_id, window, partition_variant, measure)</td><td>point, lower, upper, n_items, n_coders, measurable (bool)</td><td>S9</td></tr>
+        <tr><td>verdicts</td><td class="mono">(commitment_id, lineage_id, window)</td><td>verdict (healthy / insulated / indeterminate / closed / out_of_scope), reason_code, favoured_side, corroboration, signature, registry_hash, provisional (bool)</td><td>S10–S11</td></tr>
+        <tr><td>field_summaries</td><td class="mono">(claim_id, field_id)</td><td>summary (uniform / split / undetermined), contributing verdicts</td><td>S12</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p><strong>Orientation.</strong> Results store direction relative to the claim <em>as registered</em>. Measures convert to the side each cluster favours at computation time (§9), so reversing a claim's registered orientation changes stored directions but no verdict. This invariance is a required test (§15).</p>
+</section>
+
+<!-- ============================================ 7 stages -->
+<section id="stages">
+  <div class="sec-label">7 · Stages</div>
+  <h2>Pipeline stages</h2>
+  <p class="lede">Each stage is a CLI command, <code>viveka &lt;stage&gt; --case &lt;id&gt;</code>, that verifies the registry components it depends on, reads only its declared inputs, writes a run manifest, and fails closed. Stages that spend money require <code>--confirm-spend</code> (§13).</p>
+
+  <div class="tablewrap">
+    <table class="wide">
+      <thead><tr><th>Stage</th><th>Inputs</th><th>Outputs</th><th>Registry needed frozen</th><th>Framework source</th></tr></thead>
+      <tbody>
+        <tr><td>S0 · init case</td><td>claim wording, event list, venue list</td><td>claims, events</td><td>events, instrument (corpus part)</td><td>Dating the verdict</td></tr>
+        <tr><td>S1 · corpus</td><td>OpenAlex snapshot or API, Semantic Scholar contexts, community venue archives, GROBID for PDFs</td><td>works, authors, authorships, citations</td><td>instrument (corpus)</td><td>Pilot step 1</td></tr>
+        <tr><td>S2 · census</td><td>corpus, preliminary clusters</td><td>coverage</td><td>thresholds: <i>r</i></td><td>Coverage census</td></tr>
+        <tr><td>S3 · social layer</td><td>authorships, citations</td><td>clusters per window and method, lineages</td><td>thresholds: <i>w</i>, <i>o</i>, sweep</td><td>R1; partition problem; lineages</td></tr>
+        <tr><td>S4 · eligibility</td><td>clusters, lineages, events, coverage, citation counts bearing on the claim</td><td>eligibility report; pair go / replace</td><td><i>m</i>, <i>n</i>, <i>v</i>, <i>r</i></td><td>Pilot: check eligibility before coding</td></tr>
+        <tr><td>S5 · filters</td><td>discounting citation contexts (reason extraction task)</td><td>filters, results, design families</td><td>codebook, prompts; then freezes filters</td><td>Symmetry reason by reason</td></tr>
+        <tr><td>S6 · redaction</td><td>contexts, methods sections</td><td>redacted items; leakage report</td><td>redaction; <i>g</i></td><td>Coder rules: blinding</td></tr>
+        <tr><td>S7 · coder audits</td><td>anchor set, exchanged pairs, redacted items</td><td>audit report; qualified coder pool</td><td><i>q</i>, <i>s</i>, κ, coder pool</td><td>Coder rules; trigger 2</td></tr>
+        <tr><td>S8 · coding</td><td>redacted items, qualified pool</td><td>stance, applicability, design-family and ledger labels</td><td>everything above</td><td>Epistemic layer; ledger; rounds</td></tr>
+        <tr><td>S9 · measures</td><td>labels, clusters, lineages, results</td><td>measures with intervals</td><td>thresholds (all)</td><td>Instruments</td></tr>
+        <tr><td>S10 · verdicts</td><td>measures</td><td>verdicts with reason codes</td><td>thresholds (all)</td><td>Decision rule V, gates 1–3</td></tr>
+        <tr><td>S11 · stability</td><td>S3–S10 rerun across the sweep and window variants</td><td>stable verdicts; unstable flags</td><td>sweep, <i>w</i> variants, <i>o</i> range</td><td>Gate 4</td></tr>
+        <tr><td>S12 · summaries and triggers</td><td>verdicts, calibration results, independent checks</td><td>field summaries, trigger status, HTML report</td><td>predictions, <i>e</i>, <i>i</i></td><td>Fields; validation; triggers 1–6</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Ordering constraints the code enforces</h3>
+  <ul class="tight">
+    <li><strong>No stance before eligibility.</strong> S8 refuses to run for a case whose S4 report is missing or failed. This implements "a pair that could not have been separated is replaced before the test".</li>
+    <li><strong>No coding before audits.</strong> S8 codes only with coders marked qualified by the latest S7 report for that registry version.</li>
+    <li><strong>No scoring before predictions are frozen.</strong> S10 refuses to score a pilot or contested case unless <code>registry/predictions/</code> for that case is in the frozen manifest with a timestamp earlier than every S8 run for the case.</li>
+    <li><strong>Census before calibration.</strong> S12 computes trigger 1 only over fields that passed S2, and records replaced fields.</li>
+    <li><strong>Development folds are isolated.</strong> Codebook, filter wording and fitted thresholds may be developed only on runs tagged <code>fold=dev</code>; a held-out field's data path is not readable by development runs.</li>
+  </ul>
+</section>
+
+<!-- ============================================ 8 coders -->
+<section id="coders">
+  <div class="sec-label">8 · Coders</div>
+  <h2>The coder subsystem</h2>
+  <p class="lede">Coders are the framework's most exposed component, so this subsystem carries the most rules. Everything here implements the framework's section "Coders are instruments".</p>
+
+  <h3>Interface</h3>
+<pre><code>class Coder(Protocol):
+    coder_id: str          # e.g. "anthropic:claude-opus-5", "human:rater-02"
+    family: str            # independence unit: "anthropic", "human:rater-02", ...
+    def submit(self, task: TaskSpec, items: list[Item]) -&gt; SubmissionRef: ...
+    def collect(self, ref: SubmissionRef) -&gt; list[RawOutput]: ...   # archived verbatim first
+    def parse(self, raw: RawOutput, schema: dict) -&gt; Label | Missing: ...</code></pre>
+  <p>Intervals resample over <code>family</code>, never over <code>coder_id</code> or repetitions. Two Claude models, or one model with several prompts, are one family (H4).</p>
+
+  <h3>Tasks</h3>
+  <div class="tablewrap">
+    <table class="wide">
+      <thead><tr><th>Task</th><th>Coder sees</th><th>Coder never sees</th><th>Output</th></tr></thead>
+      <tbody>
+        <tr><td>T1 · stance</td><td>Redacted citation context; the cited result's registered direction</td><td>Field, case, cluster, citing authors, predictions</td><td><code>{label: "+"|"−"|"×"|"none", reason_span: string|null}</code></td></tr>
+        <tr><td>T2 · reason extraction</td><td>Redacted discounting contexts (label ×)</td><td>As T1</td><td>Candidate filter: property text, checkable yes/no; merged into the filter list at S5</td></tr>
+        <tr><td>T3 · applicability</td><td>Redacted methods section of one result; one registered filter</td><td>The result, conclusions, abstract, any citing context</td><td><code>{applies: "yes"|"no"|"cannot_tell"}</code></td></tr>
+        <tr><td>T4 · design family</td><td>Redacted methods of two results</td><td>Results</td><td><code>{same_family: bool}</code></td></tr>
+        <tr><td>T5 · ledger response</td><td>A dated disconfirmation and the redacted responses to it within lag ℓ</td><td>Later history beyond the response window, field identity</td><td>Code A–D, round events, cited evidence ids</td></tr>
+        <tr><td>T6 · leakage probe</td><td>Redacted items</td><td>—</td><td>Guessed field and case with confidence</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Every task has a prompt in <code>registry/prompts/</code> and a JSON Schema in <code>registry/schemas/</code>. The prompt embeds the relevant codebook section verbatim, so a codebook change changes the prompt hash and therefore the task version.</p>
+
+  <h3>Automated coder: Anthropic adapter</h3>
+  <ul class="tight">
+    <li><strong>Endpoint.</strong> Message Batches API (<code>client.messages.batches.create</code>), which accepts up to 100,000 requests or 256 MB per batch, usually completes within an hour and at most within 24, and costs half the standard rate.</li>
+    <li><strong>Model.</strong> The exact model ID is a registry value. The default is <code>claude-opus-5</code>; choosing a cheaper model trades measurement quality for cost and is <span class="tag dec">decision D-4</span>. IDs are used exactly as listed by the Models API, without date suffixes.</li>
+    <li><strong>Output.</strong> Structured outputs via <code>output_config: {"format": {"type": "json_schema", "schema": …}}</code>, with <code>effort</code> set in the same object from the registry. The schema is the registered one; the parser still validates every result and records a failure as <code>Missing</code>, never as a guessed label.</li>
+    <li><strong>Sampling.</strong> Claude Opus 5 does not accept <code>temperature</code>, so outputs are not deterministic. Reproducibility therefore rests on archiving raw outputs, and variability is measured: S7 runs a test–retest repetition on the anchor set, and the symmetry audit subtracts that rate as the framework specifies.</li>
+    <li><strong>Caching.</strong> The system prompt (task instructions and codebook excerpt) is byte-stable and marked for prompt caching; the item is the only varying content.</li>
+    <li><strong>Request identity.</strong> <code>custom_id</code> is a hash of <code>(task_version, item_id, coder_id, rep)</code>. Results arrive in any order and are joined only by <code>custom_id</code>.</li>
+    <li><strong>Retention.</strong> Batch results stay retrievable for 29 days. The collector downloads every result to <code>data/raw/coders/&lt;run_id&gt;/results.jsonl</code> immediately after the batch ends, before parsing, and records the batch ID in the run manifest.</li>
+    <li><strong>Refusals and errors.</strong> A result with <code>stop_reason: "refusal"</code> is stored as <code>Missing(refusal)</code> with its category. <code>errored</code> and <code>expired</code> results are resubmitted once, with the same <code>custom_id</code> and a logged retry; persistent failures stay missing. The share of missing labels per case and side is reported, because missingness that differs by side is itself an asymmetry.</li>
+  </ul>
+
+  <div class="note">
+    <h4>No server-side model fallback</h4>
+    <p>The API can reroute a refused request to another model. The harness <span class="tag req">must not</span> enable this: a label silently produced by a different model breaks the coder's identity and the one-family rule. A refusal is recorded as missing instead.</p>
+  </div>
+
+<pre><code># src/viveka/coders/anthropic_batch.py (sketch)
+requests = [
+    Request(
+        custom_id=request_id(task, item, coder, rep),
+        params=MessageCreateParamsNonStreaming(
+            model=registry.coder(coder).model_id,            # e.g. "claude-opus-5"
+            max_tokens=task.max_tokens,
+            system=[{"type": "text", "text": task.system_prompt,
+                     "cache_control": {"type": "ephemeral"}}],
+            messages=[{"role": "user", "content": item.redacted_text}],
+            output_config={"effort": registry.coder(coder).effort,
+                           "format": {"type": "json_schema", "schema": task.schema}},
+        ),
+    )
+    for item in items for rep in range(task.reps)
+]
+batch = client.messages.batches.create(requests=requests)</code></pre>
+
+  <h3>Human coders</h3>
+  <ul class="tight">
+    <li><code>viveka packets export --task T1 --rater rater-02</code> writes a spreadsheet packet of redacted items in randomised order, with no identifiers beyond an opaque item key.</li>
+    <li><code>viveka packets import</code> validates every row against the task schema and stores the file verbatim in <code>data/raw/coders/</code>.</li>
+    <li>Recruitment, training and number of human coders are <span class="tag dec">decision D-3</span>. The framework requires at least one human in every pool.</li>
+  </ul>
+
+  <h3>Second model family</h3>
+  <p>The framework bars any model family used in developing it from being the only automated coder. Because this framework was developed with Claude, an automated pool needs either a second, non-Claude model family or a second human coder. The adapter follows the same interface; the provider is <span class="tag dec">decision D-2</span>.</p>
+
+  <h3>Audits (stage S7)</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Audit</th><th>Procedure</th><th>Pass condition</th><th>On failure</th></tr></thead>
+      <tbody>
+        <tr><td>Leakage (S6)</td><td>T6 on a sample of redacted items from every case</td><td>Accuracy above chance by at most <i>g</i></td><td>Extend dictionary, repeat; withdraw the case if it cannot pass</td></tr>
+        <tr><td>Test–retest</td><td>Each automated coder codes the anchor set twice</td><td>Recorded, not gated; used by the symmetry audit</td><td>—</td></tr>
+        <tr><td>Symmetry</td><td>Exchanged pairs: identical items with field details swapped between cases</td><td>Label changes on at most share <i>s</i> of pairs beyond test–retest</td><td>Coder removed from the pool</td></tr>
+        <tr><td>Agreement</td><td>Every coder codes the anchor set drawn from development folds</td><td>κ on "discounts" at least 0.6 against humans</td><td>Retrain once; if no pool of <i>q</i> qualifies, trigger 2</td></tr>
+        <tr><td>Anchored disagreement</td><td>Pairwise and coder–human disagreement on the anchor set</td><td>Recorded; feeds interval widths in S9</td><td>—</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Model retirement</h3>
+  <p>A retired model cannot be rerun. Its archived outputs remain valid for the registry version that used it. Replacing it means registering a new coder, re-auditing, and bumping the registry version; labels from the two coders are never pooled as one.</p>
+</section>
+
+<!-- ============================================ 9 verdict engine -->
+<section id="verdict">
+  <div class="sec-label">9 · Verdict engine</div>
+  <h2>Measures and the four gates</h2>
+  <p class="lede">The engine is a pure function: <code>verdict(measures, registry) → Verdict</code>. It performs no I/O, reads no clock and draws no randomness except through a seeded generator passed in. It is built and tested before any real data exists (H5).</p>
+
+  <h3>Measures (<code>viveka.measures</code>)</h3>
+  <ul class="tight">
+    <li><strong>Favoured side.</strong> For each lineage and window, the side its citations support on balance: support citations to results for a side, plus discount-only citations of results against it. Computed first; every other measure is oriented to it.</li>
+    <li><strong>Δ.</strong> For each frozen filter, the rate at which the cluster invokes it (T1 reason spans mapped to filters) against unfavourable results to which T3 says it applies, minus the same rate for favourable results; combined over filters weighted by applicable results. Invocations of filters marked uncheckable count wholly as asymmetric.</li>
+    <li><strong>Ω.</strong> Among results bearing on the claim, stratified by prominence quantile, the share of favourable results the cluster cites minus the share of unfavourable results; averaged over strata.</li>
+    <li><strong>Ledger statistics.</strong> Insulating share (C and D codes, including rounds closed as C) and loop length <i>L</i>, computed on the favoured side's disconfirmations.</li>
+    <li><strong>τ, H, χ.</strong> As defined in the framework; τ counts only breaks backed by evidence no frozen filter excludes, and χ is computed but never passed to the gates.</li>
+  </ul>
+
+  <h3>Intervals</h3>
+  <p>Every interval is a percentile bootstrap at the registered level, resampling evidence items within the window and coder families jointly; <i>L</i> is recomputed on each resampled ledger. Where the anchored disagreement (§8) exceeds the disagreement observed in the case, the coder resampling uses a noise model calibrated to the anchor set instead. The number of bootstrap draws and the seed are recorded in the run manifest.</p>
+
+  <h3>Gates (<code>viveka.verdict.gates</code>)</h3>
+<pre><code>def verdict(m: Measures, reg: Registry) -&gt; Verdict:
+    if m.trajectory_closed:                                  return Verdict.CLOSED
+    if not m.cites_observation:                              return Verdict.OUT_OF_SCOPE
+    # gate 1 · eligibility
+    if (m.n_disconfirmations &lt; reg.n or m.members &lt; reg.m
+            or m.citations_on_claim &lt; reg.v or m.coverage &lt; reg.r):
+        return indeterminate(Reason.INSUFFICIENT_DATA)
+    # gate 2 · primary reading (intervals already oriented to the favoured side)
+    reading = primary_reading(m.delta, m.omega, m.insulating_share, m.loop_length, reg)
+    if reading is Reading.UNCLEAR:
+        return indeterminate(Reason.READING_UNCLEAR, note=reading.note)   # incl. "points away from favoured side"
+    # gate 3 · conduct check
+    for measure in (m.tau, m.honoured):
+        if measure.measurable and measure.points_against(reading):
+            return indeterminate(Reason.CONDUCT_CONFLICT)
+    # gate 4 is applied across runs by S11, not here
+    return Verdict.HEALTHY if reading is Reading.S else Verdict.INSULATED</code></pre>
+  <p><code>primary_reading</code> returns <b>S</b> if both the Δ and Ω intervals lie inside ±δ and the insulating-share interval lies wholly below <i>c</i>; <b>A</b> if either interval lies wholly beyond δ toward the favoured side and the <i>L</i> interval lies wholly at or above <i>k</i>; otherwise <b>UNCLEAR</b> with a note naming the combination.</p>
+
+  <h3>Stability (stage S11)</h3>
+  <p>S11 reruns S3 to S10 over the Cartesian product of registered resolutions, clustering methods, <i>o</i> values and window variants, joins verdicts on lineage identity, and keeps a verdict only if identical in every run; otherwise <code>indeterminate · unstable</code>. Lineage identity across partition variants is matched by maximum membership overlap; unmatched lineages count as instability.</p>
+
+  <h3>Field summaries and triggers (stage S12)</h3>
+  <ul class="tight">
+    <li>Field summaries follow the framework: lineages descending from the community where the claim was first tested; split when one lineage is healthy and another insulated, in any windows.</li>
+    <li>Triggers 1 to 6 are computed as named functions, each returning a status, the numbers behind it, and the verdicts it used. Trigger status is reported and appended to the change ledger; the harness never acts on a trigger by itself.</li>
+  </ul>
+</section>
+
+<!-- ============================================ 10 simulator -->
+<section id="sim">
+  <div class="sec-label">10 · Simulator</div>
+  <h2>Synthetic communities</h2>
+  <p class="lede">The simulator exists so that the verdict engine can be tested, and the framework's simulated parameters set, before any real case is touched.</p>
+
+  <h3>Generative model</h3>
+  <ol class="tight">
+    <li><strong>Social layer.</strong> A degree-corrected stochastic block model with planted clusters, evolving over yearly steps with membership churn, splits and merges, so lineage tracking is exercised.</li>
+    <li><strong>Evidence.</strong> A stream of results for and against a claim, each with methods properties (which filters apply) drawn independently of direction, and a prominence value.</li>
+    <li><strong>Behaviour.</strong> Each planted cluster has a behaviour profile: symmetric (filters applied to both sides; citation independent of direction), filter-asymmetric, omission-asymmetric, or both, with tunable strength; plus ledger response probabilities for A–D and round outcomes.</li>
+    <li><strong>Coders.</strong> Labels are passed through per-family confusion matrices; once S7 has run, those matrices are the measured ones.</li>
+  </ol>
+
+  <h3>Uses</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Use</th><th>Output</th><th>Consumer</th></tr></thead>
+      <tbody>
+        <tr><td>Engine tests</td><td>Fixtures with known planted truth</td><td>§15 property and golden tests</td></tr>
+        <tr><td>Setting <i>m</i> and <i>v</i></td><td>Smallest cluster size and citation volume at which Δ and τ intervals can exclude their thresholds at the registered level</td><td>Registry, status <code>simulated</code></td></tr>
+        <tr><td>Pilot power</td><td>Probability that each pilot case passes gate 1 and that the predicted field summaries are reachable, at the case's measured size</td><td>S4 go / replace decision</td></tr>
+        <tr><td>Robustness</td><td>Share of planted verdicts that survive the stability sweep</td><td>Early warning for trigger 5</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="keyline">
+    <h4>Not yet a framework rule</h4>
+    <p>Setting δ, <i>c</i>, <i>k</i>, <i>t</i> and <i>h</i> from simulated symmetric communities, rather than fitting them on calibration fields, was proposed but has not been adopted by the framework document. The simulator supports it; the registry keeps those parameters as <code>fitted</code> until the framework says otherwise (<span class="tag dec">decision D-7</span>).</p>
+  </div>
+</section>
+
+<!-- ============================================ 11 claude code -->
+<section id="cc">
+  <div class="sec-label">11 · Claude Code configuration</div>
+  <h2>How the agent is constrained</h2>
+  <p class="lede">Three mechanisms, in order of strength: permission rules (enforced before a tool runs), hooks (scripts that inspect each call and can block it), and project instructions (read every session). None of them is a security boundary against a determined user; the hash manifest and git tags are the real record (§5, §12).</p>
+
+  <h3>CLAUDE.md (project rules)</h3>
+<pre><code># Viveka
+
+Framework: docs/evidence-that-cuts-both-ways.html. Harness spec: docs/viveka-harness-spec.html.
+
+## Non-negotiable
+- Never produce, edit or "fix" a label, measure or verdict by hand or in conversation.
+  They come only from `viveka` stages. If output looks wrong, find the bug in code.
+- Never edit files listed in registry/FROZEN.json. Propose a version bump instead
+  (`/log-decision`, then `viveka registry bump`).
+- Never read registry/predictions/ while working on coding prompts, filters or redaction.
+- Never overwrite anything under data/raw/ or runs/.
+- Never run a stage that spends money without the user's explicit go-ahead in this session.
+- Any change to registry/ drafts, prompts or the codebook needs a reason in the change ledger.
+
+## Working
+- Python via uv: `uv run pytest`, `uv run viveka &lt;stage&gt;`.
+- The verdict engine and simulator must stay pure and fully tested.
+- Where the framework document is ambiguous, stop and record a decision; don't improvise.</code></pre>
+
+  <h3>Permissions (<code>.claude/settings.json</code>)</h3>
+<pre><code>{
+  "permissions": {
+    "allow": [
+      "Bash(uv run pytest *)",
+      "Bash(uv run viveka status *)",
+      "Bash(uv run viveka registry validate *)",
+      "Bash(git status *)", "Bash(git diff *)", "Bash(git log *)"
+    ],
+    "ask": [
+      "Bash(uv run viveka *)",
+      "Bash(git commit *)", "Bash(git tag *)"
+    ],
+    "deny": [
+      "Read(./.env)", "Read(./.env.*)",
+      "Edit(./data/raw/**)", "Edit(./runs/**)", "Edit(./ledger/changes.jsonl)",
+      "Bash(git push --force *)", "Bash(git tag -d *)", "Bash(git reset --hard *)",
+      "Bash(curl *)", "Bash(wget *)"
+    ]
+  },
+  "hooks": { … see below … }
+}</code></pre>
+  <p>Rules are evaluated deny, then ask, then allow, and <code>Edit</code> rules cover every built-in editing tool and shell output redirects. Stage commands sit under <code>ask</code> so every run is approved in the session; <code>status</code> and <code>validate</code> are read-only and allowed. Network access for data acquisition goes through pipeline code, not agent tools, so shell download tools are denied.</p>
+
+  <h3>Hooks</h3>
+  <p>Hook scripts live in <code>.claude/hooks/</code>, are Python run through uv, read the event JSON from stdin, and block by exiting with code 2 and a message on stderr, which Claude Code shows to the agent.</p>
+  <div class="tablewrap">
+    <table class="wide">
+      <thead><tr><th>Script</th><th>Event · matcher</th><th>Behaviour</th><th>Principle</th></tr></thead>
+      <tbody>
+        <tr><td>guard_frozen.py</td><td>PreToolUse · <code>Edit|Write|NotebookEdit</code></td><td>Reads <code>tool_input.file_path</code>; blocks if the path is in <code>registry/FROZEN.json</code>, under <code>data/raw/</code> or <code>runs/</code>. Message names the bump procedure.</td><td>H2, H3</td></tr>
+        <tr><td>guard_shell.py</td><td>PreToolUse · <code>Bash|PowerShell</code></td><td>Reads <code>tool_input.command</code>; blocks commands that reference frozen paths with a write, move or delete verb, and any direct call to coder APIs outside <code>viveka</code>. Best effort; permission rules remain the first line.</td><td>H1, H2</td></tr>
+        <tr><td>log_change.py</td><td>PostToolUse · <code>Edit|Write</code></td><td>For paths under <code>registry/</code>, appends <code>{time, session_id, path, sha_before, sha_after, reason: null}</code> to <code>ledger/changes.jsonl</code>.</td><td>H6</td></tr>
+        <tr><td>require_reason.py</td><td>Stop</td><td>If any ledger entry from this session has <code>reason: null</code>, blocks the stop with a message asking for <code>/log-decision</code>.</td><td>H6</td></tr>
+        <tr><td>session_context.py</td><td>SessionStart</td><td>Prints the registry version, frozen components, last completed stage per case, open decisions and trigger status; Claude Code adds it to context.</td><td>H3</td></tr>
+      </tbody>
+    </table>
+  </div>
+<pre><code>"hooks": {
+  "PreToolUse": [
+    {"matcher": "Edit|Write|NotebookEdit",
+     "hooks": [{"type": "command", "command": "uv run python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/guard_frozen.py\""}]},
+    {"matcher": "Bash|PowerShell",
+     "hooks": [{"type": "command", "command": "uv run python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/guard_shell.py\""}]}
+  ],
+  "PostToolUse": [
+    {"matcher": "Edit|Write",
+     "hooks": [{"type": "command", "command": "uv run python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/log_change.py\""}]}
+  ],
+  "Stop": [
+    {"hooks": [{"type": "command", "command": "uv run python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/require_reason.py\""}]}
+  ],
+  "SessionStart": [
+    {"matcher": "startup|resume",
+     "hooks": [{"type": "command", "command": "uv run python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/session_context.py\""}]}
+  ]
+}</code></pre>
+
+  <h3>Subagents (<code>.claude/agents/</code>)</h3>
+  <p>Subagents divide engineering work. <strong>None of them codes evidence</strong>; that would violate H1 however the subagent is configured.</p>
+  <div class="tablewrap">
+    <table class="wide">
+      <thead><tr><th>Name</th><th>Purpose</th><th>tools</th><th>Scoped hooks</th></tr></thead>
+      <tbody>
+        <tr><td>pipeline-engineer</td><td>Implement and test stages, measures, the verdict engine and the simulator</td><td>Read, Grep, Glob, Edit, Write, Bash</td><td>Blocks reads of <code>registry/predictions/</code> and <code>data/</code> for held-out folds</td></tr>
+        <tr><td>corpus-engineer</td><td>Source adapters, disambiguation, census; runs S1–S2 on request</td><td>Read, Grep, Glob, Edit, Write, Bash</td><td>Blocks reads of <code>registry/predictions/</code>, <code>registry/prompts/</code></td></tr>
+        <tr><td>invariant-reviewer</td><td>Read-only review of a diff against this specification's requirements and §15 tests</td><td>Read, Grep, Glob</td><td>—</td></tr>
+      </tbody>
+    </table>
+  </div>
+<pre><code>---
+name: invariant-reviewer
+description: Reviews a change against the Viveka harness specification. Use before committing
+  changes to src/viveka/verdict, src/viveka/coders, registry tooling or hooks.
+tools: Read, Grep, Glob
+model: inherit
+---
+Check the change against docs/viveka-harness-spec.html sections 5, 7, 8, 9 and 12.
+Report each violated requirement with file:line and the requirement it breaks. Do not edit.</code></pre>
+
+  <h3>Skills (<code>.claude/skills/</code>)</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Skill</th><th>What it does</th><th>Invocation</th></tr></thead>
+      <tbody>
+        <tr><td>/stage-status</td><td>Summarises run manifests: last stage per case, registry version, spend to date, failed gates</td><td>User or model</td></tr>
+        <tr><td>/run-stage &lt;stage&gt; &lt;case&gt;</td><td>Validates prerequisites, shows the cost estimate, and runs the stage after the user confirms</td><td><code>disable-model-invocation: true</code></td></tr>
+        <tr><td>/freeze-registry</td><td>Runs validate, shows the diff since the last freeze, asks for a reason, freezes and tags</td><td><code>disable-model-invocation: true</code></td></tr>
+        <tr><td>/log-decision</td><td>Appends a dated decision to <code>ledger/decisions.md</code> and fills pending reasons in the change ledger</td><td>User or model</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================ 12 provenance -->
+<section id="prov">
+  <div class="sec-label">12 · Provenance</div>
+  <h2>Run manifests and content addressing</h2>
+  <p class="lede">Any verdict must be traceable to the exact code, registry, inputs and coders that produced it, and re-derivable from archived raw outputs without calling a model again.</p>
+
+<pre><code>// runs/2026-10-02T1412Z-s8-coldfusion-7c1e/manifest.json
+{
+  "run_id": "2026-10-02T1412Z-s8-coldfusion-7c1e",
+  "stage": "S8", "case": "coldfusion", "fold": "pilot",
+  "git_commit": "…", "git_dirty": false,
+  "registry": {"version": 3, "components": {"thresholds": "sha256:…", "prompts": "sha256:…", "filters/cf-p1": "sha256:…"}},
+  "inputs":  [{"table": "redacted_items", "sha256": "…", "rows": 18342}],
+  "coders":  [{"coder_id": "anthropic:claude-opus-5", "family": "anthropic", "effort": "…",
+               "batch_ids": ["msgbatch_…"], "raw": "data/raw/coders/…/results.jsonl", "sha256": "…"}],
+  "outputs": [{"table": "stance_labels", "sha256": "…", "rows": 18342, "missing": 41}],
+  "seed": 20261002, "started": "…", "ended": "…",
+  "usage": {"input_tokens": 0, "cache_read_input_tokens": 0, "output_tokens": 0},
+  "confirmed_spend_by": "session …"
+}</code></pre>
+  <ul class="tight">
+    <li>Derived tables are written under a path containing their content hash; a run never overwrites a previous output (H3).</li>
+    <li><code>viveka verify &lt;run_id&gt;</code> recomputes every hash, and re-parses raw coder outputs to confirm the stored labels.</li>
+    <li><code>viveka rederive &lt;verdict_id&gt;</code> rebuilds a verdict from archived labels and the recorded registry version, and must reproduce it exactly given the recorded seed.</li>
+    <li>A run with <code>git_dirty: true</code> may be used for development folds only; S10–S12 refuse it for pilot, held-out or contested cases.</li>
+  </ul>
+</section>
+
+<!-- ============================================ 13 cost -->
+<section id="cost">
+  <div class="sec-label">13 · Cost</div>
+  <h2>Spend controls</h2>
+  <p class="lede">Coding is the only stage with material API cost. The harness makes every paid run deliberate and accounted for.</p>
+  <ul class="tight">
+    <li><strong>Estimate before running.</strong> <code>--dry-run</code> renders the requests, counts input tokens on a sample with the token-counting endpoint, projects output tokens from the anchor-set runs, and prints the estimated cost using prices read from configuration, not hard-coded.</li>
+    <li><strong>Confirm explicitly.</strong> Paid stages refuse to start without <code>--confirm-spend &lt;estimate&gt;</code> matching the dry-run figure within a tolerance; <code>/run-stage</code> is user-only.</li>
+    <li><strong>Budget ceiling.</strong> <code>instrument.yaml</code> holds a project budget and a per-run cap (<span class="tag dec">decision D-6</span>); the pipeline refuses a run that would exceed either, based on usage recorded in manifests.</li>
+    <li><strong>Levers, in order.</strong> Batch pricing and prompt caching of the stable system prompt are built in. Model choice, effort level and the number of repetitions affect measurement quality and are registry decisions, not optimisations the harness makes on its own.</li>
+    <li><strong>Pilot first.</strong> Coding runs on the anchor set and one pilot case before any calibration field, so real per-item costs replace estimates early.</li>
+  </ul>
+</section>
+
+<!-- ============================================ 14 sources -->
+<section id="sources">
+  <div class="sec-label">14 · Data sources</div>
+  <h2>Acquisition and compliance</h2>
+  <div class="tablewrap">
+    <table class="wide">
+      <thead><tr><th>Source</th><th>Provides</th><th>Access</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>OpenAlex snapshot</td><td>Works, authors, institutions, references</td><td>Free CC0 bulk snapshot</td><td>Primary source for the social layer; snapshot date is a registry value</td></tr>
+        <tr><td>OpenAlex API</td><td>Incremental lookups</td><td>API key required since 13 Feb 2026; usage-based credits with a daily free allowance</td><td>Only for items newer than the snapshot; credit use logged per run</td></tr>
+        <tr><td>Semantic Scholar Academic Graph API</td><td>Citation contexts and intents for citing–cited pairs</td><td>API key recommended</td><td>Coverage of pre-2000 and paywalled literature is incomplete; the fields and limits must be confirmed against current documentation when the adapter is built</td></tr>
+        <tr><td>Crossref, Unpaywall</td><td>DOI metadata; legal open-access full-text locations</td><td>Public APIs</td><td>Full text downloaded only from open-access locations</td></tr>
+        <tr><td>GROBID</td><td>References and in-text citation contexts from PDFs</td><td>Self-hosted service</td><td>Needs a Linux runtime (<span class="tag dec">decision D-1</span>)</td></tr>
+        <tr><td>Community venues</td><td>Proceedings and journals of communities poorly indexed elsewhere, such as ICCF proceedings</td><td>Per-source terms</td><td>Ingested directly, as the census requires; each source's terms recorded before download (<span class="tag dec">decision D-8</span>)</td></tr>
+        <tr><td>Pre-digital literature</td><td>Scanned journals for historical cases</td><td>Library and publisher access</td><td>Hand-assembled; the census decides whether a case can stay</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p><span class="tag req">must</span> Every downloaded file is stored with its source URL, retrieval time, licence or terms reference and hash. No adapter bypasses authentication, rate limits or robots rules, and full text that is not openly licensed stays local and out of any published output.</p>
+</section>
+
+<!-- ============================================ 15 testing -->
+<section id="tests">
+  <div class="sec-label">15 · Testing</div>
+  <h2>What must be tested</h2>
+  <p class="lede">Unit tests run offline with no API keys. Tests marked <code>live</code> call external services and run only on request.</p>
+  <div class="tablewrap">
+    <table class="wide">
+      <thead><tr><th>Area</th><th>Required tests</th><th>Kind</th></tr></thead>
+      <tbody>
+        <tr><td>Verdict engine</td><td>Every combination of gate inputs yields exactly one outcome; each reason code is reachable; closed and out-of-scope inputs never reach the gates</td><td>Property-based (Hypothesis)</td></tr>
+        <tr><td>Orientation</td><td>Reversing a claim's registered orientation leaves every verdict, reason and field summary unchanged</td><td>Property-based</td></tr>
+        <tr><td>Symmetry of standards</td><td>Healthy and insulated readings require intervals of the same level; swapping planted behaviour between sides mirrors the reading</td><td>Property-based</td></tr>
+        <tr><td>Planted truth</td><td>Simulated symmetric, filter-asymmetric and omission-asymmetric clusters are recovered at the rates the power analysis predicts</td><td>Golden synthetic fixtures</td></tr>
+        <tr><td>Measures</td><td>Δ ignores filters applied equally to both sides; uncheckable filters count as asymmetric; Ω is zero when citation is independent of direction; L recomputed per resample</td><td>Unit</td></tr>
+        <tr><td>Ledger rounds</td><td>Each closure path (success, fail with debit, fail without debit, idle at <i>j</i>) produces the specified code</td><td>Unit</td></tr>
+        <tr><td>Registry</td><td>Freeze is deterministic; verify fails on any byte change; stages refuse unfrozen dependencies; bump preserves the old version</td><td>Unit</td></tr>
+        <tr><td>Coders</td><td>Results joined by <code>custom_id</code> regardless of order; refusals and schema failures become Missing; raw output is written before parsing; no fallback parameter is ever sent</td><td>Unit with recorded fixtures</td></tr>
+        <tr><td>Ordering</td><td>S8 refuses without S4 and S7; S10 refuses without frozen predictions older than S8</td><td>Integration</td></tr>
+        <tr><td>Hooks</td><td>guard_frozen blocks a frozen path and allows a draft; require_reason blocks a stop with a null reason</td><td>Unit (stdin fixtures)</td></tr>
+        <tr><td>Provenance</td><td><code>rederive</code> reproduces a verdict bit-for-bit from archived labels</td><td>Integration</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================ 16 milestones -->
+<section id="milestones">
+  <div class="sec-label">16 · Milestones</div>
+  <h2>Build order</h2>
+  <p class="lede">The first three milestones need no data, no Linux runtime and no API spend. They should be complete before any decision in §17 blocks progress.</p>
+  <div class="tablewrap">
+    <table class="wide">
+      <thead><tr><th>Milestone</th><th>Delivers</th><th>Exit criterion</th><th>Blocked by</th></tr></thead>
+      <tbody>
+        <tr><td>M0 · scaffold</td><td><code>git init</code>, uv project, <code>docs/</code>, CLAUDE.md, settings, hooks, empty registry with schemas</td><td>Hook tests pass; a frozen dummy file cannot be edited through Claude Code</td><td>—</td></tr>
+        <tr><td>M1 · registry and ledger</td><td><code>viveka registry validate | freeze | verify | bump</code>, change ledger, run manifests</td><td>§15 registry tests pass</td><td>—</td></tr>
+        <tr><td>M2 · verdict engine</td><td><code>viveka.measures</code> on in-memory inputs, gates, stability logic, field summaries, triggers</td><td>§15 engine, orientation and measure tests pass</td><td>—</td></tr>
+        <tr><td>M3 · simulator</td><td>Generative model, planted-truth fixtures, <i>m</i> and <i>v</i> simulation, pilot power tool</td><td>Planted verdicts recovered; <i>m</i>, <i>v</i> written to a draft registry with source runs</td><td>—</td></tr>
+        <tr><td>M4 · corpus and census</td><td>OpenAlex snapshot loader, Semantic Scholar contexts, venue ingestion, census</td><td>Census report for both pilot cases, the reserve pair and every calibration candidate</td><td>D-8 for venue archives</td></tr>
+        <tr><td>M5 · social layer</td><td>Leiden sweep, block model, lineages, S4 eligibility with power check</td><td>Go / replace decision for the pilot pair</td><td>D-1 (block model)</td></tr>
+        <tr><td>M6 · coders and audits</td><td>Anthropic batch adapter, human packets, second-family adapter, S6 redaction and leakage, S7 audits</td><td>A qualified pool of at least <i>q</i> coders on the pilot anchor set, or trigger 2 recorded</td><td>D-2, D-3, D-4, D-6</td></tr>
+        <tr><td>M7 · coding</td><td>S5 filters, S8 stance, applicability, design family, ledger</td><td>Labels for the pilot with κ reported per label</td><td>M6</td></tr>
+        <tr><td>M8 · calibration</td><td>Development-fold fitting, held-out scoring, triggers 1, 3, 5, 6</td><td>Frozen fitted registry; trigger report</td><td>M7 on calibration fields</td></tr>
+        <tr><td>M9 · pilot</td><td>Frozen predictions, S9–S12 on the pilot, kill condition evaluated</td><td>Pilot report with trigger 4 status</td><td>M8, D-5</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================ 17 decisions -->
+<section id="decisions">
+  <div class="sec-label">17 · Decisions</div>
+  <h2>Decisions that belong to the project owner</h2>
+  <p class="lede">Each is recorded in <code>ledger/decisions.md</code> when made. The milestone column says how far the build can go without it.</p>
+  <div class="tablewrap">
+    <table class="wide">
+      <thead><tr><th>ID</th><th>Decision</th><th>Options</th><th>Blocks</th></tr></thead>
+      <tbody>
+        <tr><td>D-1</td><td>Linux runtime for the block model and GROBID</td><td>Install WSL2; install Docker Desktop; use a remote Linux runner</td><td>M5 final verdicts (Leiden-only results stay provisional)</td></tr>
+        <tr><td>D-2</td><td>Second automated model family</td><td>A non-Claude provider; or a second human coder in its place</td><td>M6</td></tr>
+        <tr><td>D-3</td><td>Human coders</td><td>Who, how many, how trained, whether paid</td><td>M6</td></tr>
+        <tr><td>D-4</td><td>Anthropic coder model and effort level</td><td>Default <code>claude-opus-5</code>; a smaller model is cheaper and must pass the same audits</td><td>M6</td></tr>
+        <tr><td>D-5</td><td>Where predictions and registry versions are timestamped</td><td>Git tags only; an external registry such as OSF in addition</td><td>M9</td></tr>
+        <tr><td>D-6</td><td>Budget ceiling and per-run cap</td><td>Set after the M6 anchor-set run gives real per-item costs</td><td>M6 beyond the anchor set</td></tr>
+        <tr><td>D-7</td><td>Null-simulated thresholds for δ, <i>c</i>, <i>k</i>, <i>t</i>, <i>h</i></td><td>Adopt in the framework document, or keep them fitted on calibration fields</td><td>M8 (the framework must be updated first if adopted)</td></tr>
+        <tr><td>D-8</td><td>Use of community archives</td><td>Confirm each source's terms; exclude any source whose terms do not permit research use</td><td>M4 for affected cases</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note">
+    <h4>Framework items the harness cannot settle</h4>
+    <p>The framework still lists open items that affect the codebook: how to code a B response that names no tested auxiliary, where design-family boundaries fall, how implied reasons are extracted, and how prominence is matched for Ω. The harness implements each as a registry-configurable rule with a placeholder, and S8 refuses to run on pilot or contested cases while any placeholder remains.</p>
+  </div>
+</section>
+
+<!-- ============================================ 18 traceability -->
+<section id="trace">
+  <div class="sec-label">18 · Traceability</div>
+  <h2>From framework to code</h2>
+  <div class="tablewrap">
+    <table class="wide">
+      <thead><tr><th>Framework element</th><th>Implemented in</th><th>Verified by</th></tr></thead>
+      <tbody>
+        <tr><td>D1, D2 · commitment and core; favoured side</td><td><code>measures/orientation</code>, claims and events tables</td><td>Orientation property test</td></tr>
+        <tr><td>P · evidential symmetry, reason by reason</td><td><code>measures/delta.py</code>, S5 filters, T1–T3</td><td>Measure unit tests; planted-truth fixtures</td></tr>
+        <tr><td>What counts as citing evidence</td><td><code>OUT_OF_SCOPE</code> check in gates; codebook</td><td>Engine tests</td></tr>
+        <tr><td>R1 · community from the social layer</td><td><code>social/</code>, S3</td><td>Lineage tests; stability sweep</td></tr>
+        <tr><td>R2 · rounds and framework-level debit</td><td><code>tasks/ledger.py</code>, <code>measures/ledger_stats.py</code></td><td>Ledger round tests</td></tr>
+        <tr><td>Ledger codes A–D, loop length</td><td>T5, <code>ledger_stats.py</code></td><td>Unit tests; resampled L</td></tr>
+        <tr><td>Ω · omission asymmetry</td><td><code>measures/omega.py</code></td><td>Unit and planted-truth tests</td></tr>
+        <tr><td>τ, H, χ</td><td><code>measures/tau.py</code>, <code>honoured.py</code>, <code>chi.py</code></td><td>Unit tests; χ absent from gate inputs</td></tr>
+        <tr><td>Coders are instruments</td><td><code>coders/</code>, S6, S7</td><td>Coder tests; audit reports</td></tr>
+        <tr><td>V · four gates, reason codes, closure</td><td><code>verdict/gates.py</code>, S10, S11</td><td>Property tests</td></tr>
+        <tr><td>Parameter and instrument registries</td><td><code>registry.py</code>, <code>registry/</code></td><td>Registry tests; <code>viveka verify</code></td></tr>
+        <tr><td>Dating the verdict; lineages; field summaries</td><td><code>social/lineage.py</code>, <code>verdict/field_summary.py</code></td><td>Unit tests</td></tr>
+        <tr><td>Pilot eligibility, reserve pair, kill condition</td><td>S4, <code>sim/power.py</code>, S12</td><td>Ordering tests; pilot report</td></tr>
+        <tr><td>Coverage census</td><td><code>census.py</code>, S2</td><td>Census report</td></tr>
+        <tr><td>Calibration folds; independent checks; triggers 1–6</td><td><code>verdict/triggers.py</code>, S12</td><td>Trigger report per registry version</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<footer>
+  Draft 1, 14 September 2026. Written to implement <i>Evidence That Cuts Both Ways</i> as revised on the same date. Where this specification and the framework disagree, the framework governs and this document is corrected. Claude Code and Claude API details (hooks, permission rules, subagent and skill frontmatter, Message Batches, structured outputs) were checked against current documentation on the date of writing and should be rechecked at milestone M0.
+</footer>
+
+</div>
+</body>
+</html>
