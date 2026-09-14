@@ -558,9 +558,23 @@ batch = client.messages.batches.create(requests=requests)</code></pre>
 
   <h3>Field summaries and triggers (stage S12)</h3>
   <ul class="tight">
-    <li>Field summaries follow the framework: lineages descending from the community where the claim was first tested; split when one lineage is healthy and another insulated, in any windows.</li>
-    <li>Triggers 1 to 6 are computed as named functions, each returning a status, the numbers behind it, and the verdicts it used. Trigger status is reported and appended to the change ledger; the harness never acts on a trigger by itself.</li>
+    <li>Field summaries follow the framework: lineages descending from the community where the claim was first tested; <b>split</b> when one lineage is healthy and a different one insulated, in any windows; <b>shifted</b> when determinate verdicts disagree only within one lineage; split takes precedence.</li>
+    <li>Triggers 1, 2, 4, 5 and 6 are pure functions, each returning whether it fired (or that it cannot be evaluated), the numbers behind it, and the commitments it used. Trigger 3 returns "not evaluable" until the framework specifies its confound model. Stage S12 appends trigger results to the change ledger; the harness never acts on a trigger by itself.</li>
   </ul>
+
+  <h3>Interpretations fixed in M2</h3>
+  <p>Where the framework left a computational choice open, the engine implements the reading below. Each is tested, and changing one is a change to the harness, not a tuning step.</p>
+  <ol class="tight">
+    <li><strong>Stance labels are relative to the result,</strong> so they never depend on orientation. The framework's "+" for a result favouring <i>p</i> and "−" for a result against <i>p</i> both mean the evidence is accepted (<code>SUPPORT</code>); "×" is <code>DISCOUNT</code> with its reason.</li>
+    <li><strong>Favoured side:</strong> the side with more favouring citations (accepted results for it, discounted results against it), using labels aggregated by majority over coder families. An exact tie is <code>BOTH</code>: S must hold on both orientations, and an A reading takes the side its asymmetry points to.</li>
+    <li><strong>Δ:</strong> for each checkable filter, the discount rate among unfavourable results it applies to, minus the rate among favourable results it applies to. These are averaged, weighted by applicable results. A filter absent from one lane is skipped, and <code>cannot_tell</code> is excluded. An uncheckable filter contributes its share of unfavourable cited results with nothing subtracted. With no filters at all Δ = 0; with filters that cannot be compared, Δ is not computable.</li>
+    <li><strong>Ω:</strong> results are ranked by prominence (ties by id) into equal-count strata. Ω is the mean, over strata holding both kinds, of the cited share of favourable results minus that of unfavourable results.</li>
+    <li><strong>Ledger:</strong> only disconfirmations older than the lag count. Final codes follow the rounds rules, the insulating share is (C + D + B→C) ÷ entries, and <i>L</i> is the longest run of insulating entries in date order, broken by an entry at which <i>p</i> was placed at risk. A round naming no tested auxiliary raises until the codebook fixes its rule.</li>
+    <li><strong>Intervals:</strong> percentile bootstrap with <i>B</i> draws. Δ, Ω and the insulating share resample items and coder families jointly. <i>L</i> resamples families only, keeping date order, because resampling entries would destroy the runs it measures. Majority ties are broken by the seeded generator. When the anchored disagreement exceeds the observed disagreement, draws keep every family and flip aggregated labels at the anchored rate.</li>
+    <li><strong>τ and H:</strong> τ is retention after qualifying breaks ÷ retention after baseline changes, measurable with one qualifying break. H is the honoured share, measurable with h₀ met conditions. Each points to A when wholly below its threshold, to S when wholly above, and nowhere when straddling.</li>
+    <li><strong>χ:</strong> computed, not measurable below coverage <i>r</i>, and never passed to the gates. Signature labels wait for the social layer and registered thresholds (§17).</li>
+    <li><strong>Stability:</strong> a verdict stands only if (verdict, reason) is identical in every variant. Lineages are matched by greedy maximum Jaccard overlap, and an unmatched lineage is unstable.</li>
+  </ol>
 </section>
 
 <!-- ============================================ 10 simulator -->
@@ -821,7 +835,7 @@ Report each violated requirement with file:line and the requirement it breaks. D
       <tbody>
         <tr><td>M0 · scaffold <span class="tag req">done 14 Sep 2026</span></td><td><code>git init</code>, uv project, <code>docs/</code>, CLAUDE.md, settings, hooks, empty registry with schemas</td><td>Hook tests pass; a frozen dummy file cannot be edited through Claude Code. Met: 67 tests pass; a live Edit on a frozen probe was blocked by <code>guard_frozen.py</code> in a Claude Code session.</td><td>—</td></tr>
         <tr><td>M1 · registry and ledger <span class="tag req">done 14 Sep 2026</span></td><td><code>viveka registry validate | freeze | verify | bump</code>, change ledger, run manifests</td><td>§15 registry tests pass. Met: 137 tests pass, including a Hypothesis test that freezing is deterministic; an end-to-end run through the CLI on a throwaway copy passed all 13 checks (freeze, tag, one-byte tamper detection, bump and refreeze with v1 retrievable from its tag, ledger rewrite detection, strict-fold refusal on a dirty tree).</td><td>—</td></tr>
-        <tr><td>M2 · verdict engine</td><td><code>viveka.measures</code> on in-memory inputs, gates, stability logic, field summaries, triggers</td><td>§15 engine, orientation and measure tests pass</td><td>—</td></tr>
+        <tr><td>M2 · verdict engine <span class="tag req">done 14 Sep 2026</span></td><td><code>viveka.measures</code> on in-memory inputs, gates, stability logic, field summaries, triggers</td><td>§15 engine, orientation and measure tests pass. Met: 206 tests pass, including Hypothesis properties that every gate input yields exactly one consistent outcome and that reversing a claim's registration changes no measure or verdict; a worked example reads healthy and insulated as built, with identical intervals when reversed.</td><td>—</td></tr>
         <tr><td>M3 · simulator</td><td>Generative model, planted-truth fixtures, <i>m</i> and <i>v</i> simulation, pilot power tool</td><td>Planted verdicts recovered; <i>m</i>, <i>v</i> written to a draft registry with source runs</td><td>—</td></tr>
         <tr><td>M4 · corpus and census</td><td>OpenAlex snapshot loader, Semantic Scholar contexts, venue ingestion, census</td><td>Census report for both pilot cases, the reserve pair and every calibration candidate</td><td>D-8 for venue archives</td></tr>
         <tr><td>M5 · social layer</td><td>Leiden sweep, block model, lineages, S4 eligibility with power check</td><td>Go / replace decision for the pilot pair</td><td>D-1 (block model)</td></tr>
@@ -857,6 +871,7 @@ Report each violated requirement with file:line and the requirement it breaks. D
   <div class="note">
     <h4>Framework items the harness cannot settle</h4>
     <p>The framework still lists open items that affect the codebook: how to code a B response that names no tested auxiliary, where design-family boundaries fall, how implied reasons are extracted, and how prominence is matched for Ω. The harness implements each as a registry-configurable rule with a placeholder, and S8 refuses to run on pilot or contested cases while any placeholder remains.</p>
+    <p>Two further gaps surfaced in M2 and are listed in the framework's open items. The four network-signature labels need thresholds before they can be reported, which is needed by M5. Trigger 3's confound model is unspecified, which is needed by M8.</p>
   </div>
 </section>
 

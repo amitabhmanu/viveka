@@ -815,6 +815,8 @@ footer{padding-block:44px 0;color:var(--muted);font-size:13px;border-top:1px sol
         <tr><td class="sym-cell">g</td><td>Coders</td><td>Largest tolerated leakage: how far above chance a coder may identify the field or case from redacted text</td><td>Convention, fixed now (proposed: 10 percentage points)</td></tr>
         <tr><td class="sym-cell">s</td><td>Coders</td><td>Largest tolerated share of exchanged pairs on which a coder's label changes, beyond its test–retest rate</td><td>Convention, fixed now (proposed: 5%)</td></tr>
         <tr><td class="sym-cell">j</td><td>Ledger</td><td>Horizon after which a round with no interim result able to go against <i>p</i> closes as C</td><td>Convention, fixed now (proposed: 10 years)</td></tr>
+        <tr><td class="sym-cell">B</td><td>Gates 2–3</td><td>Number of bootstrap resamples behind every interval</td><td>Convention, fixed now (proposed: 2000)</td></tr>
+        <tr><td>Ω strata</td><td>Gate 2</td><td>Number of field-wide prominence quantile strata over which omission asymmetry is averaged</td><td>Convention, fixed now (proposed: 5)</td></tr>
       </tbody>
     </table>
   </div>
@@ -855,8 +857,10 @@ footer{padding-block:44px 0;color:var(--muted);font-size:13px;border-top:1px sol
   <ul class="tight">
     <li><strong>Uniform:</strong> every determinate verdict, in every lineage, is the same.</li>
     <li><strong>Split:</strong> at least one lineage has a healthy verdict and another has an insulated one.</li>
+    <li><strong>Shifted:</strong> determinate verdicts disagree, but only within one lineage. Its conduct changed over time, and no second lineage carries the difference.</li>
     <li><strong>Undetermined:</strong> no lineage has a determinate verdict.</li>
   </ul>
+  <p>When both apply, split takes precedence: a lineage that shifts while a different lineage holds the opposite verdict is part of a split.</p>
   <p>The verdicts that make a split need not fall in the same sub-window, but the lineages must share an ancestor. The usual route to a split is sequential. A field tests a claim, reads healthy and lets the claim go, and its trajectory closes. A lineage that branched from it keeps the claim and reads insulated later. Requiring both verdicts in one sub-window would make that pattern, the one the framework most needs to recognise, impossible to report.</p>
   <p>A split summary is often the most informative output, because it locates the line inside a field instead of drawing it around one.</p>
 
@@ -1025,6 +1029,8 @@ footer{padding-block:44px 0;color:var(--muted);font-size:13px;border-top:1px sol
         <li><b>Calibration may run short.</b> The census is likeliest to remove the pseudosciences calibration depends on, astrology and creation science among them. Whether enough eligible fields remain to hold some out is not yet known.</li>
         <li><b>The anchor set may not transfer.</b> Coder disagreement measured on development fields may understate disagreement on contested ones, and the interval rule assumes it does not.</li>
         <li><b>Clusters without canonical texts</b> cannot take the deletion check, so for some detached residues only depth ratio is available.</li>
+        <li><b>Network signatures lack thresholds.</b> Consensus, controversy, dissent and detached residue are read from <i>χ</i> and the cross-cluster edges, but the framework does not yet say where one signature ends and the next begins. The label never enters a verdict; it still needs registered thresholds before it is reported.</li>
+        <li><b>The confound model is unspecified.</b> Trigger 3 asks whether verdicts track field size, age or prestige "after controls", without naming the model or the controls.</li>
       </ul>
     </div>
   </div>
