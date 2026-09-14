@@ -1,0 +1,20 @@
+# Viveka instrument registry.
+# Source: docs/evidence-that-cuts-both-ways.html, instrument registry table;
+# docs/viveka-harness-spec.html sections 8, 13, 14.
+# Everything here is null until the milestone that needs it (M4 corpus, M6 coders).
+
+version: 0
+state: draft
+
+corpus:
+  snapshot_date: null        # OpenAlex CC0 snapshot date
+  sources: []                # [{name, kind, url, terms_reference}]
+  queries: {}                # per case: {case_id: {...}}
+
+coders: []                   # [{coder_id, family, kind: automated|human, model_id, effort, prompt_set}]
+
+budget:
+  currency: USD
+  project_ceiling: null
+  per_run_cap: null
+  pricing: {}                # {model_id: {input_per_mtok, output_per_mtok, batch_discount}}

@@ -1,0 +1,17 @@
+# credentials
+.env
+.env.*
+
+# data and archives (hash-tracked by run manifests, not by git)
+data/
+
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# claude code: personal settings and hook scratch state
+.claude/settings.local.json
+.claude/state/

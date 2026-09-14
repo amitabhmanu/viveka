@@ -1,0 +1,78 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv run pytest *)",
+      "Bash(uv run ruff check *)",
+      "Bash(uv run viveka status *)",
+      "Bash(uv run python .claude/skills/log-decision/scripts/log_decision.py *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)"
+    ],
+    "ask": [
+      "Bash(uv run viveka *)",
+      "Bash(git commit *)",
+      "Bash(git tag *)",
+      "Bash(git push *)",
+      "Edit(./.claude/settings.json)",
+      "Edit(./.claude/hooks/**)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Edit(./data/raw/**)",
+      "Edit(./runs/**)",
+      "Edit(./ledger/changes.jsonl)",
+      "Bash(git push --force *)",
+      "Bash(git tag -d *)",
+      "Bash(git reset --hard *)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "PowerShell(git push --force *)",
+      "PowerShell(git tag -d *)",
+      "PowerShell(git reset --hard *)",
+      "PowerShell(Invoke-WebRequest *)",
+      "PowerShell(curl *)",
+      "PowerShell(wget *)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {"type": "command", "command": "uv run --no-project python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/guard_frozen.py\""}
+        ]
+      },
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {"type": "command", "command": "uv run --no-project python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/guard_shell.py\""}
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {"type": "command", "command": "uv run --no-project python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/log_change.py\""}
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {"type": "command", "command": "uv run --no-project python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/require_reason.py\""}
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {"type": "command", "command": "uv run --no-project python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/session_context.py\""}
+        ]
+      }
+    ]
+  }
+}

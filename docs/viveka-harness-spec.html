@@ -177,7 +177,7 @@ footer{padding-block:44px 0;color:var(--muted);font-size:13px;border-top:1px sol
         <tr><td>OS</td><td>Windows 11 Home (26200)</td><td>Everything</td><td>OK for all stages except those below</td></tr>
         <tr><td>Python</td><td>3.13.3</td><td>Pipeline</td><td>OK; pin <code>requires-python = "&gt;=3.12,&lt;3.14"</code></td></tr>
         <tr><td>uv</td><td>0.11.32</td><td>Environments, lockfile</td><td>OK</td></tr>
-        <tr><td>git</td><td>installed; project is <b>not</b> a repository</td><td>H2, H3, registry tags</td><td>Run <code>git init</code> at milestone M0</td></tr>
+        <tr><td>git</td><td>installed; repository initialised at M0 with <code>origin</code> = github.com/amitabhmanu/viveka (public)</td><td>H2, H3, registry tags</td><td>OK. The system config sets <code>core.autocrlf=true</code>, so <code>.gitattributes</code> pins LF: frozen hashes must be identical on every platform</td></tr>
         <tr><td>Claude Code CLI</td><td>installed</td><td>Orchestration</td><td>OK</td></tr>
         <tr><td>WSL2</td><td>not installed</td><td><code>graph-tool</code> (hierarchical block model), GROBID</td><td><span class="tag dec">decision D-1</span></td></tr>
         <tr><td>Docker</td><td>not found</td><td>GROBID, optional graph-tool image</td><td><span class="tag dec">decision D-1</span></td></tr>
@@ -283,12 +283,16 @@ S6 redaction + leakage ─► S7 coder audits ─► S8 coding ─► S9 measure
 │   ├── derived/                     parquet tables, content-addressed
 │   └── packets/                     human coding packets out and back
 ├── runs/                            one directory per run: manifest.json, logs, outputs
+├── .gitattributes                   LF everywhere, so registry hashes match across platforms
 └── .claude/
     ├── settings.json                permissions and hooks (§11)
-    ├── hooks/                       guard_frozen.py, guard_shell.py, log_change.py, require_reason.py, session_context.py
-    ├── agents/                      pipeline-engineer.md, corpus-engineer.md, invariant-reviewer.md
-    └── skills/                      stage-status, run-stage, freeze-registry, log-decision</code></pre>
-  <p>The two existing framework documents move into <code>docs/</code> at milestone M0. Every path in this specification is relative to the repository root.</p>
+    ├── hooks/                       _common.py, guard_frozen.py, guard_shell.py, guard_predictions.py,
+    │                                log_change.py, require_reason.py, session_context.py
+    ├── agents/                      pipeline-engineer.md, invariant-reviewer.md (corpus-engineer.md at M4)
+    ├── skills/                      log-decision/ with scripts/log_decision.py (stage-status, run-stage,
+    │                                freeze-registry arrive with the commands they call, M1 onwards)
+    └── state/                       git-ignored hook scratch: pending edit snapshots, Stop-block counts</code></pre>
+  <p>The framework documents moved into <code>docs/</code> at milestone M0. Every path in this specification is relative to the repository root.</p>
 </section>
 
 <!-- ============================================ 5 registry -->
@@ -621,36 +625,42 @@ Framework: docs/evidence-that-cuts-both-ways.html. Harness spec: docs/viveka-har
   <p>Rules are evaluated deny, then ask, then allow, and <code>Edit</code> rules cover every built-in editing tool and shell output redirects. Stage commands sit under <code>ask</code> so every run is approved in the session; <code>status</code> and <code>validate</code> are read-only and allowed. Network access for data acquisition goes through pipeline code, not agent tools, so shell download tools are denied.</p>
 
   <h3>Hooks</h3>
-  <p>Hook scripts live in <code>.claude/hooks/</code>, are Python run through uv, read the event JSON from stdin, and block by exiting with code 2 and a message on stderr, which Claude Code shows to the agent.</p>
+  <p>Hook scripts live in <code>.claude/hooks/</code>, use the standard library only (so they work even when the project environment is broken), are launched with <code>uv run --no-project python</code> (no environment sync on every tool call), read the event JSON from stdin, and block by exiting with code 2 and a message on stderr, which Claude Code shows to the agent. Shared logic lives in <code>_common.py</code>.</p>
+  <ul class="tight">
+    <li><strong>Guards fail closed.</strong> <code>guard_frozen</code>, <code>guard_shell</code> and <code>guard_predictions</code> treat any internal error, including malformed input or a malformed manifest, as a block. A crashing guard must never allow.</li>
+    <li><strong>The Stop hook fails open, with a cap.</strong> <code>require_reason</code> blocks at most twice for the same set of unexplained changes, then lets the session end with a warning; the changes stay flagged in <code>viveka status</code>. Blocking every stop because the hook itself is broken would trap the session.</li>
+    <li><strong>The change ledger stays append-only.</strong> Reasons are separate <code>{"type": "reason", "for": [change ids]}</code> records written by <code>/log-decision</code>; no line is ever rewritten.</li>
+  </ul>
   <div class="tablewrap">
     <table class="wide">
       <thead><tr><th>Script</th><th>Event · matcher</th><th>Behaviour</th><th>Principle</th></tr></thead>
       <tbody>
-        <tr><td>guard_frozen.py</td><td>PreToolUse · <code>Edit|Write|NotebookEdit</code></td><td>Reads <code>tool_input.file_path</code>; blocks if the path is in <code>registry/FROZEN.json</code>, under <code>data/raw/</code> or <code>runs/</code>. Message names the bump procedure.</td><td>H2, H3</td></tr>
-        <tr><td>guard_shell.py</td><td>PreToolUse · <code>Bash|PowerShell</code></td><td>Reads <code>tool_input.command</code>; blocks commands that reference frozen paths with a write, move or delete verb, and any direct call to coder APIs outside <code>viveka</code>. Best effort; permission rules remain the first line.</td><td>H1, H2</td></tr>
-        <tr><td>log_change.py</td><td>PostToolUse · <code>Edit|Write</code></td><td>For paths under <code>registry/</code>, appends <code>{time, session_id, path, sha_before, sha_after, reason: null}</code> to <code>ledger/changes.jsonl</code>.</td><td>H6</td></tr>
-        <tr><td>require_reason.py</td><td>Stop</td><td>If any ledger entry from this session has <code>reason: null</code>, blocks the stop with a message asking for <code>/log-decision</code>.</td><td>H6</td></tr>
-        <tr><td>session_context.py</td><td>SessionStart</td><td>Prints the registry version, frozen components, last completed stage per case, open decisions and trigger status; Claude Code adds it to context.</td><td>H3</td></tr>
+        <tr><td>guard_frozen.py</td><td>PreToolUse · <code>Edit|Write|NotebookEdit</code></td><td>Reads <code>tool_input.file_path</code> or <code>notebook_path</code>, normalised to a repo-relative, case-folded POSIX key; blocks files listed in <code>registry/FROZEN.json</code>, the manifest itself, <code>data/raw/</code>, <code>runs/</code> and <code>ledger/changes.jsonl</code>. For allowed edits under <code>registry/</code>, saves the hash before the edit in <code>.claude/state/pending/&lt;tool_use_id&gt;.json</code>.</td><td>H2, H3</td></tr>
+        <tr><td>guard_shell.py</td><td>PreToolUse · <code>Bash|PowerShell</code></td><td>Blocks a command that names a protected path together with a write, move or delete verb (Unix and PowerShell forms) or an output redirect, ignoring redirects to null devices; blocks <code>api.anthropic.com</code> or inline <code>import anthropic</code> outside <code>uv run viveka</code>. Best effort; permission rules remain the first line.</td><td>H1, H2</td></tr>
+        <tr><td>log_change.py</td><td>PostToolUse · <code>Edit|Write|NotebookEdit</code></td><td>For paths under <code>registry/</code>, appends <code>{id, type: "change", time, session_id, tool, path, sha_before, sha_after}</code> to <code>ledger/changes.jsonl</code> and clears the pending snapshot. If logging fails, exits 2 so the failure is visible.</td><td>H6</td></tr>
+        <tr><td>require_reason.py</td><td>Stop</td><td>If this session has change records that no reason record covers, blocks the stop and asks for <code>/log-decision</code>, at most twice for the same pending set.</td><td>H6</td></tr>
+        <tr><td>session_context.py</td><td>SessionStart · <code>startup|resume|clear|compact</code></td><td>Prints the same summary as <code>viveka status</code>: registry state, change-ledger counts, runs, open decisions. Claude Code adds it to context. Stage and trigger status join the summary when they exist.</td><td>H3</td></tr>
+        <tr><td>guard_predictions.py</td><td>PreToolUse · <code>Read|Grep|Glob</code>, scoped to <code>pipeline-engineer</code></td><td>Blocks a <code>file_path</code>, <code>path</code>, <code>pattern</code> or <code>glob</code> pointing into <code>registry/predictions/</code>. Known gap: a search rooted at the project directory still covers that folder; to be closed before predictions exist (M8).</td><td>H1</td></tr>
       </tbody>
     </table>
   </div>
 <pre><code>"hooks": {
   "PreToolUse": [
     {"matcher": "Edit|Write|NotebookEdit",
-     "hooks": [{"type": "command", "command": "uv run python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/guard_frozen.py\""}]},
+     "hooks": [{"type": "command", "command": "uv run --no-project python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/guard_frozen.py\""}]},
     {"matcher": "Bash|PowerShell",
-     "hooks": [{"type": "command", "command": "uv run python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/guard_shell.py\""}]}
+     "hooks": [{"type": "command", "command": "uv run --no-project python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/guard_shell.py\""}]}
   ],
   "PostToolUse": [
-    {"matcher": "Edit|Write",
-     "hooks": [{"type": "command", "command": "uv run python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/log_change.py\""}]}
+    {"matcher": "Edit|Write|NotebookEdit",
+     "hooks": [{"type": "command", "command": "uv run --no-project python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/log_change.py\""}]}
   ],
   "Stop": [
-    {"hooks": [{"type": "command", "command": "uv run python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/require_reason.py\""}]}
+    {"hooks": [{"type": "command", "command": "uv run --no-project python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/require_reason.py\""}]}
   ],
   "SessionStart": [
-    {"matcher": "startup|resume",
-     "hooks": [{"type": "command", "command": "uv run python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/session_context.py\""}]}
+    {"matcher": "startup|resume|clear|compact",
+     "hooks": [{"type": "command", "command": "uv run --no-project python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/session_context.py\""}]}
   ]
 }</code></pre>
 
@@ -660,8 +670,8 @@ Framework: docs/evidence-that-cuts-both-ways.html. Harness spec: docs/viveka-har
     <table class="wide">
       <thead><tr><th>Name</th><th>Purpose</th><th>tools</th><th>Scoped hooks</th></tr></thead>
       <tbody>
-        <tr><td>pipeline-engineer</td><td>Implement and test stages, measures, the verdict engine and the simulator</td><td>Read, Grep, Glob, Edit, Write, Bash</td><td>Blocks reads of <code>registry/predictions/</code> and <code>data/</code> for held-out folds</td></tr>
-        <tr><td>corpus-engineer</td><td>Source adapters, disambiguation, census; runs S1–S2 on request</td><td>Read, Grep, Glob, Edit, Write, Bash</td><td>Blocks reads of <code>registry/predictions/</code>, <code>registry/prompts/</code></td></tr>
+        <tr><td>pipeline-engineer</td><td>Implement and test stages, measures, the verdict engine and the simulator</td><td>Read, Grep, Glob, Edit, Write, Bash</td><td><code>guard_predictions.py</code> blocks <code>registry/predictions/</code>. Blocking held-out fold data is added when folds exist (M8).</td></tr>
+        <tr><td>corpus-engineer</td><td>Source adapters, disambiguation, census; runs S1–S2 on request. Added at M4.</td><td>Read, Grep, Glob, Edit, Write, Bash</td><td>Blocks reads of <code>registry/predictions/</code>, <code>registry/prompts/</code></td></tr>
         <tr><td>invariant-reviewer</td><td>Read-only review of a diff against this specification's requirements and §15 tests</td><td>Read, Grep, Glob</td><td>—</td></tr>
       </tbody>
     </table>
@@ -681,10 +691,10 @@ Report each violated requirement with file:line and the requirement it breaks. D
     <table>
       <thead><tr><th>Skill</th><th>What it does</th><th>Invocation</th></tr></thead>
       <tbody>
-        <tr><td>/stage-status</td><td>Summarises run manifests: last stage per case, registry version, spend to date, failed gates</td><td>User or model</td></tr>
-        <tr><td>/run-stage &lt;stage&gt; &lt;case&gt;</td><td>Validates prerequisites, shows the cost estimate, and runs the stage after the user confirms</td><td><code>disable-model-invocation: true</code></td></tr>
-        <tr><td>/freeze-registry</td><td>Runs validate, shows the diff since the last freeze, asks for a reason, freezes and tags</td><td><code>disable-model-invocation: true</code></td></tr>
-        <tr><td>/log-decision</td><td>Appends a dated decision to <code>ledger/decisions.md</code> and fills pending reasons in the change ledger</td><td>User or model</td></tr>
+        <tr><td>/stage-status</td><td>Summarises run manifests: last stage per case, registry version, spend to date, failed gates. Added at M1.</td><td>User or model</td></tr>
+        <tr><td>/run-stage &lt;stage&gt; &lt;case&gt;</td><td>Validates prerequisites, shows the cost estimate, and runs the stage after the user confirms. Added with the first stage (M4).</td><td><code>disable-model-invocation: true</code></td></tr>
+        <tr><td>/freeze-registry</td><td>Runs validate, shows the diff since the last freeze, asks for a reason, freezes and tags. Added at M1.</td><td><code>disable-model-invocation: true</code></td></tr>
+        <tr><td>/log-decision</td><td>Runs <code>scripts/log_decision.py</code>: appends a reason record covering this session's unexplained registry changes, and optionally a dated line in <code>ledger/decisions.md</code> (<code>--resolve</code> marks a decision DECIDED). Built at M0.</td><td>User or model</td></tr>
       </tbody>
     </table>
   </div>

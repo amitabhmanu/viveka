@@ -1,0 +1,194 @@
+# Viveka parameter registry (thresholds and conventions).
+# Source: docs/evidence-that-cuts-both-ways.html, "Parameter registry".
+# status: fitted     -> set on development folds only
+#         simulated  -> set by the simulator before any real data
+#         convention -> fixed now; proposed values from the framework
+# A null value means "not yet set". The loader (M1) refuses to freeze a
+# registry with a null fitted or simulated value that a stage depends on.
+
+version: 0
+state: draft
+
+parameters:
+  n_min_disconfirmations:
+    symbol: "n"
+    used_in: gate 1
+    meaning: Minimum disconfirmations per sub-window
+    value: null
+    status: fitted
+    source_run: null
+
+  m_min_members:
+    symbol: "m"
+    used_in: gate 1
+    meaning: Minimum members of C
+    value: null
+    status: simulated
+    source_run: null
+
+  v_min_citations:
+    symbol: "v"
+    used_in: gate 1
+    meaning: Minimum citations by C bearing on p per sub-window; below it an engaged lineage is closed
+    value: null
+    status: simulated
+    source_run: null
+
+  r_min_coverage:
+    symbol: "r"
+    used_in: gate 1, census
+    meaning: Minimum share of sampled references that resolve to items in the corpus
+    value: 0.7
+    status: convention
+    source_run: null
+
+  l_lag_years:
+    symbol: "ℓ"
+    used_in: gate 1
+    meaning: Time allowed for a response before a disconfirmation is coded
+    value: 2
+    status: convention
+    source_run: null
+
+  delta:
+    symbol: "δ"
+    used_in: gate 2
+    meaning: Smallest asymmetry treated as real, for Δ and Ω alike
+    value: null
+    status: fitted
+    source_run: null
+
+  c_max_insulating_share:
+    symbol: "c"
+    used_in: gate 2
+    meaning: Largest share of insulating responses compatible with S
+    value: null
+    status: fitted
+    source_run: null
+
+  k_min_loop:
+    symbol: "k"
+    used_in: gate 2
+    meaning: Shortest insulating loop compatible with A
+    value: null
+    status: fitted
+    source_run: null
+
+  j_idle_round_years:
+    symbol: "j"
+    used_in: ledger
+    meaning: Horizon after which a round with no interim result able to go against p closes as C
+    value: 10
+    status: convention
+    source_run: null
+
+  interval_level:
+    symbol: "interval level"
+    used_in: gates 2-3
+    meaning: Coverage of every interval
+    value: 0.95
+    status: convention
+    source_run: null
+
+  t_tau_threshold:
+    symbol: "t"
+    used_in: gate 3
+    meaning: Threshold for tie retention
+    value: null
+    status: fitted
+    source_run: null
+
+  h_honoured_threshold:
+    symbol: "h"
+    used_in: gate 3
+    meaning: Threshold for honoured rate
+    value: null
+    status: fitted
+    source_run: null
+
+  h0_min_met_conditions:
+    symbol: "h₀"
+    used_in: gate 3
+    meaning: Met revision conditions required before H is measurable
+    value: 3
+    status: convention
+    source_run: null
+
+  w_window_years:
+    symbol: "w"
+    used_in: gate 4
+    meaning: Sub-window length, stepped yearly, and the variants used in the stability check
+    value: 5
+    variants:
+      length_years: [4, 7]
+      boundary_shift_max_years: 2
+    status: convention
+    source_run: null
+
+  o_min_overlap:
+    symbol: "o"
+    used_in: lineages, gate 4
+    meaning: Minimum membership overlap (Jaccard) linking a cluster to its predecessor
+    value: 0.3
+    status: convention
+    source_run: null
+
+  sweep:
+    symbol: "sweep"
+    used_in: gate 4
+    meaning: Resolution range, clustering methods, and the range over which o is varied
+    value:
+      resolutions: null
+      methods: [leiden, hsbm]
+      o_range: [0.2, 0.5]
+    status: convention
+    source_run: null
+
+  e_max_error_share:
+    symbol: "e"
+    used_in: trigger 1
+    meaning: Tolerated share of misclassified commitments on held-out calibration fields
+    value: null
+    status: convention
+    source_run: null
+
+  i_max_indeterminate_share:
+    symbol: "i"
+    used_in: trigger 1
+    meaning: Tolerated share of indeterminate verdicts on held-out calibration fields
+    value: null
+    status: convention
+    source_run: null
+
+  kappa_min:
+    symbol: "κ"
+    used_in: trigger 2, coder audits
+    meaning: Minimum agreement between coders on "discounts"
+    value: 0.6
+    status: convention
+    source_run: null
+
+  q_min_coders:
+    symbol: "q"
+    used_in: coders
+    meaning: Minimum number of independent coders
+    value: 3
+    min_human: 1
+    status: convention
+    source_run: null
+
+  g_max_leakage_pp:
+    symbol: "g"
+    used_in: coders
+    meaning: Largest tolerated identification accuracy above chance, in percentage points
+    value: 10
+    status: convention
+    source_run: null
+
+  s_max_label_change_share:
+    symbol: "s"
+    used_in: coders
+    meaning: Largest tolerated share of exchanged pairs on which a label changes, beyond test-retest
+    value: 0.05
+    status: convention
+    source_run: null
