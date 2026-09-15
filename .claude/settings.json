@@ -7,6 +7,7 @@
       "Bash(uv run viveka registry validate *)",
       "Bash(uv run viveka registry verify *)",
       "Bash(uv run viveka ledger verify *)",
+      "Bash(uv run viveka case validate *)",
       "Bash(uv run python .claude/skills/log-decision/scripts/log_decision.py *)",
       "Bash(git status *)",
       "Bash(git diff *)",

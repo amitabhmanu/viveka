@@ -52,9 +52,11 @@ def _parser() -> argparse.ArgumentParser:
     p = sub.add_parser("verify", parents=[common], help="Check a run's recorded inputs and outputs (read-only)")
     p.add_argument("run_id")
 
+    from viveka.corpus.commands import add_parsers as add_corpus_parsers
     from viveka.sim.commands import add_parser as add_sim_parser
 
     add_sim_parser(sub, common)
+    add_corpus_parsers(sub, common)
     return parser
 
 
@@ -128,6 +130,10 @@ def main(argv: list[str] | None = None) -> int:
             from viveka.sim.commands import run as run_sim
 
             return run_sim(args, root)
+        if args.command in ("corpus", "case", "census"):
+            from viveka.corpus.commands import run as run_corpus
+
+            return run_corpus(args, root)
         if args.command == "verify":
             problems = verify_run(root, args.run_id)
             if problems:

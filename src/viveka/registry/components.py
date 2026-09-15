@@ -2,10 +2,10 @@
 
 Components are derived from a fixed map, never configured by hand:
 
-* ``thresholds`` and ``instrument`` are single files;
+* ``thresholds``, ``instrument``, ``simulation`` and ``corpus`` are single files;
 * ``schemas``, ``codebook`` and ``prompts`` are whole directories;
-* ``events/<claim>``, ``filters/<commitment>``, ``predictions/<case>`` and
-  ``redaction/<case>`` are one YAML file each.
+* ``events/<claim>``, ``cases/<case>``, ``filters/<commitment>``, ``predictions/<case>``
+  and ``redaction/<case>`` are one YAML file each.
 
 ``.gitkeep`` files and ``FROZEN.json`` belong to no component. Any other file under
 ``registry/`` that matches no component is an orphan, which validation rejects.
@@ -24,9 +24,10 @@ SINGLE_FILES = {
     "thresholds": "registry/thresholds.yaml",
     "instrument": "registry/instrument.yaml",
     "simulation": "registry/simulation.yaml",
+    "corpus": "registry/corpus.yaml",
 }
 DIRECTORIES = ("schemas", "codebook", "prompts")
-PER_FILE_DIRS = ("events", "filters", "predictions", "redaction")
+PER_FILE_DIRS = ("events", "cases", "filters", "predictions", "redaction")
 IGNORED_NAMES = frozenset({".gitkeep"})
 
 _PER_FILE_NAME = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
@@ -37,6 +38,7 @@ STATIC_UPSTREAM: dict[str, tuple[str, ...]] = {
     "instrument": ("schemas",),
     "simulation": ("schemas",),
     "thresholds": ("simulation",),  # decision D-7: simulated thresholds come from the simulation settings
+    "corpus": ("schemas",),
 }
 
 
@@ -117,7 +119,10 @@ def direct_upstream(root: Path, name: str) -> list[str]:
     upstream = list(STATIC_UPSTREAM.get(name, ()))
     if name.startswith("filters/"):
         upstream.append("codebook")
-        claim = _filter_claim(root, name)
+    if name.startswith("cases/"):
+        upstream.append("corpus")
+    if name.startswith(("filters/", "cases/")):
+        claim = _claim_of(root, name)
         if claim:
             upstream.append(f"events/{claim}")
     return upstream
@@ -145,7 +150,8 @@ def downstream(root: Path, name: str, candidates: list[str]) -> list[str]:
     return [c for c in candidates if c != name and name in with_upstream(root, [c])]
 
 
-def _filter_claim(root: Path, name: str) -> str | None:
+def _claim_of(root: Path, name: str) -> str | None:
+    """The ``claim`` a filter list or case definition names, if its file says so."""
     import yaml
 
     path = root / REGISTRY / f"{name}.yaml"

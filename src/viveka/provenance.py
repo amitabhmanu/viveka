@@ -71,6 +71,7 @@ class RunContext:
         self.components = list(components)
         self.seed = seed
         self.params = dict(params or {})
+        self.usage: dict = {}  # external API use, per source (spec §13)
         self.inputs: list[dict] = []
         self.outputs: list[dict] = []
         self.run_id: str | None = None
@@ -108,7 +109,7 @@ class RunContext:
             "inputs": self.inputs,
             "outputs": self.outputs,
             "coders": [],
-            "usage": {},
+            "usage": self.usage,
             "seed": self.seed,
             "params": self.params,
             "started": self.started,

@@ -6,9 +6,10 @@ unset values, provenance for fitted and simulated values, non-empty
 components, content that differs from what is already frozen, and frozen
 upstream components.
 
-Formats for events, filters, predictions and redaction arrive with their
-milestones (M4-M7); until then a file there only has to be a YAML mapping with a
-``format`` key (and filters a ``claim`` naming an events component).
+Events and cases have registered formats from M4a. Formats for filters, predictions
+and redaction arrive with their milestones (M5-M7); until then a file there only has
+to be a YAML mapping with a ``format`` key (and filters a ``claim`` naming an events
+component).
 """
 
 from __future__ import annotations
@@ -142,6 +143,51 @@ def _check_simulation(root: Path, rel: str) -> list[str]:
     return problems
 
 
+def _check_corpus(root: Path, rel: str) -> list[str]:
+    data, problems = _load_yaml(root, rel)
+    return problems or _against_schema(root, rel, data, "corpus")
+
+
+def _duplicates(values: list[str]) -> list[str]:
+    return sorted({v for v in values if values.count(v) > 1})
+
+
+def _check_events(root: Path, rel: str) -> list[str]:
+    data, problems = _load_yaml(root, rel)
+    if problems:
+        return problems
+    problems = _against_schema(root, rel, data, "events")
+    if problems:
+        return problems
+    stem = Path(rel).stem
+    if data["claim"] != stem:
+        problems.append(f"{rel}: claim {data['claim']!r} must match the file name {stem!r}")
+    dupes = _duplicates([e["id"] for e in data["events"]])
+    if dupes:
+        problems.append(f"{rel}: duplicate event ids: {', '.join(dupes)}")
+    return problems
+
+
+def _check_cases(root: Path, rel: str) -> list[str]:
+    data, problems = _load_yaml(root, rel)
+    if problems:
+        return problems
+    problems = _against_schema(root, rel, data, "cases")
+    if problems:
+        return problems
+    stem = Path(rel).stem
+    if data["case"] != stem:
+        problems.append(f"{rel}: case {data['case']!r} must match the file name {stem!r}")
+    if data["window"]["start"] > data["window"]["end"]:
+        problems.append(f"{rel}: window starts after it ends")
+    if not (root / REGISTRY / "events" / f"{data['claim']}.yaml").is_file():
+        problems.append(f"{rel}: claim {data['claim']!r} has no registry/events/{data['claim']}.yaml")
+    dupes = _duplicates([f["id"] for f in data["frames"]])
+    if dupes:
+        problems.append(f"{rel}: duplicate frame ids: {', '.join(dupes)}")
+    return problems
+
+
 def _check_schema_file(root: Path, rel: str) -> list[str]:
     if not rel.endswith(".schema.json"):
         return [f"{rel}: files in {SCHEMA_DIR}/ must be named <name>.schema.json"]
@@ -195,10 +241,12 @@ _CHECKERS = {
     "thresholds": _check_thresholds,
     "instrument": _check_instrument,
     "simulation": _check_simulation,
+    "corpus": _check_corpus,
     "schemas": _check_schema_file,
     "codebook": _check_codebook,
     "prompts": _check_prompt,
-    "events": _check_per_file,
+    "events": _check_events,
+    "cases": _check_cases,
     "filters": _check_per_file,
     "predictions": _check_per_file,
     "redaction": _check_per_file,

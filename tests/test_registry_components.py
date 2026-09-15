@@ -11,6 +11,8 @@ from viveka.registry.errors import UnknownComponent
     [
         ("registry/thresholds.yaml", "thresholds"),
         ("registry/instrument.yaml", "instrument"),
+        ("registry/corpus.yaml", "corpus"),
+        ("registry/cases/fifth-force.yaml", "cases/fifth-force"),
         ("registry/schemas/thresholds.schema.json", "schemas"),
         ("registry/codebook/stance/rules.md", "codebook"),
         ("registry/prompts/t1.md", "prompts"),
@@ -44,7 +46,7 @@ def test_invalid_names(name):
 
 def test_discover_and_orphans(registry_root):
     write_lf(registry_root / "registry" / "notes.txt", "x")
-    assert set(comp.discover(registry_root)) == {"thresholds", "instrument", "schemas", "simulation"}
+    assert set(comp.discover(registry_root)) == {"thresholds", "instrument", "schemas", "simulation", "corpus"}
     assert comp.orphans(registry_root) == ["registry/notes.txt"]
 
 

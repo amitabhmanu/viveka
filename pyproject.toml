@@ -7,8 +7,11 @@ authors = [
 ]
 requires-python = ">=3.12,<3.14"
 dependencies = [
+    "httpx>=0.28.1",
     "jsonschema>=4.20",
     "numpy>=1.26",
+    "pyarrow>=25.0.1",
+    "python-dotenv>=1.2.3",
     "pyyaml>=6.0",
     "ruamel.yaml>=0.18",
 ]
@@ -29,8 +32,11 @@ build-backend = "uv_build"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q -m 'not slow'"
-markers = ["slow: grid-scale simulation tests; run with -m slow"]
+addopts = "-q -m 'not slow and not live'"
+markers = [
+    "slow: grid-scale simulation tests; run with -m slow",
+    "live: calls real data sources (needs keys in .env); run with -m live",
+]
 
 [tool.ruff]
 line-length = 120
