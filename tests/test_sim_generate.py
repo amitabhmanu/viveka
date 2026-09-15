@@ -65,7 +65,10 @@ def test_planted_profiles_shape_the_inputs():
     assert not [s for s in healthy.stances if s.filter_id == "decline"]
 
     codes = [next(iter(e.codes.values())) for e in insulated.ledger]
-    assert len(codes) == cfg.disconfirmations_per_window
+    expected = 400 * cfg.disconfirmations_per_member  # Poisson mean; sd is its square root
+    assert abs(len(codes) - expected) < 5 * expected ** 0.5
+    assert abs(len(insulated.conditions_honoured) - 400 * cfg.met_conditions_per_member) \
+        < 5 * (400 * cfg.met_conditions_per_member) ** 0.5
     assert all(e.when + LAG <= insulated.window_end for e in insulated.ledger)
     assert all(e.rounds for e in insulated.ledger if next(iter(e.codes.values())) is LedgerCode.B)
 

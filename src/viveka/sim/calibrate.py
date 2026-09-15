@@ -3,10 +3,11 @@
 Every threshold is set so that the reading it guards against happens by noise alone
 in at most ``alpha`` of replicates, at every size in the grid:
 
-* δ - a symmetric (healthy) community's Δ or Ω interval lying wholly above δ. Because a
-  healthy reading needs both intervals wholly inside ±δ, δ is also at least the value at
-  which healthy communities of the largest grid size read inside ±δ with probability
-  ``power`` (user decision, 14 Sep 2026: the two-sided rule). δ is the larger of the two edges;
+* δ - a symmetric (healthy) community's Δ or Ω interval lying wholly above δ. A healthy
+  reading needs both intervals wholly inside ±δ, which makes δ an equivalence margin, so δ
+  is never below the registered convention δ₀ (``delta_margin``). δ is the larger of the
+  noise edge and δ₀ (user decision, 14 Sep 2026, replacing the two-sided rule, under which
+  δ was read at the largest grid size and m could only ever be that size);
 * k - a healthy community's L interval lying wholly at or above k;
 * t, h - a healthy community's τ or H interval lying wholly below t or h;
 * c - an insulated community's insulating-share interval lying wholly below c.
@@ -139,7 +140,7 @@ def _widest_bound(oriented: dict) -> float:
     return max(bounds)
 
 
-def derive_thresholds(table: GridTable, alpha: float, power: float) -> dict:
+def derive_thresholds(table: GridTable, alpha: float, power: float, margin: float) -> dict:
     delta_by_size, k_by_size, t_by_size, h_by_size, c_by_size = [], [], [], [], []
     for members in table.members_grid:
         healthy, insulated = table.at("healthy", members), table.at("insulated", members)
@@ -170,21 +171,19 @@ def derive_thresholds(table: GridTable, alpha: float, power: float) -> dict:
             c_by_size.append(uppers[allowed_i])
 
     false_insulated_edge = max(delta_by_size) if delta_by_size else None
-    # Healthy reach: at the largest size, the smallest δ with both intervals inside ±δ in `power` of replicates.
-    reach = sorted(max((_widest_bound(o) for o in r["oriented"]), default=math.inf)
-                   for r in table.at("healthy", max(table.members_grid)))
-    reach_edge = reach[math.ceil(power * len(reach)) - 1] if reach else math.inf
-    if false_insulated_edge is None:
-        delta = None
-    elif math.isfinite(reach_edge):
-        delta = max(false_insulated_edge, reach_edge)
-    else:
-        delta = false_insulated_edge
+    delta = None if false_insulated_edge is None else max(false_insulated_edge, margin)
+    # Reported only: per size, the smallest δ with both healthy intervals inside ±δ in `power` of replicates.
+    reach_by_size = {}
+    for members in table.members_grid:
+        reach = sorted(max((_widest_bound(o) for o in r["oriented"]), default=math.inf)
+                       for r in table.at("healthy", members))
+        edge = reach[math.ceil(power * len(reach)) - 1] if reach else math.inf
+        reach_by_size[str(members)] = edge if math.isfinite(edge) else None
 
     return {
         "delta": delta,
-        "details": {"delta_false_insulated_edge": false_insulated_edge,
-                    "delta_healthy_reach_edge": reach_edge if math.isfinite(reach_edge) else None},
+        "details": {"delta_false_insulated_edge": false_insulated_edge, "delta_margin": margin,
+                    "delta_healthy_reach_by_size": reach_by_size},
         "k": max(k_by_size) if k_by_size else None,
         "t": min(t_by_size) if t_by_size else None,
         "h": min(h_by_size) if h_by_size else None,
@@ -225,8 +224,8 @@ def derive_sizes(table: GridTable, thresholds: dict, power: float) -> dict:
     return {"m": m, "v": v, "per_size": per_size}
 
 
-def derive(table: GridTable, config: SimulationConfig) -> dict:
-    thresholds = derive_thresholds(table, config.alpha, config.power)
+def derive(table: GridTable, config: SimulationConfig, margin: float) -> dict:
+    thresholds = derive_thresholds(table, config.alpha, config.power, margin)
     details = thresholds.pop("details")
     sizes = derive_sizes(table, thresholds, config.power) if thresholds["delta"] is not None else \
         {"m": None, "v": None, "per_size": []}
@@ -234,7 +233,8 @@ def derive(table: GridTable, config: SimulationConfig) -> dict:
         "values": {**thresholds, "m": sizes["m"], "v": sizes["v"]},
         "details": details,
         "per_size": sizes["per_size"],
-        "settings": {"alpha": config.alpha, "power": config.power, "replicates": table.replicates,
+        "settings": {"alpha": config.alpha, "power": config.power, "delta_margin": margin,
+                     "replicates": table.replicates,
                      "bootstrap_draws": table.bootstrap_draws, "seed": table.seed,
                      "members_grid": list(table.members_grid)},
     }

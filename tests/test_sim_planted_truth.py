@@ -1,14 +1,16 @@
 """Spec §15 "Planted truth": planted profiles are recovered, and never read the wrong way round.
 
-The gate thresholds are not hand-picked: they are derived (decision D-7, two-sided δ rule)
-from a small simulated grid of the registered profiles, exactly as the registry run does.
+The gate thresholds are not hand-picked: they are derived (decision D-7, with δ floored at the
+registered margin δ₀) from a small simulated grid of the registered profiles, exactly as the registry run does.
 """
 
 import dataclasses
 import math
+from pathlib import Path
 
 import pytest
 
+from viveka.registry.thresholds import load_thresholds
 from viveka.sim.calibrate import derive, recovery, run_grid
 from viveka.sim.config import tiny
 from viveka.verdict.params import GateParams
@@ -30,7 +32,8 @@ def planted_config():
 @pytest.fixture(scope="module")
 def derived_params():
     cfg = planted_config()
-    values = derive(run_grid(cfg, MEASURING), cfg)["values"]
+    margin = float(load_thresholds(Path(__file__).resolve().parents[1]).value("delta_margin"))
+    values = derive(run_grid(cfg, MEASURING), cfg, margin)["values"]
     return dataclasses.replace(
         MEASURING, n=2, m=min(cfg.members_grid), v=0,
         delta=values["delta"],

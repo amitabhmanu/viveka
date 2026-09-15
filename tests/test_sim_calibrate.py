@@ -28,11 +28,11 @@ def test_each_threshold_sits_at_its_alpha_edge():
     healthy = [row("healthy", 10, delta=iv(0.01 * i, 0.5), omega=iv(-1.0, 1.0), loop=iv(loops[i], 6.0),
                    tau=iv(0.1, 0.5 + 0.01 * i), tau_m=True, hon=iv(0.1, 0.2), hon_m=i < 2) for i in range(20)]
     insulated = [row("insulated", 10, share=iv(0.2, 0.60 + 0.01 * i)) for i in range(20)]
-    derived = derive_thresholds(table(healthy + insulated, (10,)), alpha, power=0.8)
+    derived = derive_thresholds(table(healthy + insulated, (10,)), alpha, power=0.8, margin=0.0)
 
     assert derived["details"]["delta_false_insulated_edge"] == 0.17  # 0.18 and 0.19 lie strictly above: 2
-    assert derived["details"]["delta_healthy_reach_edge"] == 1.0  # Ω intervals reach ±1 in every replicate
-    assert derived["delta"] == 1.0  # the larger edge
+    assert derived["details"]["delta_healthy_reach_by_size"] == {"10": 1.0}  # reported only: Ω reaches ±1
+    assert derived["delta"] == 0.17  # the noise edge, above a zero margin
     assert derived["k"] == 4  # lower bounds 4 and 5 reach k: exactly 2
     assert math.isclose(derived["t"], 0.52)  # uppers 0.50, 0.51 lie strictly below: exactly 2
     assert derived["h"] is None  # only 2 measurable replicates: never more than alpha allows
@@ -44,19 +44,20 @@ def test_thresholds_take_the_strictest_size():
             [row("insulated", 5, share=iv(0.1, 0.9)) for _ in range(20)]
     large = [row("healthy", 50, delta=iv(0.05, 0.1), loop=iv(3, 4)) for _ in range(20)] + \
             [row("insulated", 50, share=iv(0.1, 0.4)) for _ in range(20)]
-    derived = derive_thresholds(table(small + large, (5, 50)), 0.05, power=0.8)
-    # Ω is missing at the largest size, so healthy can never read inside there: δ falls back to its false edge.
-    assert derived["details"]["delta_healthy_reach_edge"] is None
+    derived = derive_thresholds(table(small + large, (5, 50)), 0.05, power=0.8, margin=0.0)
+    # Ω is missing everywhere, so healthy can never read inside ±δ: the reported reach is undefined.
+    assert derived["details"]["delta_healthy_reach_by_size"] == {"5": None, "50": None}
     assert derived["delta"] == 0.30 and derived["k"] == 4 and derived["c"] == 0.4
 
 
-def test_healthy_reach_raises_delta_above_its_false_insulated_edge():
+def test_margin_floors_delta_and_reach_is_only_reported():
     healthy = [row("healthy", 40, delta=iv(-0.02 - 0.005 * i, 0.03 + 0.005 * i), omega=iv(-0.01, 0.01),
                    loop=iv(0, 1)) for i in range(20)]
-    derived = derive_thresholds(table(healthy, (40,)), alpha=0.05, power=0.8)
-    assert derived["details"]["delta_false_insulated_edge"] == 0.0  # every lower bound is negative
-    assert math.isclose(derived["details"]["delta_healthy_reach_edge"], 0.03 + 0.005 * 15)  # 16th of 20
-    assert derived["delta"] == derived["details"]["delta_healthy_reach_edge"]
+    below = derive_thresholds(table(healthy, (40,)), alpha=0.05, power=0.8, margin=0.1)
+    assert below["details"]["delta_false_insulated_edge"] == 0.0  # every lower bound is negative
+    assert below["delta"] == 0.1  # the margin, not the noise edge
+    assert math.isclose(below["details"]["delta_healthy_reach_by_size"]["40"], 0.03 + 0.005 * 15)  # 16th of 20
+    assert derive_thresholds(table(healthy, (40,)), alpha=0.05, power=0.8, margin=0.0)["delta"] == 0.0
 
 
 def test_sizes_are_the_first_grid_points_meeting_power():
@@ -91,12 +92,12 @@ def test_derive_packages_values_details_and_settings():
                  tau_m=True) for _ in range(20)] + \
             [row("insulated", 10, delta=iv(0.3, 0.6), share=iv(0.6, 0.9), tau=iv(0.1, 0.3), tau_m=True)
              for _ in range(20)]
-    out = derive(table(small + large, (5, 10)), tiny())
+    out = derive(table(small + large, (5, 10)), tiny(), margin=0.05)
     assert set(out["values"]) == {"delta", "c", "k", "t", "h", "m", "v"}
     assert out["values"]["delta"] == 0.05 and out["values"]["t"] == 0.6  # t from the small size's wide intervals
     assert out["values"]["m"] == 10 and out["values"]["v"] == 50
-    assert set(out["details"]) == {"delta_false_insulated_edge", "delta_healthy_reach_edge"}
-    assert out["settings"]["replicates"] == 20
+    assert set(out["details"]) == {"delta_false_insulated_edge", "delta_margin", "delta_healthy_reach_by_size"}
+    assert out["settings"]["replicates"] == 20 and out["settings"]["delta_margin"] == 0.05
 
 
 def test_measurement_params_use_registered_conventions(registry_root):

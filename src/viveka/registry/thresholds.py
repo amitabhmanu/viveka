@@ -25,6 +25,7 @@ PARAMETERS: tuple[str, ...] = (
     "r_min_coverage",
     "l_lag_years",
     "delta",
+    "delta_margin",
     "c_max_insulating_share",
     "k_min_loop",
     "j_idle_round_years",

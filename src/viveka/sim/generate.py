@@ -91,7 +91,7 @@ def simulate_commitment(profile: Profile, members: int, config: SimulationConfig
     ledger, true_codes = [], []
     start = config.window_end - config.window_length_years
     latest = config.window_end - lag
-    for e in range(config.disconfirmations_per_window):
+    for e in range(int(rng.poisson(members * config.disconfirmations_per_member))):
         when = float(start + rng.random() * (latest - start))
         code = _LEDGER_CODES[_categorical(dict(profile.ledger), ("A", "B", "C", "D"), rng)]
         round_info = None
@@ -107,7 +107,8 @@ def simulate_commitment(profile: Profile, members: int, config: SimulationConfig
                          config.ties_per_member, profile.retention_after_break, rng)
     baseline = _tie_events(int(rng.poisson(members * config.baseline_changes_per_member)),
                            config.ties_per_member, profile.retention_after_baseline, rng)
-    conditions = tuple(bool(rng.random() < profile.honoured) for _ in range(config.met_conditions_per_window))
+    conditions = tuple(bool(rng.random() < profile.honoured)
+                       for _ in range(int(rng.poisson(members * config.met_conditions_per_member))))
 
     cited_count = sum(r.cited for r in results)
     insulating = [c for c, r in true_codes if c in (LedgerCode.C, LedgerCode.D)

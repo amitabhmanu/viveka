@@ -84,12 +84,13 @@ def run(args: argparse.Namespace, root: Path) -> int:
         def progress(profile: str, members: int, done: int, total: int) -> None:
             print(f"[{done}/{total}] {profile} members={members} {time.strftime('%H:%M:%S')}", flush=True)
 
+        margin = float(thresholds.value("delta_margin"))
         run_params = {"replicates": config.replicates, "bootstrap_draws": params.bootstrap_draws,
-                      "workers": args.workers, "members_grid": list(config.members_grid)}
+                      "workers": args.workers, "members_grid": list(config.members_grid), "delta_margin": margin}
         with RunContext(root, "SIM", "thresholds", "dev", ["simulation"], seed=config.seed,
                         params=run_params) as ctx:
             table = run_grid(config, params, workers=args.workers, progress=progress)
-            derived = derive(table, config)
+            derived = derive(table, config, margin)
             ctx.store(json.dumps(list(table.rows)).encode("utf-8"), "json", rows=len(table.rows))
             ctx.store(json.dumps(derived, indent=2).encode("utf-8"), "json")
         print(json.dumps(derived["values"], indent=2))

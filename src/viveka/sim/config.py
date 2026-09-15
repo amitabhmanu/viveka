@@ -46,8 +46,8 @@ class SimulationConfig:
     qualifying_breaks_per_member: float
     baseline_changes_per_member: float
     ties_per_member: float
-    disconfirmations_per_window: int
-    met_conditions_per_window: int
+    disconfirmations_per_member: float
+    met_conditions_per_member: float
     support_share: float
     filter_property_probability: float
     window_end: int
@@ -82,8 +82,8 @@ def from_mapping(data: Mapping[str, Any]) -> SimulationConfig:
         qualifying_breaks_per_member=float(rates["qualifying_breaks_per_member"]),
         baseline_changes_per_member=float(rates["baseline_changes_per_member"]),
         ties_per_member=float(rates["ties_per_member"]),
-        disconfirmations_per_window=int(rates["disconfirmations_per_window"]),
-        met_conditions_per_window=int(rates["met_conditions_per_window"]),
+        disconfirmations_per_member=float(rates["disconfirmations_per_member"]),
+        met_conditions_per_member=float(rates["met_conditions_per_member"]),
         support_share=float(evidence["support_share"]),
         filter_property_probability=float(evidence["filter_property_probability"]),
         window_end=int(evidence["window_end"]),
