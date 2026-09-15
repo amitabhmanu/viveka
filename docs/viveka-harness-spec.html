@@ -288,7 +288,7 @@ S6 redaction + leakage ─► S7 coder audits ─► S8 coding ─► S9 measure
     ├── settings.json                permissions and hooks (§11)
     ├── hooks/                       _common.py, guard_frozen.py, guard_shell.py, guard_predictions.py,
     │                                log_change.py, require_reason.py, session_context.py
-    ├── agents/                      pipeline-engineer.md, invariant-reviewer.md (corpus-engineer.md at M4)
+    ├── agents/                      pipeline-engineer.md, invariant-reviewer.md, corpus-engineer.md
     ├── skills/                      log-decision/ with scripts/log_decision.py (stage-status, run-stage,
     │                                freeze-registry arrive with the commands they call, M1 onwards)
     └── state/                       git-ignored hook scratch: pending edit snapshots, Stop-block counts</code></pre>
@@ -321,8 +321,11 @@ parameters:
     <table>
       <thead><tr><th>Component</th><th>Files</th><th>Upstream</th></tr></thead>
       <tbody>
-        <tr><td><code>thresholds</code></td><td><code>registry/thresholds.yaml</code></td><td>—</td></tr>
-        <tr><td><code>instrument</code></td><td><code>registry/instrument.yaml</code></td><td><code>schemas</code></td></tr>
+        <tr><td><code>thresholds</code></td><td><code>registry/thresholds.yaml</code></td><td><code>simulation</code> (D-7)</td></tr>
+        <tr><td><code>simulation</code></td><td><code>registry/simulation.yaml</code></td><td><code>schemas</code></td></tr>
+        <tr><td><code>instrument</code></td><td><code>registry/instrument.yaml</code> (coders, budget)</td><td><code>schemas</code></td></tr>
+        <tr><td><code>corpus</code></td><td><code>registry/corpus.yaml</code> (sources, API limits and caps, census conventions; moved out of <code>instrument</code> at M4a so adding coders never unfreezes case definitions)</td><td><code>schemas</code></td></tr>
+        <tr><td><code>cases/&lt;case&gt;</code></td><td><code>registry/cases/&lt;name&gt;.yaml</code>: claim, role, pair, window, seed works, frames</td><td><code>corpus</code>, and <code>events/&lt;claim&gt;</code> for the claim the file names</td></tr>
         <tr><td><code>schemas</code>, <code>codebook</code></td><td>every file in the directory</td><td>—</td></tr>
         <tr><td><code>prompts</code></td><td>every file in <code>registry/prompts/</code></td><td><code>codebook</code>, <code>schemas</code></td></tr>
         <tr><td><code>events/&lt;claim&gt;</code>, <code>predictions/&lt;case&gt;</code>, <code>redaction/&lt;case&gt;</code></td><td><code>registry/&lt;dir&gt;/&lt;name&gt;.yaml</code></td><td>—</td></tr>
@@ -339,7 +342,7 @@ parameters:
 
   <h3>Freeze protocol</h3>
   <ol class="tight">
-    <li><code>viveka registry validate [component…]</code> checks syntax, the JSON Schemas, orphan files and cross-references: a prompt's front matter names an existing schema, a filter list names a claim with an events file, and every <code>source_run</code> has a run manifest. Formats for events, filters, predictions and redaction arrive with their milestones; until then those files need only be YAML mappings with a <code>format</code> key.</li>
+    <li><code>viveka registry validate [component…]</code> checks syntax, the JSON Schemas, orphan files and cross-references: a prompt's front matter names an existing schema, a filter list names a claim with an events file, and every <code>source_run</code> has a run manifest. Events and cases have registered formats (JSON Schemas <code>events</code> and <code>cases</code>, format 1) from M4a, and a case must name a claim with an events file; formats for filters, predictions and redaction arrive with their milestones, and until then those files need only be YAML mappings with a <code>format</code> key.</li>
     <li><code>viveka registry freeze &lt;component…&gt; --reason "…"</code> refuses unless validation passes and: no thresholds value is null; every fitted or simulated value has a <code>source_run</code>; each component has files and differs from what is already frozen; every upstream component is frozen or frozen in the same call; already-frozen components still verify; and the tag is free. It then writes the manifest atomically, appends a <code>freeze</code> record to the change ledger, commits exactly the newly frozen files, the manifest and the ledger (a pathspec commit that leaves other staged work alone), and creates the annotated tag <code>registry-v&lt;N&gt;</code>. <code>--no-git</code> exists for development and tests only.</li>
     <li>Optionally, the manifest hash is deposited with an external timestamp (<span class="tag dec">decision D-5</span>). The git tag alone is a guardrail against accident, not proof against a determined rewrite.</li>
     <li>Every stage runs inside <code>RunContext</code> (§12), which calls <code>require_frozen(components, fold)</code>: it verifies the named components and everything upstream of them, refuses drafts outside the development fold, and refuses a frozen component whose files no longer match in every fold, including development.</li>
@@ -365,8 +368,11 @@ parameters:
       <tbody>
         <tr><td>works</td><td class="mono">work_id</td><td>doi, title, year, venue_id, source (openalex / venue archive / manual), license, full_text_path</td><td>S1</td></tr>
         <tr><td>authors, authorships</td><td class="mono">author_id; (work_id, author_id)</td><td>disambiguation source and confidence, institution ids, position</td><td>S1</td></tr>
-        <tr><td>citations</td><td class="mono">citation_id</td><td>citing_work, cited_work, context_text, context_source (S2 API / GROBID / manual), section</td><td>S1</td></tr>
-        <tr><td>coverage</td><td class="mono">(cluster_id, window)</td><td>sampled_works, references_sampled, references_resolved, coverage</td><td>S2</td></tr>
+        <tr><td>citations</td><td class="mono">citation_id</td><td>citing_work, cited_work (from OpenAlex <code>referenced_works</code>)</td><td>S1</td></tr>
+        <tr><td>contexts</td><td class="mono">(cited_work, citing_s2_id, context_index)</td><td>citing_doi, text, intents, is_influential, source (S2 API / GROBID / manual)</td><td>S1 contexts</td></tr>
+        <tr><td>frames</td><td class="mono">(case_id, frame_id, work_id)</td><td>kind (community / mainstream), year</td><td>S1</td></tr>
+        <tr><td>census_sample</td><td class="mono">(case_id, frame_id, year, work_id)</td><td>status (measured / unmeasured), reference_source (crossref / manual / none), refs, resolved</td><td>S2</td></tr>
+        <tr><td>coverage</td><td class="mono">(case_id, frame_id, year)</td><td>kind, frame_works, sampled, measured, unmeasured, refs, resolved. At M5 the frame is a cluster and S4 aggregates years into sub-windows</td><td>S2</td></tr>
         <tr><td>claims, events</td><td class="mono">claim_id; event_id</td><td>registered wording and orientation; dated disconfirmations with work ids</td><td>Registry, loaded by S0</td></tr>
         <tr><td>results</td><td class="mono">result_id</td><td>work_id, claim_id, direction (for / against the registered claim), design_family_id, prominence (field-wide citations from outside the citing cluster)</td><td>S5, S8</td></tr>
         <tr><td>clusters</td><td class="mono">(window, method, resolution, cluster_id)</td><td>author_id membership</td><td>S3</td></tr>
@@ -418,6 +424,16 @@ parameters:
     <li><strong>No scoring before predictions are frozen.</strong> S10 refuses to score a pilot or contested case unless <code>registry/predictions/</code> for that case is in the frozen manifest with a timestamp earlier than every S8 run for the case.</li>
     <li><strong>Census before calibration.</strong> S12 computes trigger 1 only over fields that passed S2, and records replaced fields.</li>
     <li><strong>Development folds are isolated.</strong> Codebook, filter wording and fitted thresholds may be developed only on runs tagged <code>fold=dev</code>; a held-out field's data path is not readable by development runs.</li>
+    <li><strong>No census without a corpus.</strong> S2 refuses unless a successful S1 run exists for the same case, fold and registry component hashes.</li>
+  </ul>
+
+  <h3>Interpretations fixed in M4a</h3>
+  <ul class="tight">
+    <li><strong>Frames before clusters.</strong> The framework takes the census per cluster, but clusters arrive at S3 (M5). Until then the census unit is a registered <em>frame</em>: the works citing a case's seed works, or the works in its community venues. M5 reruns the same census code with cluster frames.</li>
+    <li><strong>The census reports; gate 1 judges.</strong> S2 records coverage per frame and publication year and never compares it with <i>r</i>. <i>r</i> lives in <code>thresholds</code>, which cannot be frozen until <i>n</i> is fitted (M8), and a strict-fold run needs every component it uses frozen; S4 applies <i>r</i> per sub-window.</li>
+    <li><strong>Denominators from Crossref.</strong> OpenAlex's <code>referenced_works</code> lists only references it matched, so it cannot give the share that failed to resolve. A sampled work's reference list comes from Crossref (open since June 2022) or a manual import; a reference resolves when its deposited or Crossref-matched DOI is in OpenAlex (<code>corpus.census.resolution</code>).</li>
+    <li><strong>Unmeasured, not guessed.</strong> A sampled work with no reference list (typically proceedings, books and scans) is <em>unmeasured</em>. A frame or year whose unmeasured share exceeds <code>max_unmeasured_share</code> is not measurable. The rule is the same for every frame, so poorly indexed literatures are reported as such rather than silently scored low or excluded.</li>
+    <li><strong>Tables carry no run id.</strong> Parquet tables are content-addressed and named in the run manifest (<code>params.tables</code>), so a run that replays archived responses reproduces them byte for byte; the manifest, not a column, ties a table to its run.</li>
   </ul>
 </section>
 
@@ -716,7 +732,7 @@ Framework: docs/evidence-that-cuts-both-ways.html. Harness spec: docs/viveka-har
       <thead><tr><th>Name</th><th>Purpose</th><th>tools</th><th>Scoped hooks</th></tr></thead>
       <tbody>
         <tr><td>pipeline-engineer</td><td>Implement and test stages, measures, the verdict engine and the simulator</td><td>Read, Grep, Glob, Edit, Write, Bash</td><td><code>guard_predictions.py</code> blocks <code>registry/predictions/</code>. Blocking held-out fold data is added when folds exist (M8).</td></tr>
-        <tr><td>corpus-engineer</td><td>Source adapters, disambiguation, census; runs S1–S2 on request. Added at M4.</td><td>Read, Grep, Glob, Edit, Write, Bash</td><td>Blocks reads of <code>registry/predictions/</code>, <code>registry/prompts/</code></td></tr>
+        <tr><td>corpus-engineer</td><td>Source adapters, disambiguation, census; runs S1–S2 on request. Built at M4a.</td><td>Read, Grep, Glob, Edit, Write, Bash</td><td><code>guard_predictions.py --also-prompts</code> blocks reads of <code>registry/predictions/</code> and <code>registry/prompts/</code></td></tr>
         <tr><td>invariant-reviewer</td><td>Read-only review of a diff against this specification's requirements and §15 tests</td><td>Read, Grep, Glob</td><td>—</td></tr>
       </tbody>
     </table>
@@ -737,7 +753,7 @@ Report each violated requirement with file:line and the requirement it breaks. D
       <thead><tr><th>Skill</th><th>What it does</th><th>Invocation</th></tr></thead>
       <tbody>
         <tr><td>/stage-status</td><td>Runs <code>viveka status</code> and explains it: registry version and integrity, draft components, unset thresholds, ledger integrity, recent runs, open decisions. Spend and failed gates join it when stages exist. Built at M1.</td><td>User or model</td></tr>
-        <tr><td>/run-stage &lt;stage&gt; &lt;case&gt;</td><td>Validates prerequisites, shows the cost estimate, and runs the stage after the user confirms. Added with the first stage (M4).</td><td><code>disable-model-invocation: true</code></td></tr>
+        <tr><td>/run-stage &lt;stage&gt; &lt;case&gt;</td><td>Validates the case and registry, checks strict-fold prerequisites, shows the <code>--dry-run</code> projection of live calls and OpenAlex spend, and runs the stage after the user confirms. Built at M4a.</td><td><code>disable-model-invocation: true</code></td></tr>
         <tr><td>/freeze-registry</td><td>Runs validate, shows the diff since the last registry tag, asks the user for the reason, then runs <code>viveka registry freeze</code>, which commits and tags. Built at M1.</td><td><code>disable-model-invocation: true</code></td></tr>
         <tr><td>/log-decision</td><td>Runs <code>scripts/log_decision.py</code>: appends a reason record covering this session's unexplained registry changes, and optionally a dated line in <code>ledger/decisions.md</code> (<code>--resolve</code> marks a decision DECIDED). Built at M0.</td><td>User or model</td></tr>
       </tbody>
@@ -783,6 +799,7 @@ Report each violated requirement with file:line and the requirement it breaks. D
     <li><strong>Budget ceiling.</strong> <code>instrument.yaml</code> holds a project budget and a per-run cap (<span class="tag dec">decision D-6</span>); the pipeline refuses a run that would exceed either, based on usage recorded in manifests.</li>
     <li><strong>Levers, in order.</strong> Batch pricing and prompt caching of the stable system prompt are built in. Model choice, effort level and the number of repetitions affect measurement quality and are registry decisions, not optimisations the harness makes on its own.</li>
     <li><strong>Pilot first.</strong> Coding runs on the anchor set and one pilot case before any calibration field, so real per-item costs replace estimates early.</li>
+    <li><strong>Data sources (M4a).</strong> OpenAlex calls are priced from <code>corpus.api.openalex.prices_usd</code> before each live attempt and refused once today's spend would pass <code>daily_usd_cap</code> (0.80, below the $1 free allowance); the day's spend is logged in <code>data/usage/</code>, so drafting lookups count too. Responses are archived on first retrieval and replayed at no cost. Paid credit needs <span class="tag dec">decision D-6</span>.</li>
   </ul>
 </section>
 
@@ -794,10 +811,10 @@ Report each violated requirement with file:line and the requirement it breaks. D
     <table class="wide">
       <thead><tr><th>Source</th><th>Provides</th><th>Access</th><th>Notes</th></tr></thead>
       <tbody>
-        <tr><td>OpenAlex snapshot</td><td>Works, authors, institutions, references</td><td>Free CC0 bulk snapshot</td><td>Primary source for the social layer; snapshot date is a registry value</td></tr>
-        <tr><td>OpenAlex API</td><td>Incremental lookups</td><td>API key required since 13 Feb 2026; usage-based credits with a daily free allowance</td><td>Only for items newer than the snapshot; credit use logged per run</td></tr>
-        <tr><td>Semantic Scholar Academic Graph API</td><td>Citation contexts and intents for citing–cited pairs</td><td>API key recommended</td><td>Coverage of pre-2000 and paywalled literature is incomplete; the fields and limits must be confirmed against current documentation when the adapter is built</td></tr>
-        <tr><td>Crossref, Unpaywall</td><td>DOI metadata; legal open-access full-text locations</td><td>Public APIs</td><td>Full text downloaded only from open-access locations</td></tr>
+        <tr><td>OpenAlex snapshot</td><td>Works, authors, institutions, references</td><td>Free CC0 bulk snapshot, updated quarterly (monthly for paid subscribers)</td><td>Not used at M4a: case corpora come from the API within its free allowance, and the snapshot runs to hundreds of GB</td></tr>
+        <tr><td>OpenAlex API</td><td>Works, authorships, matched references, venue lookups</td><td>API key required since 13 Feb 2026. Checked 15 Sep 2026: single-work lookup free, list or filter $0.0001, search $0.001, PDF $0.01 per call; $1 of free use per day</td><td>Primary source at M4a. <code>referenced_works</code> holds only references matched to OpenAlex works, so it cannot supply census denominators. Spend capped and logged (§13)</td></tr>
+        <tr><td>Semantic Scholar Academic Graph API</td><td>Citation contexts and intents for citing–cited pairs</td><td>API key; introductory authenticated rate 1 request/s</td><td>Checked 15 Sep 2026: the citations endpoint returns <code>contexts</code>, <code>intents</code> and <code>isInfluential</code>; offset + limit must stay below 10,000, so heavily cited works are truncated and the run records which. Coverage of pre-2000 and paywalled literature is incomplete</td></tr>
+        <tr><td>Crossref, Unpaywall</td><td>DOI metadata and full reference lists; legal open-access full-text locations</td><td>Public APIs (Crossref polite pool with a contact email)</td><td>Crossref references are open by default since 6 June 2022 and carry a DOI when deposited or matched; they are the census denominator. Full text downloaded only from open-access locations</td></tr>
         <tr><td>GROBID</td><td>References and in-text citation contexts from PDFs</td><td>Self-hosted service</td><td>Needs a Linux runtime (<span class="tag dec">decision D-1</span>)</td></tr>
         <tr><td>Community venues</td><td>Proceedings and journals of communities poorly indexed elsewhere, such as ICCF proceedings</td><td>Per-source terms</td><td>Ingested directly, as the census requires; each source's terms recorded before download (<span class="tag dec">decision D-8</span>)</td></tr>
         <tr><td>Pre-digital literature</td><td>Scanned journals for historical cases</td><td>Library and publisher access</td><td>Hand-assembled; the census decides whether a case can stay</td></tr>
@@ -845,7 +862,8 @@ Report each violated requirement with file:line and the requirement it breaks. D
         <tr><td>M1 · registry and ledger <span class="tag req">done 14 Sep 2026</span></td><td><code>viveka registry validate | freeze | verify | bump</code>, change ledger, run manifests</td><td>§15 registry tests pass. Met: 137 tests pass, including a Hypothesis test that freezing is deterministic; an end-to-end run through the CLI on a throwaway copy passed all 13 checks (freeze, tag, one-byte tamper detection, bump and refreeze with v1 retrievable from its tag, ledger rewrite detection, strict-fold refusal on a dirty tree).</td><td>—</td></tr>
         <tr><td>M2 · verdict engine <span class="tag req">done 14 Sep 2026</span></td><td><code>viveka.measures</code> on in-memory inputs, gates, stability logic, field summaries, triggers</td><td>§15 engine, orientation and measure tests pass. Met: 206 tests pass, including Hypothesis properties that every gate input yields exactly one consistent outcome and that reversing a claim's registration changes no measure or verdict; a worked example reads healthy and insulated as built, with identical intervals when reversed.</td><td>—</td></tr>
         <tr><td>M3 · simulator <span class="tag req">done 14 Sep 2026</span></td><td>Generative model, planted-truth fixtures, simulation of δ, <i>c</i>, <i>k</i>, <i>t</i>, <i>h</i> (D-7) and of <i>m</i> and <i>v</i>, pilot power tool</td><td>Planted verdicts recovered; δ, <i>c</i>, <i>k</i>, <i>t</i>, <i>h</i>, <i>m</i>, <i>v</i> written to a draft registry with source runs. Met: 235 tests pass. The first run (<code>2026-09-14T1641Z-sim-thresholds-943d</code>) exposed three findings: <i>m</i> = 160 sat at the top of the grid because the two-sided δ rule was read at the largest size, and <i>c</i> and <i>h</i> saturated at 1.0 because disconfirmations and met conditions were fixed counts. After the review (rates per member, grid to 640, δ floored at the margin δ₀ = 0.15), run <code>2026-09-14T1734Z-sim-thresholds-4ead</code> (200 replicates, B = 2000, seed 20260914; about 2 hours of compute on 4 workers) verifies and wrote δ = 0.15, <i>c</i> = 0.908, <i>k</i> = 5, <i>t</i> = 0.857, <i>h</i> = 0.816, <i>m</i> = 320, <i>v</i> = 779. <i>m</i> is now set by the profiles, not the grid: at 160 members insulated communities read beyond δ in 76% of replicates, short of the power 0.8, and at 320 both profiles separate in at least 97%. The pilot tool reads a synthetic fifth-force / cold-fusion pair as uniform / split in every replicate at 400 members per lineage, and as undetermined below <i>m</i>.</td><td>—</td></tr>
-        <tr><td>M4 · corpus and census</td><td>OpenAlex snapshot loader, Semantic Scholar contexts, venue ingestion, census</td><td>Census report for both pilot cases, the reserve pair and every calibration candidate</td><td>D-8 for venue archives</td></tr>
+        <tr><td>M4a · corpus and census, pilot and reserve</td><td>Corpus and case registry components, OpenAlex / Crossref / Semantic Scholar adapters with raw archive and spend cap, manual reference import, S1 fetch and contexts, S2 census, <code>corpus-engineer</code>, <code>/run-stage</code></td><td>Census reports for fifth force, cold fusion, the 17 keV neutrino and its partner, from frozen case definitions, with how much of each is unmeasured. Tooling built 15 Sep 2026 (offline tests pass); case drafts, freeze and live runs pending</td><td>API keys (user); D-1 and D-8 deferred: unindexed venue works count as unmeasured</td></tr>
+        <tr><td>M4b · census, calibration candidates</td><td>Case definitions and census for the calibration fields, enlarged as the framework requires</td><td>Census report for every calibration candidate; replaced fields recorded</td><td>M4a; D-8 for venue archives</td></tr>
         <tr><td>M5 · social layer</td><td>Leiden sweep, block model, lineages, S4 eligibility with power check</td><td>Go / replace decision for the pilot pair</td><td>D-1 (block model)</td></tr>
         <tr><td>M6 · coders and audits</td><td>Anthropic batch adapter, human packets, second-family adapter, S6 redaction and leakage, S7 audits</td><td>A qualified pool of at least <i>q</i> coders on the pilot anchor set, or trigger 2 recorded</td><td>D-2, D-3, D-4, D-6</td></tr>
         <tr><td>M7 · coding</td><td>S5 filters, S8 stance, applicability, design family, ledger</td><td>Labels for the pilot with κ reported per label</td><td>M6</td></tr>
