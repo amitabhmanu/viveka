@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/amitabhmanu/viveka/registry/schemas/cases.schema.json",
+  "title": "Viveka case definition, corpus part (registry/cases/<case>.yaml)",
+  "type": "object",
+  "required": ["format", "case", "claim", "role", "pair", "window", "seeds", "frames"],
+  "additionalProperties": false,
+  "properties": {
+    "format": {"const": 1},
+    "case": {"$ref": "#/$defs/slug"},
+    "claim": {"$ref": "#/$defs/slug"},
+    "role": {"enum": ["pilot", "reserve"]},
+    "pair": {"$ref": "#/$defs/slug"},
+    "notes": {"type": "string"},
+    "window": {
+      "type": "object",
+      "required": ["start", "end"],
+      "additionalProperties": false,
+      "properties": {
+        "start": {"type": "integer", "minimum": 1800, "maximum": 2100},
+        "end": {"type": "integer", "minimum": 1800, "maximum": 2100}
+      }
+    },
+    "seeds": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/work"}},
+    "frames": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "kind"],
+        "additionalProperties": false,
+        "oneOf": [{"required": ["cites"]}, {"required": ["sources"]}],
+        "properties": {
+          "id": {"$ref": "#/$defs/slug"},
+          "kind": {"enum": ["community", "mainstream"]},
+          "cites": {"const": "seeds"},
+          "sources": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^S\\d+$"}},
+          "note": {"type": "string"}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "slug": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]*$"},
+    "work": {
+      "type": "object",
+      "additionalProperties": false,
+      "anyOf": [{"required": ["openalex"]}, {"required": ["doi"]}],
+      "properties": {
+        "openalex": {"type": "string", "pattern": "^W\\d+$"},
+        "doi": {"type": "string", "pattern": "^10\\.\\S+/\\S+$"},
+        "note": {"type": "string"}
+      }
+    }
+  }
+}

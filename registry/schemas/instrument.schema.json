@@ -3,33 +3,11 @@
   "$id": "https://github.com/amitabhmanu/viveka/registry/schemas/instrument.schema.json",
   "title": "Viveka instrument registry",
   "type": "object",
-  "required": ["version", "state", "corpus", "coders", "budget"],
+  "required": ["version", "state", "coders", "budget"],
   "additionalProperties": false,
   "properties": {
     "version": {"type": "integer", "minimum": 0},
     "state": {"enum": ["draft", "frozen"]},
-    "corpus": {
-      "type": "object",
-      "required": ["snapshot_date", "sources", "queries"],
-      "additionalProperties": false,
-      "properties": {
-        "snapshot_date": {"type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
-        "sources": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": ["name", "kind", "url", "terms_reference"],
-            "properties": {
-              "name": {"type": "string"},
-              "kind": {"enum": ["bibliographic_snapshot", "bibliographic_api", "citation_contexts", "open_access_fulltext", "community_venue", "manual"]},
-              "url": {"type": "string"},
-              "terms_reference": {"type": ["string", "null"]}
-            }
-          }
-        },
-        "queries": {"type": "object"}
-      }
-    },
     "coders": {
       "type": "array",
       "items": {

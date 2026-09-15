@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/amitabhmanu/viveka/registry/schemas/corpus.schema.json",
+  "title": "Viveka corpus registry",
+  "type": "object",
+  "required": ["version", "state", "sources", "api", "census"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {"type": "integer", "minimum": 0},
+    "state": {"enum": ["draft", "frozen"]},
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "kind", "url", "terms_reference"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+          "kind": {"enum": ["bibliographic_api", "citation_contexts", "open_access_fulltext", "community_venue", "manual"]},
+          "url": {"type": "string"},
+          "terms_reference": {"type": ["string", "null"]}
+        }
+      }
+    },
+    "api": {
+      "type": "object",
+      "required": ["openalex", "crossref", "semanticscholar"],
+      "additionalProperties": false,
+      "properties": {
+        "openalex": {
+          "type": "object",
+          "required": ["daily_usd_cap", "prices_usd", "requests_per_second", "per_page", "doi_batch"],
+          "additionalProperties": false,
+          "properties": {
+            "daily_usd_cap": {"type": "number", "minimum": 0},
+            "prices_usd": {
+              "type": "object",
+              "required": ["singleton", "list", "search", "content"],
+              "additionalProperties": {"type": "number", "minimum": 0}
+            },
+            "requests_per_second": {"$ref": "#/$defs/rate"},
+            "per_page": {"type": "integer", "minimum": 1, "maximum": 200},
+            "doi_batch": {"type": "integer", "minimum": 1, "maximum": 100}
+          }
+        },
+        "crossref": {
+          "type": "object",
+          "required": ["requests_per_second"],
+          "additionalProperties": false,
+          "properties": {"requests_per_second": {"$ref": "#/$defs/rate"}}
+        },
+        "semanticscholar": {
+          "type": "object",
+          "required": ["requests_per_second", "page_size", "max_offset"],
+          "additionalProperties": false,
+          "properties": {
+            "requests_per_second": {"$ref": "#/$defs/rate"},
+            "page_size": {"type": "integer", "minimum": 1, "maximum": 1000},
+            "max_offset": {"type": "integer", "minimum": 2}
+          }
+        }
+      }
+    },
+    "census": {
+      "type": "object",
+      "required": ["works_per_year", "max_unmeasured_share", "seed", "resolution"],
+      "additionalProperties": false,
+      "properties": {
+        "works_per_year": {"type": "integer", "minimum": 1},
+        "max_unmeasured_share": {"type": "number", "minimum": 0, "maximum": 1},
+        "seed": {"type": "integer", "minimum": 0},
+        "resolution": {"enum": ["crossref_doi_in_openalex"]}
+      }
+    }
+  },
+  "$defs": {
+    "rate": {"type": "number", "exclusiveMinimum": 0}
+  }
+}

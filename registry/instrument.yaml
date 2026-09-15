@@ -1,15 +1,12 @@
 # Viveka instrument registry.
 # Source: docs/evidence-that-cuts-both-ways.html, instrument registry table;
-# docs/viveka-harness-spec.html sections 8, 13, 14.
-# Everything here is null until the milestone that needs it (M4 corpus, M6 coders).
+# docs/viveka-harness-spec.html sections 8 and 13.
+# Everything here is null until the milestone that needs it (M6 coders).
+# Corpus sources and census conventions moved to registry/corpus.yaml at M4a, so that
+# adding coders never returns frozen case definitions to draft.
 
 version: 0
 state: draft
-
-corpus:
-  snapshot_date: null        # OpenAlex CC0 snapshot date
-  sources: []                # [{name, kind, url, terms_reference}]
-  queries: {}                # per case: {case_id: {...}}
 
 coders: []                   # [{coder_id, family, kind: automated|human, model_id, effort, prompt_set}]
 

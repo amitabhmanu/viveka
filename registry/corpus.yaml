@@ -1,0 +1,49 @@
+# Viveka corpus registry (M4a plan, 15 Sep 2026).
+# Source: docs/evidence-that-cuts-both-ways.html, instrument registry "Corpus" row and
+# "Coverage census"; docs/viveka-harness-spec.html sections 5, 7, 13 and 14.
+#
+# Sources, API limits and the census conventions shared by every case. Each case's
+# own queries live in registry/cases/<case>.yaml, which depends on this file. The
+# OpenAlex snapshot is not used: case corpora come from the API within its free
+# daily allowance.
+
+version: 0
+state: draft
+
+sources:
+  - name: openalex
+    kind: bibliographic_api
+    url: "https://api.openalex.org"
+    terms_reference: "https://blog.openalex.org/openalex-api-new-features-and-usage-based-pricing/ (CC0 data; API key and usage-based pricing since 13 Feb 2026; checked 15 Sep 2026)"
+  - name: crossref
+    kind: bibliographic_api
+    url: "https://api.crossref.org"
+    terms_reference: "https://www.crossref.org/documentation/retrieve-metadata/rest-api/ (references open by default since 6 Jun 2022; checked 15 Sep 2026)"
+  - name: semanticscholar
+    kind: citation_contexts
+    url: "https://api.semanticscholar.org/graph/v1"
+    terms_reference: "https://www.semanticscholar.org/product/api (license terms to confirm when the key is issued)"
+  - name: manual
+    kind: manual
+    url: ""
+    terms_reference: null
+
+api:
+  openalex:
+    daily_usd_cap: 0.80            # below the $1 free daily allowance; paid credit needs decision D-6
+    prices_usd: {singleton: 0.0, list: 0.0001, search: 0.001, content: 0.01}
+    requests_per_second: 5
+    per_page: 200
+    doi_batch: 50                  # DOIs per OR filter
+  crossref:
+    requests_per_second: 5         # polite pool, with contact email
+  semanticscholar:
+    requests_per_second: 1         # introductory authenticated limit
+    page_size: 1000
+    max_offset: 10000              # offset + limit must stay below this
+
+census:
+  works_per_year: 10               # sampled per frame and publication year
+  max_unmeasured_share: 0.5        # above it, coverage is not measurable for that frame or year
+  seed: 20260915
+  resolution: crossref_doi_in_openalex  # a reference resolves when its Crossref-deposited or Crossref-matched DOI is in OpenAlex
