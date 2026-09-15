@@ -30,15 +30,15 @@
     "rates": {
       "type": "object",
       "required": ["results_per_member", "qualifying_breaks_per_member", "baseline_changes_per_member",
-                   "ties_per_member", "disconfirmations_per_window", "met_conditions_per_window"],
+                   "ties_per_member", "disconfirmations_per_member", "met_conditions_per_member"],
       "additionalProperties": false,
       "properties": {
         "results_per_member": {"type": "number", "exclusiveMinimum": 0},
         "qualifying_breaks_per_member": {"type": "number", "minimum": 0},
         "baseline_changes_per_member": {"type": "number", "minimum": 0},
         "ties_per_member": {"type": "number", "exclusiveMinimum": 0},
-        "disconfirmations_per_window": {"type": "integer", "minimum": 0},
-        "met_conditions_per_window": {"type": "integer", "minimum": 0}
+        "disconfirmations_per_member": {"type": "number", "minimum": 0},
+        "met_conditions_per_member": {"type": "number", "minimum": 0}
       }
     },
     "evidence": {
