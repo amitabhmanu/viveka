@@ -1,0 +1,98 @@
+{
+  "run_id": "2026-09-16T1409Z-s1-contexts-cold-fusion-7d36",
+  "stage": "S1-contexts",
+  "case": "cold-fusion",
+  "fold": "dev",
+  "status": "ok",
+  "error": null,
+  "git_commit": "5f5858a9b08dc27e9fb7d1e4bb9afce28c4ad13e",
+  "git_dirty": false,
+  "registry": {
+    "version": 0,
+    "components": {
+      "schemas": "draft:sha256:8a56c89cd84541f7ac0a70407dde0e7d274c80683054cf84f555cfdb30250f6c",
+      "corpus": "draft:sha256:30b7ea539d60857de36f239b9e162ffc02425dd95d67ebc442e24387124aaf96",
+      "events/cold-fusion": "draft:sha256:29c7c8773ea3dcee9e921a2967cb4608ebbfcba539d47c44f1f2f396516bd6a2",
+      "cases/cold-fusion": "draft:sha256:2168d775c202cf2f69140ab6b91c1681201a2fd3a62ace7adfd8d1055150d53c"
+    }
+  },
+  "inputs": [
+    {
+      "path": "data/raw/openalex/a0/a0ce109f34c5eb2b76385b509507cc9b3db1bd10754d7f143a400f77ac918e6f.json",
+      "sha256": "sha256:1f87e775548c8a4a717f2f19fb16111454553586dc3081f1a85fe679753d7a8a"
+    },
+    {
+      "path": "data/raw/openalex/08/08bc126ba26e64139dc39bf775ce031ce74bc8972edc732dfbc1f789f0f5a1f3.json",
+      "sha256": "sha256:82290a7a02dc5f8e9ddd640838f423b5bdc9e545a2ceea41e067f18299e6b6f7"
+    },
+    {
+      "path": "data/raw/openalex/62/62eaa1aaae2b7ec15ed512e2e6d722d142acea00c7d082d207971400a384cfac.json",
+      "sha256": "sha256:b68cc561ec4c2f5b6ee2b0b6cdeef684f0bde96497b520f24e42967ab2d93bde"
+    },
+    {
+      "path": "data/raw/openalex/4a/4a76e06d1971fc8c5511bcb565269d63fc9bb5be4201df73043b7329f4fbf5ab.json",
+      "sha256": "sha256:d59ace13b70d935403907745561360c8562d5d67ac36381a582160e34fa4333b"
+    },
+    {
+      "path": "data/raw/openalex/0a/0a1947da5bf1f971a2a7950a131bc37a46dabf265920b2f0d75892fc60ee4157.json",
+      "sha256": "sha256:731aee469cc3b4cd3378638dcc2367744bb3793228ee44d07d3e3ee8798cd172"
+    },
+    {
+      "path": "data/raw/semanticscholar/4b/4b2757410cc5daacfe614300c8277f989006240c12836811e8da8e16c0e37604.json",
+      "sha256": "sha256:82936dd41079ef131f95f5a0d7a7bab7cb4f8002bfd3944c78882f710d7db39c"
+    },
+    {
+      "path": "data/raw/semanticscholar/c1/c1a6f1e573ceba41c121cee9e3080548210495f23fd0516204ad7fa319aabf4f.json",
+      "sha256": "sha256:193d8c5042d85f0bc9a8cea794740db8fad2a4cfafdb4af3cda520499c2bcf69"
+    },
+    {
+      "path": "data/raw/semanticscholar/98/98e79c9d2169256e3401c70a26d5ca2bd422098d84b2042cc04b8516405ff463.json",
+      "sha256": "sha256:148a63bd0ee0d955ffad8141639700ea3e828428ab4d0b1c5ff7e43a40a3cc0b"
+    },
+    {
+      "path": "data/raw/semanticscholar/6b/6b42d3539c244a1977ddfbc65c40d8bc22891751304caf95a0c438096d2e4d14.json",
+      "sha256": "sha256:d2100cab526471249bd785bfcc4947f121acbe0597fb1f6ad35ddb6f02597e32"
+    },
+    {
+      "path": "data/raw/semanticscholar/76/762924100a9b21b632e7bc80f4f3109420c8b9f6ce08bd415d51bc1e978c3e36.json",
+      "sha256": "sha256:16bd7ad4d05b1e8fb2ed4ad0c32cde5285853f51e7e3bf3e69c3aa718a82a94c"
+    },
+    {
+      "path": "data/raw/semanticscholar/3c/3c26317a3bbcaa3ccafa3e2c66c55d68a6591b02de3c053213b35af9225134a0.json",
+      "sha256": "sha256:b91ea234a5a3629df02ad47fb807a69f78e9235f6b691c193312fe74e5098d2d"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "data/derived/65/65fbf6b7725cf35417b76a62a4bf1e971207bc7f4be530702ec0aa7f0b8bb210.parquet",
+      "sha256": "sha256:65fbf6b7725cf35417b76a62a4bf1e971207bc7f4be530702ec0aa7f0b8bb210",
+      "rows": 719
+    }
+  ],
+  "coders": [],
+  "usage": {
+    "live_calls": {
+      "semanticscholar": {
+        "free": 6
+      }
+    },
+    "replayed": {
+      "openalex": 5
+    },
+    "usd": {
+      "semanticscholar": 0.0
+    }
+  },
+  "seed": null,
+  "params": {
+    "tables": {
+      "contexts": "data/derived/65/65fbf6b7725cf35417b76a62a4bf1e971207bc7f4be530702ec0aa7f0b8bb210.parquet"
+    },
+    "truncated": [],
+    "without_doi": [],
+    "semanticscholar_key": false
+  },
+  "started": "2026-09-16T14:09:56+00:00",
+  "ended": "2026-09-16T14:10:23+00:00",
+  "viveka_version": "0.1.0"
+}

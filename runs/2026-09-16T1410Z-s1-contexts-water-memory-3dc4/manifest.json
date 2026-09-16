@@ -1,0 +1,78 @@
+{
+  "run_id": "2026-09-16T1410Z-s1-contexts-water-memory-3dc4",
+  "stage": "S1-contexts",
+  "case": "water-memory",
+  "fold": "dev",
+  "status": "ok",
+  "error": null,
+  "git_commit": "5f5858a9b08dc27e9fb7d1e4bb9afce28c4ad13e",
+  "git_dirty": false,
+  "registry": {
+    "version": 0,
+    "components": {
+      "schemas": "draft:sha256:8a56c89cd84541f7ac0a70407dde0e7d274c80683054cf84f555cfdb30250f6c",
+      "corpus": "draft:sha256:30b7ea539d60857de36f239b9e162ffc02425dd95d67ebc442e24387124aaf96",
+      "events/water-memory": "draft:sha256:4e2ab538b54c89924e61cbbc3cdf916879e460da4ffab4b78fb20d8d2796609a",
+      "cases/water-memory": "draft:sha256:e12e08d93a3cf4672838569932c36a649a1b54386f8b754657cd94684a6978ca"
+    }
+  },
+  "inputs": [
+    {
+      "path": "data/raw/openalex/71/7179bb36456ef60de4de9c3ed4ed3c43e7d684403c635dd8107a304e44ab5093.json",
+      "sha256": "sha256:72f4ffcec127829de82b885277c0466d65087298e1687e56022f0bad74d4a2b2"
+    },
+    {
+      "path": "data/raw/openalex/4f/4f815473a6af79027de8d2650a1b794ab4f61d899b2793d1350c567ace11bedc.json",
+      "sha256": "sha256:c5df569223123b67ef905112b42dc69e0a31de702d084244d5570aefb4ef43d8"
+    },
+    {
+      "path": "data/raw/openalex/0d/0d44dfff276a2f112cd48c18ff0bf0b4dc757c4d391b005675fbdf93ac4bf84b.json",
+      "sha256": "sha256:b6d1acc794dac7c2beb1b87c0b2fe29b38da6c564ef24b9f2718234241f918dd"
+    },
+    {
+      "path": "data/raw/semanticscholar/15/151bea6a25cda9151c59e390af56d95443963952e3cd6a6fbf0919f608823699.json",
+      "sha256": "sha256:631ee2a6dad05e8e9393368a7be359159e050136b872660ccaeea2e2331bfb7d"
+    },
+    {
+      "path": "data/raw/semanticscholar/34/34e4274fb2af31aac1ab73ac596d1cefa291c6bb4a1804e8bb50758d2ba234ed.json",
+      "sha256": "sha256:24458c6531a5831089a6e28442b17b6ca78159e5eb519ceb9ecbe0f97b1caef2"
+    },
+    {
+      "path": "data/raw/semanticscholar/bf/bf307886f5fef55633db07b1f854a798780f8c93838bc2580e1a150c33519c37.json",
+      "sha256": "sha256:671c4f9a97921d5e494d0ded68f6150bbc5058d2b6f19d8d90b1c84700f647d1"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "data/derived/41/419250e4937ef995b498ec48fd7462e278703a4f5d499000ef55a4c00e713c54.parquet",
+      "sha256": "sha256:419250e4937ef995b498ec48fd7462e278703a4f5d499000ef55a4c00e713c54",
+      "rows": 390
+    }
+  ],
+  "coders": [],
+  "usage": {
+    "live_calls": {
+      "semanticscholar": {
+        "free": 3
+      }
+    },
+    "replayed": {
+      "openalex": 3
+    },
+    "usd": {
+      "semanticscholar": 0.0
+    }
+  },
+  "seed": null,
+  "params": {
+    "tables": {
+      "contexts": "data/derived/41/419250e4937ef995b498ec48fd7462e278703a4f5d499000ef55a4c00e713c54.parquet"
+    },
+    "truncated": [],
+    "without_doi": [],
+    "semanticscholar_key": false
+  },
+  "started": "2026-09-16T14:10:46+00:00",
+  "ended": "2026-09-16T14:10:58+00:00",
+  "viveka_version": "0.1.0"
+}

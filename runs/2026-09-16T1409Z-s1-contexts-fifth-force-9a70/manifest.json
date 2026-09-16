@@ -1,0 +1,102 @@
+{
+  "run_id": "2026-09-16T1409Z-s1-contexts-fifth-force-9a70",
+  "stage": "S1-contexts",
+  "case": "fifth-force",
+  "fold": "dev",
+  "status": "ok",
+  "error": null,
+  "git_commit": "5f5858a9b08dc27e9fb7d1e4bb9afce28c4ad13e",
+  "git_dirty": false,
+  "registry": {
+    "version": 0,
+    "components": {
+      "schemas": "draft:sha256:8a56c89cd84541f7ac0a70407dde0e7d274c80683054cf84f555cfdb30250f6c",
+      "corpus": "draft:sha256:30b7ea539d60857de36f239b9e162ffc02425dd95d67ebc442e24387124aaf96",
+      "events/fifth-force": "draft:sha256:f8735da9c8b13880114f20c52756e82e6d3a7875bda37497630d8136f6633be8",
+      "cases/fifth-force": "draft:sha256:878782a0d4fb7d312e11de078e5a76a98f80cfc7b3511b5bd19fd5c65c7380d0"
+    }
+  },
+  "inputs": [
+    {
+      "path": "data/raw/openalex/c5/c5ee1f209066c81b5d71e36f948e228bb9426c86d275ef5bf7b238f428efd804.json",
+      "sha256": "sha256:a3bafc3232f9e3a863b8369d8bcac92a5bdd9396c13344fc33540d0bc014fc55"
+    },
+    {
+      "path": "data/raw/openalex/4b/4ba0378e6a8b50facf820fc9645cc55f7efe1531877e9c0b72eb8c0e60a20349.json",
+      "sha256": "sha256:427a797745947bcaa0df1014d532ee78dc18198c08c4c8ef0815586ff6b33731"
+    },
+    {
+      "path": "data/raw/openalex/60/60638da879287c41a460552cb41eba060c51d35c6429741682e68fb24d936b28.json",
+      "sha256": "sha256:3ab954ca336b01b1d0ea89ac378c52e7929ee643e96675d83c051be703100eed"
+    },
+    {
+      "path": "data/raw/openalex/4f/4fa6f9f7023ddcabcf900838bf81fb7f7f0a8831e68e10e079ca84c25dacad3b.json",
+      "sha256": "sha256:5fca16ddcd8032353283ad9da620a6952ea5804ac68b998b9dd1d5240da29a84"
+    },
+    {
+      "path": "data/raw/openalex/f1/f1d867b915713f366df2a55e68d7596b539d3970d89a53029c5fb37c03b750a8.json",
+      "sha256": "sha256:fb4a495895d424cc499da9a22c1d0b7daeeb5034d9fa183b6aff955b274e8974"
+    },
+    {
+      "path": "data/raw/openalex/e9/e96c741c3fc034727f1a80e93b8e0e0c09fa94eb3f39a1afb6d37bd3cabe96d4.json",
+      "sha256": "sha256:19d8a2a4d2df9b056b918221f159b30ee13a18e8a43e7ab205b4b8accc339b90"
+    },
+    {
+      "path": "data/raw/semanticscholar/3f/3f8e60f6109bd54045f7d41421d7de381773b12716ad6b535c090c9d7fbd790b.json",
+      "sha256": "sha256:d251a234ed77c2afe8702da7e0535697de5a8af00fe3b49f0f8beaff6d5384eb"
+    },
+    {
+      "path": "data/raw/semanticscholar/fa/fa6865340b265eacf1993bc858824967ab8502145d8b866edaa9784d02d9c14d.json",
+      "sha256": "sha256:ac36d5472b030b3d184135f3156a1000c3f7dd2493066f9ba3ad3310e8e69a3f"
+    },
+    {
+      "path": "data/raw/semanticscholar/b4/b40bee6e499baeadff53bbb3126bdcba13ba708c36e762aa2f4bab9086fbdf40.json",
+      "sha256": "sha256:c331915c5a0510f68d497cf0685634d274c223a22585c2445592576fcfd86c54"
+    },
+    {
+      "path": "data/raw/semanticscholar/42/42033fc41825540d89b5ddccb3633d09eee3252408992d9ef9cebc49611bbb81.json",
+      "sha256": "sha256:04835a893da9ef3f406bdc148491cd52ad17f785f495b498c8d548f1e5ab0fc6"
+    },
+    {
+      "path": "data/raw/semanticscholar/10/104495d07f9f62f9fe50044d67e8cf08e9ed1093d9bb8040eda54880b13aadcb.json",
+      "sha256": "sha256:5ca3bb3481d5d832b6d4c20752ee783d9257c4e3b3d8baec7ff03a258f0e454a"
+    },
+    {
+      "path": "data/raw/semanticscholar/63/637d8cfaf57d0a8493d76e22a49ef90d43d21bae390d22b9cc15489215bb80a2.json",
+      "sha256": "sha256:4e5806ea7b58a05524daac958c23630c4581a0b5f9da27b7c6655011ece7cc04"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "data/derived/42/4292b6c16e24f1679562c2eaf28a444a3208c4e5c027a1d1541bcc5cdf3ec124.parquet",
+      "sha256": "sha256:4292b6c16e24f1679562c2eaf28a444a3208c4e5c027a1d1541bcc5cdf3ec124",
+      "rows": 96
+    }
+  ],
+  "coders": [],
+  "usage": {
+    "live_calls": {
+      "semanticscholar": {
+        "free": 6
+      }
+    },
+    "replayed": {
+      "openalex": 6
+    },
+    "usd": {
+      "semanticscholar": 0.0
+    }
+  },
+  "seed": null,
+  "params": {
+    "tables": {
+      "contexts": "data/derived/42/4292b6c16e24f1679562c2eaf28a444a3208c4e5c027a1d1541bcc5cdf3ec124.parquet"
+    },
+    "truncated": [],
+    "without_doi": [],
+    "semanticscholar_key": false
+  },
+  "started": "2026-09-16T14:09:30+00:00",
+  "ended": "2026-09-16T14:09:56+00:00",
+  "viveka_version": "0.1.0"
+}
