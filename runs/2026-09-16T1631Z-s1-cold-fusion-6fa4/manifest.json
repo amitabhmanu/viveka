@@ -1,0 +1,137 @@
+{
+  "run_id": "2026-09-16T1631Z-s1-cold-fusion-6fa4",
+  "stage": "S1",
+  "case": "cold-fusion",
+  "fold": "pilot",
+  "status": "ok",
+  "error": null,
+  "git_commit": "d7120d68ea48a4f1d3280e02659828ce123ef893",
+  "git_dirty": false,
+  "registry": {
+    "version": 1,
+    "components": {
+      "schemas": "sha256:5704077e2669802b64657865cc7080c7b43fec6ed5fe9ca5f63c5bf2087664ae",
+      "corpus": "sha256:31c5f276d70e3ff2395d08dbcc8a49bda10853c2bff69bf7b3dbe9e36ea43718",
+      "events/cold-fusion": "sha256:f000f244c4da13cbd36305fa47639a44fd4bd1802a3d00cedd59cb0194df380d",
+      "cases/cold-fusion": "sha256:278d81da954a1a24424fc8f82a5d0ee66807289cc3b732e3917d3fe946f6b536"
+    }
+  },
+  "inputs": [
+    {
+      "path": "data/raw/openalex/a0/a0ce109f34c5eb2b76385b509507cc9b3db1bd10754d7f143a400f77ac918e6f.json",
+      "sha256": "sha256:1f87e775548c8a4a717f2f19fb16111454553586dc3081f1a85fe679753d7a8a"
+    },
+    {
+      "path": "data/raw/openalex/08/08bc126ba26e64139dc39bf775ce031ce74bc8972edc732dfbc1f789f0f5a1f3.json",
+      "sha256": "sha256:82290a7a02dc5f8e9ddd640838f423b5bdc9e545a2ceea41e067f18299e6b6f7"
+    },
+    {
+      "path": "data/raw/openalex/62/62eaa1aaae2b7ec15ed512e2e6d722d142acea00c7d082d207971400a384cfac.json",
+      "sha256": "sha256:b68cc561ec4c2f5b6ee2b0b6cdeef684f0bde96497b520f24e42967ab2d93bde"
+    },
+    {
+      "path": "data/raw/openalex/4a/4a76e06d1971fc8c5511bcb565269d63fc9bb5be4201df73043b7329f4fbf5ab.json",
+      "sha256": "sha256:d59ace13b70d935403907745561360c8562d5d67ac36381a582160e34fa4333b"
+    },
+    {
+      "path": "data/raw/openalex/0a/0a1947da5bf1f971a2a7950a131bc37a46dabf265920b2f0d75892fc60ee4157.json",
+      "sha256": "sha256:731aee469cc3b4cd3378638dcc2367744bb3793228ee44d07d3e3ee8798cd172"
+    },
+    {
+      "path": "data/raw/openalex/38/382a9eac6a28b4164df5b952fbda9d1741772e1bfcc1f824d003fe9745387da9.json",
+      "sha256": "sha256:c099db6c24b582503d0c0dc7901e248c75b0940f124e03397df722b1053263f3"
+    },
+    {
+      "path": "data/raw/openalex/f2/f2cf0e07188308750b0b09eac6aa5ec409d94b5505a0cf925c945c3dbee0f420.json",
+      "sha256": "sha256:a5fbfb31db39828dda16e1aa7e6f3d62ec3792a469dcd1e60c1f53d72c91bfac"
+    },
+    {
+      "path": "data/raw/openalex/a7/a764b4bd82c89c8b46a3fb879f21e425f2c1ef635e6338014e5490124d262285.json",
+      "sha256": "sha256:8692b4a64f84f668375aa7f6934310cc76d1542d1b972a257f5b1546923ed0c7"
+    },
+    {
+      "path": "data/raw/openalex/b4/b417a58c923e788b14bb2d1b72f21388b915be4f7246529927ae5161518cd4eb.json",
+      "sha256": "sha256:918eab5fc7778f890e8ddf4e4ba47074054235fb74f4b1a4fccd659d57f3bf71"
+    },
+    {
+      "path": "data/raw/openalex/3d/3d857fd37909fbec0c196efd409a6fa149d1d2b737e7a7241a045fc043dab16a.json",
+      "sha256": "sha256:5b0723ff8b56159ceb582e0e8b713018dc5c2eba610854f5c82c71ef6b78465d"
+    },
+    {
+      "path": "data/raw/openalex/ff/ff28d0e3c9c9209a14da395ee4fcc05b9de06e25e6e81a5732a680b30690d823.json",
+      "sha256": "sha256:780e0e564e66df3ff9341adab3f75547b504699b22fad51145a7b70f71511e7f"
+    },
+    {
+      "path": "data/raw/openalex/03/035705b7c3037ee3af50b6d6343830384a206f4980be2f6b76c8eb97d028d580.json",
+      "sha256": "sha256:419cc6e359ff9ce1d22c9ef91d69fd56248d742e71aa8404e4743f6d7085a29d"
+    },
+    {
+      "path": "data/raw/openalex/1b/1bb6b91dc61115b1eedc3006873e52dbef517b6e77dfaddf30764ae9f7b7cd46.json",
+      "sha256": "sha256:d0bce8cfa628bb7c1a2878327d2a4da5f2ae2321ce2c166b73098ecb3e2571cb"
+    },
+    {
+      "path": "data/raw/openalex/fd/fdd9b13780c54f31598c0a8b932b573e7d1e5802524d0f771f6d2604328728f4.json",
+      "sha256": "sha256:0dbc9533cafffa0d32478a122f7c0e6a64c57f0f90a0fa0184bb6be33fe12659"
+    },
+    {
+      "path": "data/raw/openalex/74/749f179842aa6e4dc5f144472454e052d9c9396cd21c1c7522e83ed2957f2230.json",
+      "sha256": "sha256:f4b1daf18f14f604662df0bf0395306ef9f3952fbd22deb5f52f91a5b894752a"
+    },
+    {
+      "path": "data/raw/openalex/d2/d2aa6b003a803cd42be00c35a593ed435fc93d1941bf99364a9c5e0aa73e5e0f.json",
+      "sha256": "sha256:a62d4a1de870e52060828d327462dcccc736d2cb0fd84d3549a453e96cc32f84"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "data/derived/95/958d6eeb87febf8440e52cdb3ed732c69d7c3b206befde0e4976ac1c3861998c.parquet",
+      "sha256": "sha256:958d6eeb87febf8440e52cdb3ed732c69d7c3b206befde0e4976ac1c3861998c",
+      "rows": 1839
+    },
+    {
+      "path": "data/derived/e2/e2aed7d8141498fbd29ac8d02c676a93d4881941e1731c1f1234a04961e91dc8.parquet",
+      "sha256": "sha256:e2aed7d8141498fbd29ac8d02c676a93d4881941e1731c1f1234a04961e91dc8",
+      "rows": 5505
+    },
+    {
+      "path": "data/derived/0a/0a70c0cca989e21ea4eaa169c7e7a2e7785b62845fbdea7f4ac1d7a7b86f9cec.parquet",
+      "sha256": "sha256:0a70c0cca989e21ea4eaa169c7e7a2e7785b62845fbdea7f4ac1d7a7b86f9cec",
+      "rows": 5505
+    },
+    {
+      "path": "data/derived/85/856abde99c582ac4abcce8cfae9bf35c33d50d4cc780cb45f30b8cd87bf4dd25.parquet",
+      "sha256": "sha256:856abde99c582ac4abcce8cfae9bf35c33d50d4cc780cb45f30b8cd87bf4dd25",
+      "rows": 63150
+    },
+    {
+      "path": "data/derived/50/5066f6b4b90dc96608da37875971f88bfbb55c93f8fe989a4eac3f273e3b742a.parquet",
+      "sha256": "sha256:5066f6b4b90dc96608da37875971f88bfbb55c93f8fe989a4eac3f273e3b742a",
+      "rows": 1962
+    }
+  ],
+  "coders": [],
+  "usage": {
+    "live_calls": {},
+    "replayed": {
+      "openalex": 16
+    },
+    "usd": {}
+  },
+  "seed": null,
+  "params": {
+    "window": [
+      1989,
+      2025
+    ],
+    "tables": {
+      "works": "data/derived/95/958d6eeb87febf8440e52cdb3ed732c69d7c3b206befde0e4976ac1c3861998c.parquet",
+      "authors": "data/derived/e2/e2aed7d8141498fbd29ac8d02c676a93d4881941e1731c1f1234a04961e91dc8.parquet",
+      "authorships": "data/derived/0a/0a70c0cca989e21ea4eaa169c7e7a2e7785b62845fbdea7f4ac1d7a7b86f9cec.parquet",
+      "citations": "data/derived/85/856abde99c582ac4abcce8cfae9bf35c33d50d4cc780cb45f30b8cd87bf4dd25.parquet",
+      "frames": "data/derived/50/5066f6b4b90dc96608da37875971f88bfbb55c93f8fe989a4eac3f273e3b742a.parquet"
+    }
+  },
+  "started": "2026-09-16T16:31:43+00:00",
+  "ended": "2026-09-16T16:31:43+00:00",
+  "viveka_version": "0.1.0"
+}
