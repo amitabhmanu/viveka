@@ -30,10 +30,12 @@ def fetcher(tmp_path, monkeypatch):
 def test_openalex_crossref_and_s2_shapes(fetcher):
     listing = fetcher.get(Request.build("openalex", "list", f"{openalex.BASE}/works",
                                         filter="publication_year:1990,has_doi:true,type:article", per_page=1,
-                                        select=",".join(openalex.WORK_FIELDS)))
+                                        cursor="*", select=",".join(openalex.WORK_FIELDS)))
     assert listing.status == 200
+    print("openalex meta:", {k: v for k, v in listing.body["meta"].items() if k != "next_cursor"})
     work = listing.body["results"][0]
-    assert set(openalex.WORK_FIELDS) <= set(work) and "next_cursor" in listing.body["meta"]
+    assert set(openalex.WORK_FIELDS) <= set(work)
+    assert "next_cursor" in listing.body["meta"]  # only present when a cursor is requested, as iter_pages does
     doi = openalex.work_row(work)["doi"]
 
     record = fetcher.get(crossref.work_request(doi))
