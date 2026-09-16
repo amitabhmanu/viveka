@@ -47,10 +47,10 @@ def test_fetch_writes_tables_manifest_and_archive(world):
     assert manifest["usage"]["live_calls"]["openalex"] == {"list": 3, "singleton": 1}
     assert manifest["usage"]["usd"]["openalex"] == pytest.approx(0.0003)
     works = {w["work_id"] for w in table(root, manifest, "works")}
-    assert works == {"W1", "W2", *(f"W{10 + i}" for i in range(10)), "W30", "W31", "W32"}
+    assert works == {"W1", "W2", *(f"W{10 + i}" for i in range(10)), "W30", "W31", "W32", "W33"}
     frames = table(root, manifest, "frames")
     assert sum(f["frame_id"] == "citing" for f in frames) == 11  # ten citing works and the null result
-    assert sum(f["frame_id"] == "venue" for f in frames) == 3
+    assert sum(f["frame_id"] == "venue" for f in frames) == 4  # the census, not S1, excludes the editorial
     assert any(c["citation_id"] == "W10:W1" for c in table(root, manifest, "citations"))
     assert all(c.url.params.get("api_key") == "OA-SECRET" for c in fake.calls)
     raw = (root / "data" / "raw").rglob("*.json")
@@ -91,18 +91,20 @@ def test_census_needs_a_fetch_then_measures_coverage(world):
     # 1990: W10, W12, W14, W16, W18 (each with a DOI-less reference findable by volume and page) and the null
     # result W2 (one reference, resolvable)
     assert rows[("citing", 1990)] == {"case_id": "cold-fusion", "frame_id": "citing", "kind": "mainstream",
-                                      "year": 1990, "frame_works": 6, "sampled": 6, "measured": 6,
-                                      "unmeasured": 0, "refs": 21, "resolved": 11, "doiless": 5,
+                                      "year": 1990, "frame_works": 6, "frame_works_excluded": 0, "sampled": 6,
+                                      "measured": 6, "unmeasured": 0, "refs": 21, "resolved": 11,
+                                      "refs_excluded": 0, "refs_unclassifiable": 0, "doiless": 5,
                                       "doiless_sampled": 5, "doiless_matched": 5, "doiless_unparseable": 0,
                                       "resolved_estimated": 16.0}
-    # 1991: W11, W13, W15, W17 measured, each with an unparseable DOI-less reference; W19 has no DOI
+    # 1991: W11, W13, W15, W17 measured, each citing "An old book" (unclassifiable, so not counted); W19 has no DOI
     r1991 = rows[("citing", 1991)]
-    assert (r1991["measured"], r1991["unmeasured"], r1991["doiless_unparseable"], r1991["resolved_estimated"]) == \
-        (4, 1, 4, 8.0)
-    assert rows[("venue", 1995)]["unmeasured"] == 3 and rows[("venue", 1995)]["refs"] == 0
+    assert (r1991["measured"], r1991["unmeasured"], r1991["refs"], r1991["refs_unclassifiable"],
+            r1991["resolved_estimated"]) == (4, 1, 12, 4, 8.0)
+    venue = rows[("venue", 1995)]
+    assert (venue["frame_works"], venue["frame_works_excluded"], venue["unmeasured"], venue["refs"]) == (3, 1, 3, 0)
     report = "\n".join(lines)
-    assert "| citing | mainstream | 11 | 11 | 9.1% | 37 | 24.3% | 5/9 | 4/9 | 64.9% | yes |" in report
-    assert "| venue | community | 3 | 3 | 100.0% | 0 | n/a | 0/0 | 0/0 | n/a | no |" in report
+    assert "| citing | mainstream | 11 | 0 | 11 | 9.1% | 33 | 0/4 | 15.2% | 5/5 | 0/5 | 72.7% | yes |" in report
+    assert "| venue | community | 3 | 1 | 3 | 100.0% | 0 | 0/0 | n/a | 0/0 | 0/0 | n/a | no |" in report
     assert manifest["usage"]["live_calls"]["crossref"] == {"free": 13}
     assert all(c.url.params.get("mailto") == "test@example.invalid" for c in fake.calls
                if c.url.host == "api.crossref.org")
@@ -118,7 +120,7 @@ def test_manual_imports_measure_unindexed_venue_works(world):
                                   out=lambda s: None)
     manifest = load_manifest(root, run_id)
     venue = next(r for r in table(root, manifest, "coverage") if r["frame_id"] == "venue")
-    assert venue["measured"] == 1 and venue["refs"] == 2 and venue["resolved"] == 1
+    assert (venue["measured"], venue["refs"], venue["resolved"], venue["refs_unclassifiable"]) == (1, 1, 1, 1)
     assert any(i["path"] == "data/raw/manual/iccf.csv" for i in manifest["inputs"])
     outside = root / "iccf.csv"
     write_lf(outside, csv.read_text(encoding="utf-8"))

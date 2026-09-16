@@ -37,6 +37,9 @@ def reference_of(entry: dict) -> Reference:
         first_page=_text(entry.get("first-page")),
         journal=_text(entry.get("journal-title")),
         text=_text(entry.get("unstructured")),
+        article_title=_text(entry.get("article-title")),
+        volume_title=_text(entry.get("volume-title")),
+        series_title=_text(entry.get("series-title")),
     )
 
 

@@ -29,6 +29,7 @@ from viveka.census import (
     doiless_sample,
     match_found,
     outcome,
+    paper_doiless,
     sample_frame,
     summarize,
 )
@@ -276,19 +277,32 @@ def latest_run(root: Path, stage: str, case_id: str, fold: str, components: dict
     return None
 
 
-def draw_sample(case: Case, frames_rows: list[dict], works_rows: list[dict], per_year: int, seed: int
-                ) -> tuple[dict[str, list[FrameWork]], dict[str, list[FrameWork]], dict[str, str], int]:
-    doi_of = {w["work_id"]: w["doi"] for w in works_rows}
+@dataclass
+class Draw:
+    by_frame: dict[str, list[FrameWork]]  # each frame's papers
+    samples: dict[str, list[FrameWork]]
+    excluded: dict[str, Counter]  # frame -> year -> works that are not papers
+    kinds: dict[str, str]
+    undated: int
+
+
+def draw_sample(case: Case, frames_rows: list[dict], works_rows: list[dict], per_year: int, seed: int,
+                paper_types: frozenset[str]) -> Draw:
+    works = {w["work_id"]: w for w in works_rows}
     by_frame: dict[str, list[FrameWork]] = defaultdict(list)
-    kinds = {f.frame_id: f.kind for f in case.frames}
+    excluded: dict[str, Counter] = defaultdict(Counter)
     undated = 0
     for row in frames_rows:
         if row["year"] is None:
             undated += 1
             continue
-        by_frame[row["frame_id"]].append(FrameWork(row["work_id"], int(row["year"]), doi_of.get(row["work_id"])))
-    samples = {fid: sample_frame(case.case_id, fid, works, per_year, seed) for fid, works in by_frame.items()}
-    return dict(by_frame), samples, kinds, undated
+        work = works.get(row["work_id"]) or {}
+        if work.get("type") not in paper_types:
+            excluded[row["frame_id"]][int(row["year"])] += 1
+            continue
+        by_frame[row["frame_id"]].append(FrameWork(row["work_id"], int(row["year"]), work.get("doi")))
+    samples = {fid: sample_frame(case.case_id, fid, papers, per_year, seed) for fid, papers in by_frame.items()}
+    return Draw(dict(by_frame), samples, dict(excluded), {f.frame_id: f.kind for f in case.frames}, undated)
 
 
 def _fetch_inputs(root: Path, case_id: str, fold: str) -> tuple[dict, list[dict], list[dict]]:
@@ -315,7 +329,8 @@ def match_references(fetcher: Fetcher, case_id: str, work_id: str, references: R
     """Match a work's sampled DOI-less references in OpenAlex; None marks one whose year, volume and page
     can't be read."""
     found: dict[int, bool | None] = {}
-    for index in doiless_sample(case_id, work_id, references, settings.doiless_sample_per_work, settings.seed):
+    pool = paper_doiless(references)
+    for index in doiless_sample(case_id, work_id, pool, settings.doiless_sample_per_work, settings.seed):
         biblio = biblio_of(references.entries[index])
         if biblio is None:
             found[index] = None
@@ -333,15 +348,17 @@ def census_case(root: Path, case_id: str, fold: str, *, manual: Path | None = No
     config = load_corpus_config(root)
     settings = config.census
     fetch, frames_rows, works_rows = _fetch_inputs(root, case_id, fold)
-    by_frame, samples, kinds, undated = draw_sample(case, frames_rows, works_rows, settings.works_per_year,
-                                                    settings.seed)
+    draw = draw_sample(case, frames_rows, works_rows, settings.works_per_year, settings.seed, settings.paper_types)
+    samples = draw.samples
     manual_refs = _manual_refs(root, manual)
     with RunContext(root, "S2", case_id, fold, [f"cases/{case_id}"], seed=settings.seed,
                     params={"fetch_run": fetch["run_id"], "works_per_year": settings.works_per_year,
                             "max_unmeasured_share": settings.max_unmeasured_share,
                             "resolution": settings.resolution,
                             "doiless_sample_per_work": settings.doiless_sample_per_work,
-                            "match_year_tolerance": settings.match_year_tolerance}) as ctx:
+                            "match_year_tolerance": settings.match_year_tolerance,
+                            "paper_types": sorted(settings.paper_types),
+                            "reference_classification": settings.reference_classification}) as ctx:
         ctx.record_input(root / fetch["params"]["tables"]["frames"])
         ctx.record_input(root / fetch["params"]["tables"]["works"])
         if manual is not None:
@@ -362,27 +379,31 @@ def census_case(root: Path, case_id: str, fold: str, *, manual: Path | None = No
                     else:
                         references[work.work_id] = None
                 reference_dois = [d for r in references.values() if r for d in r.dois if d]
-                known = set(openalex.lookup_dois(fetcher, reference_dois, int(config.openalex["doi_batch"]),
-                                                 fields=openalex.ID_FIELDS))
+                found = openalex.lookup_dois(fetcher, reference_dois, int(config.openalex["doi_batch"]),
+                                             fields=(*openalex.ID_FIELDS, "type"))
+                doi_types = {doi: obj.get("type") for doi, obj in found.items()}
                 matches = {work_id: match_references(fetcher, case_id, work_id, refs, settings)
                            for work_id, refs in sorted(references.items()) if refs is not None}
             finally:
                 _finish(ctx, fetcher)
         coverage, sample_rows = [], []
-        for frame_id in sorted(by_frame):
-            outcomes = [outcome(w, references[w.work_id], known, matches.get(w.work_id)) for w in samples[frame_id]]
-            coverage += coverage_rows(case_id, frame_id, kinds[frame_id], by_frame[frame_id], outcomes)
+        for frame_id in sorted(set(draw.by_frame) | set(draw.excluded)):
+            outcomes = [outcome(w, references[w.work_id], doi_types, settings.paper_types, matches.get(w.work_id))
+                        for w in samples.get(frame_id, [])]
+            coverage += coverage_rows(case_id, frame_id, draw.kinds[frame_id], draw.by_frame.get(frame_id, []),
+                                      outcomes, draw.excluded.get(frame_id))
             sample_rows += [{"case_id": case_id, "frame_id": frame_id, "year": o.work.year, "work_id": o.work.work_id,
                              "status": o.status,
                              "reference_source": o.references.source if o.references else "none",
-                             "refs": o.references.total if o.references else 0, "resolved": o.resolved,
+                             "refs": o.refs, "resolved": o.resolved, "refs_excluded": o.refs_excluded,
+                             "refs_unclassifiable": o.refs_unclassifiable,
                              "doiless": o.doiless, "doiless_sampled": o.doiless_sampled,
                              "doiless_matched": o.doiless_matched, "doiless_unparseable": o.doiless_unparseable}
                             for o in outcomes]
         written = {}
         for name, rows in (("coverage", coverage), ("census_sample", sample_rows)):
             written[name] = rel_posix(ctx.store(tables.to_parquet(name, rows), "parquet", rows=len(rows)), root)
-        report = census_report(case, ctx.run_id, fetch["run_id"], config, coverage, undated)
+        report = census_report(case, ctx.run_id, fetch["run_id"], config, coverage, draw.undated)
         written["report"] = rel_posix(ctx.store(report.encode("utf-8"), "md"), root)
         ctx.params["tables"] = written
     out(report)
@@ -396,7 +417,7 @@ def project_census(fetcher: Fetcher, config: CorpusConfig, samples: dict[str, li
     reference_dois: list[str] = []
     unarchived_works = 0
     per_work = config.census.doiless_sample_per_work
-    match_calls = sum(min(per_work, len(r.doiless())) for r in manual_refs.values())
+    match_calls = sum(min(per_work, len(paper_doiless(r))) for r in manual_refs.values())
     seen: set[str] = set()
     for work in (w for sample in samples.values() for w in sample):
         if work.work_id in seen or work.work_id in manual_refs or not work.doi:
@@ -411,7 +432,7 @@ def project_census(fetcher: Fetcher, config: CorpusConfig, samples: dict[str, li
         else:
             refs = crossref.references_of(hit.body) if hit.status == 200 else None
             reference_dois += [d for d in (refs.dois if refs else ()) if d]
-            match_calls += min(per_work, len(refs.doiless())) if refs else 0
+            match_calls += min(per_work, len(paper_doiless(refs))) if refs else 0
     reference_dois += [d for r in manual_refs.values() for d in r.dois if d]
     batch = int(config.openalex["doi_batch"])
     known_calls = math.ceil(len(set(reference_dois)) / batch)
@@ -434,28 +455,30 @@ def census_report(case: Case, run_id: str, fetch_run: str, config: CorpusConfig,
     lines = [
         f"# Coverage census: {case.case_id}",
         "",
-        f"Run `{run_id}` from corpus run `{fetch_run}`. Window {case.start}–{case.end}; up to "
-        f"{settings.works_per_year} works sampled per frame and year (seed {settings.seed}). A reference with a DOI "
-        f"resolves when the DOI is in OpenAlex; up to {settings.doiless_sample_per_work} references without a DOI "
-        f"per work are matched by year (±{settings.match_year_tolerance}), volume and first page, and each "
-        f"frame-year's matched share estimates the rest. A frame or year with more than "
-        f"{settings.max_unmeasured_share:.0%} unmeasured works is not measurable.",
+        f"Run `{run_id}` from corpus run `{fetch_run}`. Window {case.start}–{case.end}. Only research papers count "
+        f"(OpenAlex types {', '.join(sorted(settings.paper_types))}; references classified by "
+        f"`{settings.reference_classification}`, proceedings kept): other works and references are excluded and "
+        f"counted. Up to {settings.works_per_year} papers sampled per frame and year (seed {settings.seed}). A "
+        f"reference with a DOI resolves when the DOI is in OpenAlex; up to {settings.doiless_sample_per_work} paper "
+        f"references without a DOI per work are matched by year (±{settings.match_year_tolerance}), volume and "
+        f"first page, and each frame-year's matched share estimates the rest. A frame or year with more than "
+        f"{settings.max_unmeasured_share:.0%} unmeasured papers is not measurable.",
         "",
-        "Coverage is not compared with *r* here: gate 1 applies *r* per sub-window at S4. DOI-less references "
-        "with no readable volume and page (mostly books, theses, reports, preprints and proceedings) count as "
-        "unmatched.",
+        "Coverage is not compared with *r* here: gate 1 applies *r* per sub-window at S4.",
         "",
-        "| frame | kind | works | sampled | unmeasured | references | no DOI | DOI-less matched | no volume/page | "
-        "coverage (est.) | measurable |",
-        "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|",
+        "| frame | kind | papers | excluded works | sampled | unmeasured | paper refs | excluded refs "
+        "(non-paper/unclassifiable) | no DOI | DOI-less matched | no volume/page | coverage (est.) | measurable |",
+        "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|",
     ]
     for frame in case.frames:
         s: Summary | None = whole.get(frame.frame_id)
         if s is None:
-            lines.append(f"| {frame.frame_id} | {frame.kind} | 0 | 0 | – | 0 | – | – | – | n/a | no (no works) |")
+            lines.append(f"| {frame.frame_id} | {frame.kind} | 0 | 0 | 0 | – | 0 | – | – | – | – | n/a | "
+                         "no (no works) |")
             continue
-        lines.append(f"| {s.frame_id} | {s.kind} | {s.frame_works} | {s.sampled} | {_pct(s.unmeasured_share)} | "
-                     f"{s.refs} | {_pct(s.doiless / s.refs if s.refs else None)} | "
+        lines.append(f"| {s.frame_id} | {s.kind} | {s.frame_works} | {s.frame_works_excluded} | {s.sampled} | "
+                     f"{_pct(s.unmeasured_share)} | {s.refs} | {s.refs_excluded}/{s.refs_unclassifiable} | "
+                     f"{_pct(s.doiless / s.refs if s.refs else None)} | "
                      f"{s.doiless_matched}/{s.doiless_sampled} | {s.doiless_unparseable}/{s.doiless_sampled} | "
                      f"{_pct(s.coverage)} | {'yes' if s.measurable else 'no'} |")
     if undated:
@@ -465,13 +488,15 @@ def census_report(case: Case, run_id: str, fetch_run: str, config: CorpusConfig,
         if not rows:
             continue
         lines += ["", f"## {frame.frame_id} by year", "",
-                  "| year | works | sampled | unmeasured | references | no DOI | DOI-less matched | coverage (est.) | "
-                  "measurable |",
-                  "|---:|---:|---:|---:|---:|---:|---:|---:|---|"]
+                  "| year | papers | excluded works | sampled | unmeasured | paper refs | excluded refs | no DOI | "
+                  "DOI-less matched | coverage (est.) | measurable |",
+                  "|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|"]
         for row in rows:
             (s,) = summarize([row], settings.max_unmeasured_share)
-            lines.append(f"| {row['year']} | {row['frame_works']} | {row['sampled']} | {_pct(s.unmeasured_share)} | "
-                         f"{row['refs']} | {_pct(s.doiless / s.refs if s.refs else None)} | "
+            lines.append(f"| {row['year']} | {row['frame_works']} | {row['frame_works_excluded']} | {row['sampled']} | "
+                         f"{_pct(s.unmeasured_share)} | {row['refs']} | "
+                         f"{row['refs_excluded']}/{row['refs_unclassifiable']} | "
+                         f"{_pct(s.doiless / s.refs if s.refs else None)} | "
                          f"{s.doiless_matched}/{s.doiless_sampled} | {_pct(s.coverage)} | "
                          f"{'yes' if s.measurable else 'no'} |")
     return "\n".join(lines) + "\n"
@@ -560,8 +585,8 @@ def _dry_run(root: Path, args: argparse.Namespace, out: Out) -> int:
     with make_fetcher(root, config, offline=True) as fetcher:
         if args.command == "census":
             _, frames_rows, works_rows = _fetch_inputs(root, args.case, args.fold)
-            _, samples, _, _ = draw_sample(case, frames_rows, works_rows, config.census.works_per_year,
-                                           config.census.seed)
+            samples = draw_sample(case, frames_rows, works_rows, config.census.works_per_year, config.census.seed,
+                                  config.census.paper_types).samples
             projection = project_census(fetcher, config, samples, _manual_refs(root, args.manual))
             out(f"census dry run for {args.case}: {sum(len(s) for s in samples.values())} sampled works")
         else:

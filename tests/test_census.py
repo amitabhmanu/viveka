@@ -12,10 +12,13 @@ from viveka.census import (
     journal_compatible,
     match_found,
     outcome,
+    reference_kind,
     sample_frame,
     summarize,
 )
 from viveka.corpus.manual import ManualImportError, load_manual
+
+PAPERS = frozenset({"article", "review", "letter", "conference-paper"})
 
 
 def works(n_per_year, years=(1990, 1991)):
@@ -34,54 +37,99 @@ def test_sampling_is_stratified_reproducible_and_seed_dependent():
 
 def test_doiless_references_are_sampled_reproducibly():
     refs = References.from_dois(["10.1/a"] + [None] * 10, "crossref")
-    first = doiless_sample("cf", "W1", refs, 3, seed=1)
+    pool = refs.doiless()
+    first = doiless_sample("cf", "W1", pool, 3, seed=1)
     assert len(first) == 3 and all(refs.entries[i].doi is None for i in first)
-    assert first == doiless_sample("cf", "W1", refs, 3, seed=1) and first != doiless_sample("cf", "W2", refs, 3, 1)
-    few = References.from_dois(["10.1/a", None, None], "crossref")
-    assert doiless_sample("cf", "W1", few, 3, seed=1) == [1, 2]
-    assert doiless_sample("cf", "W1", refs, 0, seed=1) == []
+    assert first == doiless_sample("cf", "W1", pool, 3, seed=1) and first != doiless_sample("cf", "W2", pool, 3, 1)
+    assert doiless_sample("cf", "W1", [2, 1], 3, seed=1) == [1, 2]
+    assert doiless_sample("cf", "W1", pool, 0, seed=1) == []
 
 
-def test_outcomes_and_estimated_coverage():
+def test_outcomes_count_only_papers_and_estimate_coverage():
     frame = works(3, years=(1990,)) + works(2, years=(1991,))
-    refs = References((Reference("10.1/a"), Reference("10.1/b"), Reference(None, text="A book"), Reference("10.9/x"),
-                       Reference(None, 1986, "56", "3", "Phys. Rev. Lett.")), "crossref")
-    known = {"10.1/a", "10.1/b"}
-    first = outcome(frame[0], refs, known, {2: None, 4: True})
-    assert (first.resolved, first.doiless, first.doiless_sampled, first.doiless_matched,
-            first.doiless_unparseable) == (2, 2, 2, 1, 1)
-    assert first.status == "measured" and outcome(frame[1], None, known).status == "unmeasured"
-    outcomes = [first, outcome(frame[1], None, known), outcome(frame[3], refs, known, {4: False})]
-    rows = coverage_rows("cf", "citing", "mainstream", frame, outcomes)
+    refs = References((
+        Reference("10.1/a"), Reference("10.1/b"),
+        Reference(None, text="Landau, Lifshitz, Quantum Mechanics (Pergamon, Oxford, 1965)."),  # a book: excluded
+        Reference("10.9/x"),  # a DOI the corpus lacks: an unresolved paper
+        Reference(None, 1986, "56", "3", "Phys. Rev. Lett."),  # a DOI-less paper
+        Reference("10.5/chapter"),  # a DOI whose corpus type is not a paper: excluded
+        Reference(None, 1978),  # nothing to classify it by
+    ), "crossref")
+    doi_types = {"10.1/a": "article", "10.1/b": "review", "10.5/chapter": "book-chapter"}
+    first = outcome(frame[0], refs, doi_types, PAPERS, {4: True})
+    assert (first.refs, first.resolved, first.refs_excluded, first.refs_unclassifiable, first.doiless,
+            first.doiless_sampled, first.doiless_matched) == (4, 2, 2, 1, 1, 1, 1)
+    assert first.status == "measured" and outcome(frame[1], None, doi_types, PAPERS).status == "unmeasured"
+    outcomes = [first, outcome(frame[1], None, doi_types, PAPERS),
+                outcome(frame[3], refs, doi_types, PAPERS, {4: False})]
+    rows = coverage_rows("cf", "citing", "mainstream", frame, outcomes, {1990: 2, 1992: 1})
+    common = {"case_id": "cf", "frame_id": "citing", "kind": "mainstream"}
     assert rows == [
-        {"case_id": "cf", "frame_id": "citing", "kind": "mainstream", "year": 1990, "frame_works": 3, "sampled": 2,
-         "measured": 1, "unmeasured": 1, "refs": 5, "resolved": 2, "doiless": 2, "doiless_sampled": 2,
-         "doiless_matched": 1, "doiless_unparseable": 1, "resolved_estimated": 3.0},
-        {"case_id": "cf", "frame_id": "citing", "kind": "mainstream", "year": 1991, "frame_works": 2, "sampled": 1,
-         "measured": 1, "unmeasured": 0, "refs": 5, "resolved": 2, "doiless": 2, "doiless_sampled": 1,
-         "doiless_matched": 0, "doiless_unparseable": 0, "resolved_estimated": 2.0},
+        {**common, "year": 1990, "frame_works": 3, "frame_works_excluded": 2, "sampled": 2, "measured": 1,
+         "unmeasured": 1, "refs": 4, "resolved": 2, "refs_excluded": 2, "refs_unclassifiable": 1, "doiless": 1,
+         "doiless_sampled": 1, "doiless_matched": 1, "doiless_unparseable": 0, "resolved_estimated": 3.0},
+        {**common, "year": 1991, "frame_works": 2, "frame_works_excluded": 0, "sampled": 1, "measured": 1,
+         "unmeasured": 0, "refs": 4, "resolved": 2, "refs_excluded": 2, "refs_unclassifiable": 1, "doiless": 1,
+         "doiless_sampled": 1, "doiless_matched": 0, "doiless_unparseable": 0, "resolved_estimated": 2.0},
+        {**common, "year": 1992, "frame_works": 0, "frame_works_excluded": 1, "sampled": 0, "measured": 0,
+         "unmeasured": 0, "refs": 0, "resolved": 0, "refs_excluded": 0, "refs_unclassifiable": 0, "doiless": 0,
+         "doiless_sampled": 0, "doiless_matched": 0, "doiless_unparseable": 0, "resolved_estimated": 0.0},
     ]
     (whole,) = summarize(rows, max_unmeasured_share=0.5)
-    assert whole.coverage == 0.5 and whole.unmeasured_share == pytest.approx(1 / 3) and whole.measurable
-    assert whole.doiless == 4 and whole.resolved_estimated == 5.0
+    assert whole.coverage == 0.625 and whole.unmeasured_share == pytest.approx(1 / 3) and whole.measurable
+    assert whole.frame_works_excluded == 3 and whole.refs_excluded == 4 and whole.resolved_estimated == 5.0
     (strict,) = summarize(rows, max_unmeasured_share=0.3)
     assert not strict.measurable
     (year_1990,) = summarize(rows[:1], 0.5)
-    assert year_1990.coverage == 0.6 and year_1990.unmeasured_share == 0.5 and year_1990.measurable
+    assert year_1990.coverage == 0.75 and year_1990.unmeasured_share == 0.5 and year_1990.measurable
 
 
 def test_no_references_is_not_measurable():
     frame = works(2, years=(1995,))
-    rows = coverage_rows("cf", "venue", "community", frame, [outcome(w, None, set()) for w in frame])
+    rows = coverage_rows("cf", "venue", "community", frame, [outcome(w, None, {}, PAPERS) for w in frame])
     (s,) = summarize(rows, 1.0)
     assert s.coverage is None and s.unmeasured_share == 1.0 and not s.measurable
+
+
+@pytest.mark.parametrize(
+    ("reference", "kind"),
+    [
+        (Reference(None, 1983, "D27", "1672", "Phys. Rev."), "paper"),
+        (Reference(None, 1992, "55", "1", "Rep. Prog. Phys."), "paper"),
+        (Reference(None, 1983, first_page="244", series_title="AIP Conf. Proc. No. 99"), "paper"),
+        (Reference(None, text="Proc. 9th Int. Workshop on Low Temperature Detectors 605, 453 (2002)"), "paper"),
+        (Reference(None, text="[3] A. Takahashi, Mechanism of deuteron cluster fusion, Proceedings of the ICCF 10, "
+                              "Cambridge, MA, 2003. Available at http://www.lenr-canr.org"), "paper"),
+        (Reference(None, text="Hawking S.W., Commun. Math. Phys. 25, 167 (1972)"), "paper"),
+        (Reference("10.1/any"), "paper"),
+        (Reference(None, 1982, volume_title="Electron Radial Wave Functions and Nuclear Beta Decay"), "excluded"),
+        (Reference(None, 1984, journal="SLAC-PUB-3304"), "excluded"),
+        (Reference(None, 1977, journal="CERN 77-18", article_title="An Introduction to Gauge Theories"), "excluded"),
+        (Reference(None, 1989, first_page="69", journal="US Department of Energy, DOE/S-0073"), "excluded"),
+        (Reference(None, text="Griffiths SR. Mothers' attitudes to immunisation [MD Thesis]. London, 1986."),
+         "excluded"),
+        (Reference(None, text="P.G. Esposito, to be published."), "excluded"),
+        (Reference(None, text="[11] Landau, Lifshitz, Quantum Mechanics (Pergamon, Oxford, 1965)."), "excluded"),
+        (Reference(None, text="Will, C.: 1981, Theory and Experiment in Gravitational Physics, Cambridge "
+                              "University Press, Cambridge."), "excluded"),
+        (Reference(None, text="[4] DOE, Report of the review of low energy nuclear reactions, 2004. Available at "
+                              "http://www.science.doe.gov"), "excluded"),
+        (Reference(None, text="New Scientist 14 July 1988 p. 39."), "excluded"),
+        (Reference(None, 1978), "unclassifiable"),
+        (Reference(None, text="Kaluza, T.: 1921, Sitzungsberichte der Berliner Akademie der Wissenschaften, No. 966."),
+         "unclassifiable"),
+    ],
+)
+def test_reference_kinds(reference, kind):
+    assert reference_kind(reference) == kind
 
 
 def test_frame_kind_does_not_change_the_numbers():
     frame = works(12)
     sample = sample_frame("cf", "f", frame, 10, seed=7)
     refs = References.from_dois(("10.1/a", None), "crossref")
-    outcomes = [outcome(w, refs if i % 3 else None, {"10.1/a"}, {1: i % 2 == 0}) for i, w in enumerate(sample)]
+    outcomes = [outcome(w, refs if i % 3 else None, {"10.1/a": "article"}, PAPERS, {1: i % 2 == 0})
+                for i, w in enumerate(sample)]
     community = coverage_rows("cf", "f", "community", frame, outcomes)
     mainstream = coverage_rows("cf", "f", "mainstream", frame, outcomes)
     assert [{**r, "kind": None} for r in community] == [{**r, "kind": None} for r in mainstream]

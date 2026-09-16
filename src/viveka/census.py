@@ -1,14 +1,18 @@
 """The coverage census (framework "Coverage census"; spec stage S2), as pure functions.
 
-A frame's works are stratified by publication year and sampled with a generator seeded from the
-registry. A sampled work is *measured* when its full reference list is known, from Crossref or a
+Only research papers count: journal articles, reviews, letters and conference or proceedings papers.
+A frame's works of other types (editorials, errata, book chapters, preprints, theses, front matter) are
+excluded before sampling, and so are references that point to books, theses, reports, preprints, web
+pages or unpublished work; references too sparse to classify are excluded and counted separately.
+
+A frame's papers are stratified by publication year and sampled with a generator seeded from the
+registry. A sampled paper is *measured* when its full reference list is known, from Crossref or a
 manual import, and *unmeasured* otherwise. A reference with a DOI resolves when the DOI is in the
-corpus index. References without a DOI (books, proceedings, older papers never matched to a DOI)
-are sampled per work and matched by year, volume and first page, with the journal name breaking
-ties; each frame-year's matched share estimates how many of its DOI-less references resolve.
-Coverage is estimated resolved references over all references of measured works. Every frame,
-community or mainstream, goes through the same code, and the census never compares coverage with
-r: gate 1 does that at S4, per sub-window (spec §7).
+corpus index. References without a DOI are sampled per work and matched by year, volume and first
+page, with the journal name breaking ties; each frame-year's matched share estimates how many of its
+DOI-less references resolve. Coverage is estimated resolved references over all paper references of
+measured works. Every frame, community or mainstream, goes through the same code, and the census never
+compares coverage with r: gate 1 does that at S4, per sub-window (spec §7).
 """
 
 from __future__ import annotations
@@ -37,6 +41,9 @@ class Reference:
     first_page: str | None = None
     journal: str | None = None
     text: str | None = None  # the unstructured citation string, when there is one
+    article_title: str | None = None
+    volume_title: str | None = None  # a book's or edited volume's title
+    series_title: str | None = None  # a proceedings or book series
 
 
 @dataclass(frozen=True)
@@ -73,7 +80,10 @@ class SampleOutcome:
     work: FrameWork
     references: References | None
     resolved: int
-    doiless: int = 0
+    refs: int = 0  # paper references, the denominator
+    refs_excluded: int = 0  # references to non-papers
+    refs_unclassifiable: int = 0
+    doiless: int = 0  # DOI-less paper references
     doiless_sampled: int = 0
     doiless_matched: int = 0
     doiless_unparseable: int = 0
@@ -104,14 +114,53 @@ def sample_frame(case_id: str, frame_id: str, works: Iterable[FrameWork], per_ye
     return chosen
 
 
-def doiless_sample(case_id: str, work_id: str, references: References, per_work: int, seed: int) -> list[int]:
-    """Indices of up to ``per_work`` DOI-less references, reproducible from the seed."""
-    pool = references.doiless()
+def doiless_sample(case_id: str, work_id: str, pool: Sequence[int], per_work: int, seed: int) -> list[int]:
+    """Up to ``per_work`` of the given reference indices, reproducible from the seed."""
+    pool = sorted(pool)
     if len(pool) <= per_work:
         return pool
     rng = np.random.default_rng(np.random.SeedSequence(entropy=seed,
                                                        spawn_key=(stable_key(case_id), stable_key(work_id))))
     return sorted(pool[i] for i in rng.choice(len(pool), size=per_work, replace=False).tolist())
+
+
+# ---------------------------------------------------------------- what counts as a paper
+
+_THESIS = re.compile(r"\b(?:thesis|dissertation|ph\.?\s?d\b|m\.?\s?sc\b|diplomarbeit)", re.I)
+_UNPUBLISHED = re.compile(r"\b(?:to be published|in press|submitted|unpublished|private communication|"
+                          r"personal communication|in preparation|arxiv|preprint)", re.I)
+_PROCEEDINGS = re.compile(r"\b(?:proc\.|proceedings|conference|conf\.|symposium|workshop|colloquium|iccf)", re.I)
+_REPORT = re.compile(r"\b(?:[A-Z]{2,}[- ]?(?:PUB|REP|TH|EP|PH|TM)[- ]?\d|CERN[- ]\d|DOE/|LA-UR\b|UCRL\b|ORNL\b|"
+                     r"technical report|tech\. rep|report (?:no|number|of|to)\b|memorandum)", re.I)
+_WEB = re.compile(r"https?://|www\.|available (?:at|from)\b", re.I)
+_BOOK = re.compile(r"\((?:eds?|editors?)\.?\)|\beds?\.\s*\)|\b(?:university )?press\b|\bpublishers?\b|\bverlag\b|"
+                   r"\bisbn\b|\b\d(?:st|nd|rd|th) ed(?:ition|\.)", re.I)
+_PUBLISHER_CITY = re.compile(r"\((?:[A-Z][\w.&'-]*\s?)+,\s*[A-Z][\w .'-]+,\s*(?:18|19|20)\d\d\)")
+_NEWS = re.compile(r"\b(?:new scientist|newspaper|magazine)\b", re.I)
+
+
+def reference_kind(ref: Reference) -> str:
+    """'paper', 'excluded' (a book, thesis, report, preprint, web page or unpublished work) or 'unclassifiable'.
+
+    A reference with a DOI is a paper here; its OpenAlex type decides it in ``outcome``. Proceedings count as
+    papers, because they are where many communities publish.
+    """
+    if ref.doi:
+        return "paper"
+    text = " ".join(x for x in (ref.text, ref.journal, ref.series_title, ref.volume_title, ref.article_title) if x)
+    if _THESIS.search(text) or _UNPUBLISHED.search(text) or _NEWS.search(text):
+        return "excluded"
+    if ref.series_title or _PROCEEDINGS.search(text):
+        return "paper"
+    if _REPORT.search(text) or _WEB.search(text):
+        return "excluded"
+    if ref.volume_title and not ref.journal:
+        return "excluded"
+    if _BOOK.search(text) or _PUBLISHER_CITY.search(ref.text or ""):
+        return "excluded"
+    if ref.journal or biblio_of(ref) is not None:
+        return "paper"
+    return "unclassifiable"
 
 
 # ---------------------------------------------------------------- bibliographic matching
@@ -149,8 +198,7 @@ def _page(value: str) -> str | None:
 def biblio_of(ref: Reference) -> Biblio | None:
     """Year, volume number and first page, from structured fields or a citation string.
 
-    None means the reference has no readable volume and page, which is typical of books, theses, reports,
-    preprints and proceedings.
+    None means the reference has no readable volume and page.
     """
     if ref.year and ref.volume and ref.first_page:
         volume, page = _volume(ref.volume), _page(ref.first_page)
@@ -182,55 +230,78 @@ def match_found(biblio: Biblio, candidate_journals: Sequence[str | None]) -> boo
     return biblio.journal is not None and any(n and journal_compatible(biblio.journal, n) for n in candidate_journals)
 
 
+def paper_doiless(references: References) -> list[int]:
+    """Indices of DOI-less references that count as papers: the pool the match sample is drawn from."""
+    return [i for i, e in enumerate(references.entries) if e.doi is None and reference_kind(e) == "paper"]
+
+
 # ---------------------------------------------------------------- coverage
 
 
-def outcome(work: FrameWork, references: References | None, known_dois: set[str],
-            matches: Mapping[int, bool | None] | None = None) -> SampleOutcome:
-    """``matches`` maps each sampled DOI-less reference to matched (True), unmatched (False) or unparseable (None)."""
+def outcome(work: FrameWork, references: References | None, doi_types: Mapping[str, str | None],
+            paper_types: frozenset[str], matches: Mapping[int, bool | None] | None = None) -> SampleOutcome:
+    """Count a sampled work's paper references and how many resolve.
+
+    ``doi_types`` maps each DOI found in the corpus to its work type; a DOI absent from it is unresolved but
+    still counted as a paper. ``matches`` maps each sampled DOI-less paper reference to matched (True),
+    unmatched (False) or no readable volume and page (None).
+    """
     if references is None:
         return SampleOutcome(work, None, 0)
     matches = matches or {}
+    counts = Counter()
+    for entry in references.entries:
+        if entry.doi is not None:
+            if entry.doi not in doi_types:
+                counts["refs"] += 1
+            elif doi_types[entry.doi] in paper_types:
+                counts.update(refs=1, resolved=1)
+            else:
+                counts["refs_excluded"] += 1
+            continue
+        kind = reference_kind(entry)
+        if kind == "paper":
+            counts.update(refs=1, doiless=1)
+        elif kind == "excluded":
+            counts["refs_excluded"] += 1
+        else:
+            counts["refs_unclassifiable"] += 1
     return SampleOutcome(
-        work, references,
-        resolved=sum(1 for d in references.dois if d is not None and d in known_dois),
-        doiless=len(references.doiless()),
-        doiless_sampled=len(matches),
+        work, references, resolved=counts["resolved"], refs=counts["refs"], refs_excluded=counts["refs_excluded"],
+        refs_unclassifiable=counts["refs_unclassifiable"], doiless=counts["doiless"], doiless_sampled=len(matches),
         doiless_matched=sum(1 for m in matches.values() if m is True),
         doiless_unparseable=sum(1 for m in matches.values() if m is None),
     )
 
 
+_OUTCOME_SUMS = ("refs", "resolved", "refs_excluded", "refs_unclassifiable", "doiless", "doiless_sampled",
+                 "doiless_matched", "doiless_unparseable")
+
+
 def coverage_rows(case_id: str, frame_id: str, kind: str, works: Sequence[FrameWork],
-                  outcomes: Sequence[SampleOutcome]) -> list[dict]:
+                  outcomes: Sequence[SampleOutcome], excluded_works: Mapping[int, int] | None = None) -> list[dict]:
     """One row per publication year of the frame, with the year's estimate of resolved references."""
+    excluded_works = excluded_works or {}
     frame_counts = Counter(w.year for w in works)
     per_year: dict[int, list[SampleOutcome]] = defaultdict(list)
     for o in outcomes:
         per_year[o.work.year].append(o)
     rows = []
-    for year in sorted(frame_counts):
+    for year in sorted(set(frame_counts) | set(excluded_works)):
         sampled = per_year.get(year, [])
         measured = [o for o in sampled if o.references is not None]
-        row = {
-            "case_id": case_id, "frame_id": frame_id, "kind": kind, "year": year,
-            "frame_works": frame_counts[year], "sampled": len(sampled), "measured": len(measured),
-            "unmeasured": len(sampled) - len(measured),
-            "refs": sum(o.references.total for o in measured if o.references is not None),
-            "resolved": sum(o.resolved for o in measured),
-            "doiless": sum(o.doiless for o in measured),
-            "doiless_sampled": sum(o.doiless_sampled for o in measured),
-            "doiless_matched": sum(o.doiless_matched for o in measured),
-            "doiless_unparseable": sum(o.doiless_unparseable for o in measured),
-        }
+        row = {"case_id": case_id, "frame_id": frame_id, "kind": kind, "year": year,
+               "frame_works": frame_counts[year], "frame_works_excluded": excluded_works.get(year, 0),
+               "sampled": len(sampled), "measured": len(measured), "unmeasured": len(sampled) - len(measured)}
+        row.update({name: sum(getattr(o, name) for o in measured) for name in _OUTCOME_SUMS})
         share = row["doiless_matched"] / row["doiless_sampled"] if row["doiless_sampled"] else 0.0
         row["resolved_estimated"] = round(row["resolved"] + row["doiless"] * share, 6)
         rows.append(row)
     return rows
 
 
-_SUMMED = ("frame_works", "sampled", "measured", "unmeasured", "refs", "resolved", "doiless", "doiless_sampled",
-           "doiless_matched", "doiless_unparseable", "resolved_estimated")
+_SUMMED = ("frame_works", "frame_works_excluded", "sampled", "measured", "unmeasured", *_OUTCOME_SUMS,
+           "resolved_estimated")
 
 
 @dataclass(frozen=True)
@@ -239,11 +310,14 @@ class Summary:
     frame_id: str
     kind: str
     frame_works: int
+    frame_works_excluded: int
     sampled: int
     measured: int
     unmeasured: int
     refs: int
     resolved: int
+    refs_excluded: int
+    refs_unclassifiable: int
     doiless: int
     doiless_sampled: int
     doiless_matched: int

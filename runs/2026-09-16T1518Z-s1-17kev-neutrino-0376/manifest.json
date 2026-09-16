@@ -1,0 +1,101 @@
+{
+  "run_id": "2026-09-16T1518Z-s1-17kev-neutrino-0376",
+  "stage": "S1",
+  "case": "17kev-neutrino",
+  "fold": "dev",
+  "status": "ok",
+  "error": null,
+  "git_commit": "6311303fab6dc54ffb855cde13c55526493e5db3",
+  "git_dirty": true,
+  "registry": {
+    "version": 0,
+    "components": {
+      "schemas": "draft:sha256:2a52a2c83d5410360a3bb52a0f14f045f9c0d4943974c6b38175f19d96a67e8e",
+      "corpus": "draft:sha256:4a957082f715ec7bf0a40c4330546b424e8f0998939c74a6a7d88b73819c2ea4",
+      "events/17kev-neutrino": "draft:sha256:f52c779e9092576f7e8af6f5bc2ee71e8ccca6e4ed92b9e418a4c4ea053ec973",
+      "cases/17kev-neutrino": "draft:sha256:97c6f441d2e328b676a6298b025455c4c3698b3fffdedf02738090e26ba097de"
+    }
+  },
+  "inputs": [
+    {
+      "path": "data/raw/openalex/3b/3bf7425923366b0ac5a815476727c176efa8b716ea09d45be9eb9b03b8c0a10c.json",
+      "sha256": "sha256:90a5b1a0f45816c79c73587c9b493615431dc0f2c7f4153c6a534b1b064fdf69"
+    },
+    {
+      "path": "data/raw/openalex/96/969947170d0e0b13b17c8f4f9a08492695e01a0af068ebb7a690b2078ae202f8.json",
+      "sha256": "sha256:b984fde51975530f92706fde7891c9808a545df20c558ac49cd2b5666222de2d"
+    },
+    {
+      "path": "data/raw/openalex/52/52566f4e08b10fb9d2cd471a3222d20f8206ed01f8e19eaa0ba3c4c74205fb3e.json",
+      "sha256": "sha256:563f6aec96b26a79ebb20850615e45d7afbe0b6221755955e3211ca6f8da5bd6"
+    },
+    {
+      "path": "data/raw/openalex/fb/fb8efc43f10c6530721285e308dc024e9659b4b8a106bae67108ea154bd398cd.json",
+      "sha256": "sha256:bf555fbd86da3483035e0b7faadffe0555b7d95ae220ed1f0961bc4078d7913a"
+    },
+    {
+      "path": "data/raw/openalex/ff/ffcd91b1f0c19ac30366693a6f627e780948c212a4ccbb0faf9df70010dfc12d.json",
+      "sha256": "sha256:808e37ce7ab510cea311d67d4ff07e9b641ac03e95228cd1cd89e77b25779c8d"
+    },
+    {
+      "path": "data/raw/openalex/fa/fa221c8bd3b393f1af22e25aa636cad12e72f9006a8a1fcc5c44384dbd1d9854.json",
+      "sha256": "sha256:5d5f9f15d9b5f7d7a6035fcc1f949c3dd44ba3523606d8ba7bbf6651824e6253"
+    },
+    {
+      "path": "data/raw/openalex/b8/b820c05ba80f1e0afffe98b2b7515a84e278a81141323a765920bf443e27a300.json",
+      "sha256": "sha256:fd12e6a6b49fef0545a1664f689c98a14eb03b8586099fea21470349c6b900e0"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "data/derived/64/649ab1a6b0469043330d0b44f636f3cbe84fad2dfd15dd8a7dcfdebaf6ef2565.parquet",
+      "sha256": "sha256:649ab1a6b0469043330d0b44f636f3cbe84fad2dfd15dd8a7dcfdebaf6ef2565",
+      "rows": 280
+    },
+    {
+      "path": "data/derived/d5/d5a1f21a0e1244726f4df3115e4d26d8b0c6654851f84ed71c1e5885c80fe026.parquet",
+      "sha256": "sha256:d5a1f21a0e1244726f4df3115e4d26d8b0c6654851f84ed71c1e5885c80fe026",
+      "rows": 779
+    },
+    {
+      "path": "data/derived/fe/fe09e6ee51ccf17834373aed16f7573f3ba61df1e96419fbbedc8712a4453037.parquet",
+      "sha256": "sha256:fe09e6ee51ccf17834373aed16f7573f3ba61df1e96419fbbedc8712a4453037",
+      "rows": 779
+    },
+    {
+      "path": "data/derived/01/01cdfd3c9a51ca663603fee9b1e283d88616c51ddef949e441871ec295bc66c3.parquet",
+      "sha256": "sha256:01cdfd3c9a51ca663603fee9b1e283d88616c51ddef949e441871ec295bc66c3",
+      "rows": 11217
+    },
+    {
+      "path": "data/derived/c7/c71b85ccd8a8f2d558595bd8fe94a4098d079bc372f90203246f5782b29cc191.parquet",
+      "sha256": "sha256:c71b85ccd8a8f2d558595bd8fe94a4098d079bc372f90203246f5782b29cc191",
+      "rows": 279
+    }
+  ],
+  "coders": [],
+  "usage": {
+    "live_calls": {},
+    "replayed": {
+      "openalex": 7
+    },
+    "usd": {}
+  },
+  "seed": null,
+  "params": {
+    "window": [
+      1985,
+      2010
+    ],
+    "tables": {
+      "works": "data/derived/64/649ab1a6b0469043330d0b44f636f3cbe84fad2dfd15dd8a7dcfdebaf6ef2565.parquet",
+      "authors": "data/derived/d5/d5a1f21a0e1244726f4df3115e4d26d8b0c6654851f84ed71c1e5885c80fe026.parquet",
+      "authorships": "data/derived/fe/fe09e6ee51ccf17834373aed16f7573f3ba61df1e96419fbbedc8712a4453037.parquet",
+      "citations": "data/derived/01/01cdfd3c9a51ca663603fee9b1e283d88616c51ddef949e441871ec295bc66c3.parquet",
+      "frames": "data/derived/c7/c71b85ccd8a8f2d558595bd8fe94a4098d079bc372f90203246f5782b29cc191.parquet"
+    }
+  },
+  "started": "2026-09-16T15:18:55+00:00",
+  "ended": "2026-09-16T15:18:56+00:00",
+  "viveka_version": "0.1.0"
+}

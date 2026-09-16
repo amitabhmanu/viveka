@@ -18,13 +18,13 @@ OA = "https://openalex.org/"
 
 def oa_work(wid: str, year: int, doi: str | None = None, refs=(), source: str | None = None,
             authors=(("A1", "Ann Author"),), title: str | None = None, source_name: str | None = None,
-            biblio: tuple[str, str] | None = None) -> dict:
+            biblio: tuple[str, str] | None = None, work_type: str = "article") -> dict:
     return {
         "id": OA + wid,
         "doi": f"https://doi.org/{doi}" if doi else None,
         "display_name": title or f"Work {wid}",
         "publication_year": year,
-        "type": "article",
+        "type": work_type,
         "biblio": {"volume": biblio[0], "first_page": biblio[1]} if biblio else {},
         "primary_location": ({"source": {"id": OA + source, "display_name": source_name or f"Venue {source}"}}
                              if source else None),
@@ -188,6 +188,7 @@ def small_world() -> FakeSources:
         fake.add(oa_work(f"W{10 + i}", year, doi=doi, refs=["W1", "W2"], authors=((f"A{10 + i}", "Author"),)))
     for i in range(3):
         fake.add(oa_work(f"W{30 + i}", 1995, doi=f"10.3/v{i}", source="S5"))
+    fake.add(oa_work("W33", 1995, doi="10.3/editorial", source="S5", work_type="editorial"))  # not a paper
     # A DOI-less article that OpenAlex has, findable by volume and page.
     fake.add(oa_work("W3", 1986, source="S9", source_name="Physical Review Letters", biblio=("56", "3")))
     structured = {"journal-title": "Phys. Rev. Lett.", "volume": "56", "first-page": "3", "year": "1986"}

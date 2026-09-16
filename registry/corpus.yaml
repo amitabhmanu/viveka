@@ -54,3 +54,9 @@ census:
   # frame-year's DOI-less references. A reference whose year, volume and page cannot be read counts as unmatched.
   doiless_sample_per_work: 3
   match_year_tolerance: 1
+  # Only research papers count (user decision, 16 Sep 2026): proceedings are kept because communities publish
+  # there. Frame works of other OpenAlex types are excluded before sampling; references to books, theses,
+  # reports, preprints, web pages and unpublished work are excluded by the registered classifier, and
+  # references too sparse to classify are excluded and counted separately.
+  paper_types: [article, review, letter, conference-paper]
+  reference_classification: crossref_fields_v1
