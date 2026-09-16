@@ -1,0 +1,183 @@
+{
+  "run_id": "2026-09-16T1353Z-s1-water-memory-4206",
+  "stage": "S1",
+  "case": "water-memory",
+  "fold": "dev",
+  "status": "ok",
+  "error": null,
+  "git_commit": "0c139c60836905e75455c9142cd340518c09f533",
+  "git_dirty": false,
+  "registry": {
+    "version": 0,
+    "components": {
+      "schemas": "draft:sha256:1eea36d3dfa586e4de25fbd8a90d1f67ae35de6eca6e7644caafbc637f5e2b73",
+      "corpus": "draft:sha256:9cf0fcc2d88347fcaf666ae29cb5dcff3201b4b00520b53de955bbc91185afaa",
+      "events/water-memory": "draft:sha256:4e2ab538b54c89924e61cbbc3cdf916879e460da4ffab4b78fb20d8d2796609a",
+      "cases/water-memory": "draft:sha256:e12e08d93a3cf4672838569932c36a649a1b54386f8b754657cd94684a6978ca"
+    }
+  },
+  "inputs": [
+    {
+      "path": "data/raw/openalex/71/7179bb36456ef60de4de9c3ed4ed3c43e7d684403c635dd8107a304e44ab5093.json",
+      "sha256": "sha256:72f4ffcec127829de82b885277c0466d65087298e1687e56022f0bad74d4a2b2"
+    },
+    {
+      "path": "data/raw/openalex/4f/4f815473a6af79027de8d2650a1b794ab4f61d899b2793d1350c567ace11bedc.json",
+      "sha256": "sha256:c5df569223123b67ef905112b42dc69e0a31de702d084244d5570aefb4ef43d8"
+    },
+    {
+      "path": "data/raw/openalex/0d/0d44dfff276a2f112cd48c18ff0bf0b4dc757c4d391b005675fbdf93ac4bf84b.json",
+      "sha256": "sha256:b6d1acc794dac7c2beb1b87c0b2fe29b38da6c564ef24b9f2718234241f918dd"
+    },
+    {
+      "path": "data/raw/openalex/49/490d144ff645c95dbda8bb595604fcb2f696644882db9b625ba9809530ce0701.json",
+      "sha256": "sha256:0e1fd3f68bb6ee729849c1c77c178a0ce12cf12068abbc15f82046e6a5cdeece"
+    },
+    {
+      "path": "data/raw/openalex/ec/ec91c37666ed60cf940ebe99deddac27aff45e8a0a729746e932afe6a1f60dc1.json",
+      "sha256": "sha256:a136ae3b74b9aef8b14ca0c1ee80d06b42de9822f1b353def78bb8a0f13bd2cf"
+    },
+    {
+      "path": "data/raw/openalex/38/38aeff288b9c424f4f1d3653825dac231d9e074453feb0cc9552b86e5fea4db6.json",
+      "sha256": "sha256:3ef6f1d42ae25eeeb5c90481fb5b6b516e1f0a6cb05d637ee820153b644e641a"
+    },
+    {
+      "path": "data/raw/openalex/9a/9a035d971597ac34d917e2d0e483e65540daebb84eeec991b51f4ebfbb767b05.json",
+      "sha256": "sha256:346127d65616e31d7593fe6e4ddeb27b57010272762d35c16cf294b6d5138c37"
+    },
+    {
+      "path": "data/raw/openalex/dd/dd3213da771f5381a1eda4fa1a4b841c0872755fc5aea0a14bdc1602a609d105.json",
+      "sha256": "sha256:48f6f3770f9a8d5835c068f7b07e403bda286c0dba20bc39fe53af4c9f13390a"
+    },
+    {
+      "path": "data/raw/openalex/0f/0f27d20993995b651b558350b4f4d8788131830e1dd6f59e3b5b0e2af536f6df.json",
+      "sha256": "sha256:26b0e4749288103c59a060bd093c3268732be4715f2a7d0d27fde450ea69b1d8"
+    },
+    {
+      "path": "data/raw/openalex/ff/ff4270b1e332c34156d643f4ecccafb67366ee1483d983a08f0aa03345f11de2.json",
+      "sha256": "sha256:772afcddd6b623670347970ce94a5defb2d159ac2ea26b52d4cc03abb9fc3737"
+    },
+    {
+      "path": "data/raw/openalex/a7/a7b4644b0c91736d4bedc573cc8fda9fde4517dfb9bdf2db748cc3895134395f.json",
+      "sha256": "sha256:e0e9fa9255081e85b0fb91de8cdd99dce741539811d7b88b83458475e0f1d598"
+    },
+    {
+      "path": "data/raw/openalex/25/2526e93189fa8f039dc148635bed226209bf12c89a8c71ae95d674a1c5b2b1d2.json",
+      "sha256": "sha256:2e52ff7b30c208c0257fbbbe22c3fc2ab328ce01a1962e4896ef057c18a2a62f"
+    },
+    {
+      "path": "data/raw/openalex/ae/aeba1f006c4df4a326e7e4ac53881603f2830f38a9b964d0d768cfac90ba413e.json",
+      "sha256": "sha256:74a6a65dc9a26d72eaf740c03878d1440bf2b8534dd783dbef6e256c7cfd54c1"
+    },
+    {
+      "path": "data/raw/openalex/90/9037a6c0567dbc3b47f29ed1cc255bd037edd0e0acb4687c9f8484fa3c8c79a7.json",
+      "sha256": "sha256:faa642f4b86d9a24a6336abe77c82f68726e10f475300c4bd3a49551d9d16aba"
+    },
+    {
+      "path": "data/raw/openalex/5c/5c6cfa38012357c24a0e3e1000448763d9575a5311a6e92cad85e0d5869dc155.json",
+      "sha256": "sha256:54730bac66cd6ebf7ebd9ac6b8383d2ca7643e94f39e2afecd95be39973834d3"
+    },
+    {
+      "path": "data/raw/openalex/6b/6b29031b830cd35ea04d7e947d6a431b719e2d38dadfd3f30dc3a9e400fc0e9e.json",
+      "sha256": "sha256:a3e0d60674efd17771be5ec11c4668ea9c10420c72a651a2f262b7dbff573c85"
+    },
+    {
+      "path": "data/raw/openalex/ca/cae7e93ebe035ef58c2334193dfd7973be762f9c69e6dc77df74dcfc597335cf.json",
+      "sha256": "sha256:0aff17c732120e0bdba08abbec66c47ade943035fb66e9a7837f47b7cba6fb80"
+    },
+    {
+      "path": "data/raw/openalex/2b/2bbc1b6c62cc40f802d481a8a2c23651803b766e278b4986b0f8fdba5e2e67d2.json",
+      "sha256": "sha256:b12efe6bfbab6dfbd9f2a5b8695f37142305cf1813f2b52536e55bb3155503f7"
+    },
+    {
+      "path": "data/raw/openalex/dd/dd5b366a9aaea567c474e7e3e80799ca70cb482cc0d072b8bcf3fc10f9abd892.json",
+      "sha256": "sha256:00d35e92877dc6c8e056bf334f3458f95b4d3dc7fb8998e384de2ee1f27ac09f"
+    },
+    {
+      "path": "data/raw/openalex/e5/e544bea88e677c04d9e8fa0b847feec2a8e21e5bafb56b77b8b18d89969a8db4.json",
+      "sha256": "sha256:cf42b91f365aff85e7bae481c28e9ed7dbd5ac8cb6b69c77967c174ae5aedccc"
+    },
+    {
+      "path": "data/raw/openalex/af/af25d95cb8698d53a85170784836389ab8f35821ebdfef73a33f9f3753937bd8.json",
+      "sha256": "sha256:70f08a64a3292f86bd02052410f1ec06aa02cd1d6e761267cd9302358e82308e"
+    },
+    {
+      "path": "data/raw/openalex/20/2004141a3194bf8c075fddf414c6fa43b3e8135f1e16726a0e4d90c0218db956.json",
+      "sha256": "sha256:afae6e7f5825e66eae96e346d4a7e95924799ddaf12f11d68ad4a3fa04bc95df"
+    },
+    {
+      "path": "data/raw/openalex/2e/2e566846f343ddefb4381606aceb95b1e89a85693945e4abec0876a4c53a374f.json",
+      "sha256": "sha256:e417139c3d6a20aff3f5fde45251879e80fda0806eb44da7709a00db1e8d8de3"
+    },
+    {
+      "path": "data/raw/openalex/25/254fec2561d00a8671ecc4438ae3f863cb58694a68a93b88408299d10257b6af.json",
+      "sha256": "sha256:b39874d7dafec02a053917aba278ed01f83e44e0442470f275b8ab73e5e07287"
+    },
+    {
+      "path": "data/raw/openalex/d7/d7eef6db6f1b5e3a0062810e735a142257bc568469cbde37ee45b551038112bc.json",
+      "sha256": "sha256:7b004be02cd27144d3a37070f90875b9c8b3114c9a04ea3ad240fa90b7c280cf"
+    },
+    {
+      "path": "data/raw/openalex/90/90300ae82ddbf0a17f178fedfa1f59b412301d64ebf89738b592b3e70ef60652.json",
+      "sha256": "sha256:1a8a9fd7427865c6f57370be5928de247b8b4841500f4301abae6782da1edb47"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "data/derived/9a/9a57975c2dfa360b858c70c90b4035f3151544570886b820c830a60971cf072d.parquet",
+      "sha256": "sha256:9a57975c2dfa360b858c70c90b4035f3151544570886b820c830a60971cf072d",
+      "rows": 4491
+    },
+    {
+      "path": "data/derived/55/5558324c51fbcffc674a6939d77aea3afe3e2fe413eda9924c4aaa5cb18573b9.parquet",
+      "sha256": "sha256:5558324c51fbcffc674a6939d77aea3afe3e2fe413eda9924c4aaa5cb18573b9",
+      "rows": 9132
+    },
+    {
+      "path": "data/derived/85/857114f2ae5f87bee7705b7544498dda85b513503f6bb50cb238094657e67721.parquet",
+      "sha256": "sha256:857114f2ae5f87bee7705b7544498dda85b513503f6bb50cb238094657e67721",
+      "rows": 9132
+    },
+    {
+      "path": "data/derived/a4/a4712ecdb76f4adba1a42235690fe93a4cfa1009d322f4eb7c6b041674e3b684.parquet",
+      "sha256": "sha256:a4712ecdb76f4adba1a42235690fe93a4cfa1009d322f4eb7c6b041674e3b684",
+      "rows": 58862
+    },
+    {
+      "path": "data/derived/99/99dc2af2113e2a10adb805fcb2f25222fd6c3b3f3558e90cd0d91489fe8c4483.parquet",
+      "sha256": "sha256:99dc2af2113e2a10adb805fcb2f25222fd6c3b3f3558e90cd0d91489fe8c4483",
+      "rows": 4559
+    }
+  ],
+  "coders": [],
+  "usage": {
+    "live_calls": {
+      "openalex": {
+        "list": 21
+      }
+    },
+    "replayed": {
+      "openalex": 5
+    },
+    "usd": {
+      "openalex": 0.0021
+    }
+  },
+  "seed": null,
+  "params": {
+    "window": [
+      1988,
+      2025
+    ],
+    "tables": {
+      "works": "data/derived/9a/9a57975c2dfa360b858c70c90b4035f3151544570886b820c830a60971cf072d.parquet",
+      "authors": "data/derived/55/5558324c51fbcffc674a6939d77aea3afe3e2fe413eda9924c4aaa5cb18573b9.parquet",
+      "authorships": "data/derived/85/857114f2ae5f87bee7705b7544498dda85b513503f6bb50cb238094657e67721.parquet",
+      "citations": "data/derived/a4/a4712ecdb76f4adba1a42235690fe93a4cfa1009d322f4eb7c6b041674e3b684.parquet",
+      "frames": "data/derived/99/99dc2af2113e2a10adb805fcb2f25222fd6c3b3f3558e90cd0d91489fe8c4483.parquet"
+    }
+  },
+  "started": "2026-09-16T13:53:10+00:00",
+  "ended": "2026-09-16T13:53:42+00:00",
+  "viveka_version": "0.1.0"
+}
