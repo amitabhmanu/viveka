@@ -41,6 +41,7 @@ class FakeSources:
     works: dict[str, dict] = field(default_factory=dict)
     crossref_refs: dict[str, list] = field(default_factory=dict)  # doi -> per reference: a DOI, None, or a raw entry
     s2_citations: dict[str, list[dict]] = field(default_factory=dict)  # doi -> citation items
+    crossref_search: list[tuple[str, list[dict]]] = field(default_factory=list)  # (query substring, items)
     calls: list[httpx.Request] = field(default_factory=list)
 
     def add(self, *works: dict) -> None:
@@ -57,7 +58,7 @@ class FakeSources:
         if request.url.host == "api.openalex.org":
             return self._openalex(raw, params)
         if request.url.host == "api.crossref.org":
-            return self._crossref(raw)
+            return self._crossref(raw, params)
         if request.url.host == "api.semanticscholar.org":
             return self._s2(raw, params)
         return httpx.Response(404)
@@ -112,7 +113,11 @@ class FakeSources:
                                          "results": page})
 
     # -- Crossref
-    def _crossref(self, path: str) -> httpx.Response:
+    def _crossref(self, path: str, params: dict) -> httpx.Response:
+        if path == "/works":
+            query = params.get("query.bibliographic", "").lower()
+            items = next((items for needle, items in self.crossref_search if needle.lower() in query), [])
+            return httpx.Response(200, json={"status": "ok", "message": {"items": items}})
         doi = normalize_doi(path.removeprefix("/works/"))
         if doi in self.crossref_refs:
             refs = [{"key": f"ref{i}", **(d if isinstance(d, dict) else {"DOI": d} if d else
@@ -190,10 +195,17 @@ def small_world() -> FakeSources:
         fake.add(oa_work(f"W{30 + i}", 1995, doi=f"10.3/v{i}", source="S5"))
     fake.add(oa_work("W33", 1995, doi="10.3/editorial", source="S5", work_type="editorial"))  # not a paper
     # A DOI-less article that OpenAlex has, findable by volume and page.
-    fake.add(oa_work("W3", 1986, source="S9", source_name="Physical Review Letters", biblio=("56", "3")))
+    fake.add(oa_work("W3", 1986, doi="10.4/prl", source="S9", source_name="Physical Review Letters",
+                     biblio=("56", "3")))
     structured = {"journal-title": "Phys. Rev. Lett.", "volume": "56", "first-page": "3", "year": "1986"}
+    # W12 cites the same paper with a wrong first page; only the bibliographic query recovers it.
+    miscited = {**structured, "first-page": "4", "article-title": "Reanalysis of the Eotvos experiment"}
+    fake.crossref_search.append(("Reanalysis of the Eotvos experiment", [
+        {"DOI": "10.4/prl", "score": 62.0, "issued": {"date-parts": [[1986]]}, "volume": "56", "page": "3-6",
+         "container-title": ["Physical Review Letters"], "title": ["Reanalysis of the Eotvos experiment"],
+         "type": "journal-article"}]))
     for i in range(9):  # every citing work with a DOI: 2 resolvable references, 1 unknown DOI, 1 without DOI
         fake.crossref_refs[f"10.2/c{i}"] = ["10.1/seed", "10.1/null", "10.9/not-indexed",
-                                            structured if i % 2 == 0 else None]
+                                            (miscited if i == 2 else structured) if i % 2 == 0 else None]
     fake.crossref_refs["10.1/null"] = ["10.1/seed"]
     return fake

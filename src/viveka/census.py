@@ -86,6 +86,7 @@ class SampleOutcome:
     doiless: int = 0  # DOI-less paper references
     doiless_sampled: int = 0
     doiless_matched: int = 0
+    doiless_rescued: int = 0  # of the matched, those found through a Crossref bibliographic query
     doiless_unparseable: int = 0
 
     @property
@@ -235,16 +236,110 @@ def paper_doiless(references: References) -> list[int]:
     return [i for i, e in enumerate(references.entries) if e.doi is None and reference_kind(e) == "paper"]
 
 
+# ---------------------------------------------------------------- recovery through a bibliographic query
+
+RESCUE_TYPES = frozenset({"journal-article", "proceedings-article"})
+_WORDS = re.compile(r"[a-z0-9]+")
+_ANY_YEAR = re.compile(r"\b(?:18|19|20)\d{2}\b")
+
+
+@dataclass(frozen=True)
+class Candidate:
+    """One item a bibliographic query returned."""
+
+    doi: str | None
+    score: float
+    year: int | None
+    volume: str | None
+    first_page: str | None
+    journal: str | None
+    title: str | None
+    kind: str | None
+
+
+def rescue_query(ref: Reference) -> str | None:
+    """The string to query with: the citation text, or its structured fields; None if too little to go on."""
+    if ref.text:
+        query = ref.text
+    else:
+        query = " ".join(str(p) for p in (ref.article_title, ref.journal, ref.volume, ref.first_page, ref.year) if p)
+    query = query.strip()
+    return query[:300] if len(query) >= 20 else None
+
+
+def _content_words(text: str) -> list[str]:
+    return [w for w in _WORDS.findall(text.lower()) if len(w) >= 3 and w not in _STOPWORDS]
+
+
+def journal_contained(cited: str, candidate: str) -> bool:
+    """Like ``journal_compatible``, but the candidate may carry extra words ('... and Interfacial Electrochemistry')."""
+    a, remaining = _journal_words(cited), iter(_journal_words(candidate))
+    return bool(a) and all(any(y.startswith(x) for y in remaining) for x in a)
+
+
+MIN_TITLE_WORDS = 5  # shorter titles are volume or series names as often as papers
+STRONG_TITLE_WORDS, STRONG_TITLE_SHARE = 7, 0.85  # a title match strong enough to outweigh contradicting numbers
+
+
+def _share(words: Sequence[str], pool: set[str]) -> float:
+    return sum(w in pool for w in words) / len(words) if words else 0.0
+
+
+def rescue_match(ref: Reference, candidates: Sequence[Candidate], min_score: float, title_share: float,
+                 year_tolerance: int) -> str | None:
+    """The DOI of the first candidate that is plausibly the cited paper, or None (rule crossref_bibliographic_v2).
+
+    A candidate must be a journal article or proceedings paper scoring at least ``min_score`` and published within
+    the year tolerance when both years are known. It is rejected when the citation is to proceedings and the
+    candidate is a journal article from a non-proceedings venue (a different publication of the same work), and
+    when its volume and page both contradict the citation's, unless its title matches strongly. It is accepted
+    when its title (at least five words) shares ``title_share`` of its words with the citation, both ways when the
+    citation carries its own title, or, with both years known, when it agrees on volume, first page or journal.
+    """
+    biblio = biblio_of(ref)
+    year = ref.year
+    if year is None:
+        found = _ANY_YEAR.search(ref.text or "")
+        year = int(found.group()) if found else None
+    citation = " ".join(p for p in (ref.text, ref.article_title, ref.journal, ref.series_title) if p)
+    haystack = set(_content_words(citation))
+    cited_title = _content_words(ref.article_title or "")
+    cites_proceedings = bool(_PROCEEDINGS.search(citation)) or ref.series_title is not None
+    for c in candidates:
+        if not c.doi or c.kind not in RESCUE_TYPES or c.score < min_score:
+            continue
+        years_known = year is not None and c.year is not None
+        if years_known and abs(c.year - year) > year_tolerance:
+            continue
+        if cites_proceedings and c.kind == "journal-article" and not _PROCEEDINGS.search(c.journal or ""):
+            continue
+        title_words = _content_words(c.title or "")
+        forward = _share(title_words, haystack)
+        titled = len(title_words) >= MIN_TITLE_WORDS and forward >= title_share and (
+            not cited_title or _share(cited_title, set(title_words)) >= title_share)
+        strong_title = titled and len(title_words) >= STRONG_TITLE_WORDS and forward >= STRONG_TITLE_SHARE
+        numbers_known = {n for n in (c.volume and _volume(c.volume), c.first_page and _page(c.first_page)) if n}
+        numbers = biblio is not None and bool(numbers_known & {biblio.volume, biblio.first_page})
+        if biblio is not None and numbers_known and not numbers and not strong_title:
+            continue  # volume and page both contradict the citation
+        journal = bool(ref.journal and c.journal and journal_contained(ref.journal, c.journal))
+        if titled or (years_known and (numbers or journal)):
+            return c.doi
+    return None
+
+
 # ---------------------------------------------------------------- coverage
 
 
 def outcome(work: FrameWork, references: References | None, doi_types: Mapping[str, str | None],
-            paper_types: frozenset[str], matches: Mapping[int, bool | None] | None = None) -> SampleOutcome:
+            paper_types: frozenset[str], matches: Mapping[int, bool | None] | None = None,
+            rescued: Iterable[int] = ()) -> SampleOutcome:
     """Count a sampled work's paper references and how many resolve.
 
     ``doi_types`` maps each DOI found in the corpus to its work type; a DOI absent from it is unresolved but
     still counted as a paper. ``matches`` maps each sampled DOI-less paper reference to matched (True),
-    unmatched (False) or no readable volume and page (None).
+    unmatched (False) or no readable volume and page (None); ``rescued`` names the sampled references whose
+    match came from a bibliographic query.
     """
     if references is None:
         return SampleOutcome(work, None, 0)
@@ -270,12 +365,13 @@ def outcome(work: FrameWork, references: References | None, doi_types: Mapping[s
         work, references, resolved=counts["resolved"], refs=counts["refs"], refs_excluded=counts["refs_excluded"],
         refs_unclassifiable=counts["refs_unclassifiable"], doiless=counts["doiless"], doiless_sampled=len(matches),
         doiless_matched=sum(1 for m in matches.values() if m is True),
+        doiless_rescued=sum(1 for i in set(rescued) if matches.get(i) is True),
         doiless_unparseable=sum(1 for m in matches.values() if m is None),
     )
 
 
 _OUTCOME_SUMS = ("refs", "resolved", "refs_excluded", "refs_unclassifiable", "doiless", "doiless_sampled",
-                 "doiless_matched", "doiless_unparseable")
+                 "doiless_matched", "doiless_rescued", "doiless_unparseable")
 
 
 def coverage_rows(case_id: str, frame_id: str, kind: str, works: Sequence[FrameWork],
@@ -321,6 +417,7 @@ class Summary:
     doiless: int
     doiless_sampled: int
     doiless_matched: int
+    doiless_rescued: int
     doiless_unparseable: int
     resolved_estimated: float
     coverage: float | None

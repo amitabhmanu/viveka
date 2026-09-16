@@ -31,6 +31,8 @@ class CensusSettings:
     match_year_tolerance: int
     paper_types: frozenset[str]
     reference_classification: str
+    rescue_min_score: float
+    rescue_title_share: float
 
 
 @dataclass(frozen=True)
@@ -67,7 +69,9 @@ def from_mapping(data: Mapping[str, Any]) -> CorpusConfig:
         census=CensusSettings(int(census["works_per_year"]), float(census["max_unmeasured_share"]),
                               int(census["seed"]), str(census["resolution"]), int(census["doiless_sample_per_work"]),
                               int(census["match_year_tolerance"]), frozenset(census["paper_types"]),
-                              str(census["reference_classification"])),
+                              str(census["reference_classification"]),
+                              float(census["bibliographic_rescue"]["min_score"]),
+                              float(census["bibliographic_rescue"]["title_word_share"])),
     )
 
 

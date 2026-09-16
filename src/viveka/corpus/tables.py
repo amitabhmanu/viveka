@@ -27,13 +27,13 @@ SCHEMAS: dict[str, pa.Schema] = {
                                 ("status", _S), ("reference_source", _S), ("refs", _I32), ("resolved", _I32),
                                 ("refs_excluded", _I32), ("refs_unclassifiable", _I32),
                                 ("doiless", _I32), ("doiless_sampled", _I32), ("doiless_matched", _I32),
-                                ("doiless_unparseable", _I32)]),
+                                ("doiless_rescued", _I32), ("doiless_unparseable", _I32)]),
     "coverage": pa.schema([("case_id", _S), ("frame_id", _S), ("kind", _S), ("year", _I32),
                            ("frame_works", _I32), ("frame_works_excluded", _I32), ("sampled", _I32),
                            ("measured", _I32), ("unmeasured", _I32), ("refs", _I32), ("resolved", _I32),
                            ("refs_excluded", _I32), ("refs_unclassifiable", _I32), ("doiless", _I32),
                            ("doiless_sampled", _I32),
-                           ("doiless_matched", _I32), ("doiless_unparseable", _I32),
+                           ("doiless_matched", _I32), ("doiless_rescued", _I32), ("doiless_unparseable", _I32),
                            ("resolved_estimated", pa.float64())]),
 }
 

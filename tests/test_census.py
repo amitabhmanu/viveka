@@ -3,6 +3,7 @@ from conftest import write_lf
 
 from viveka.census import (
     Biblio,
+    Candidate,
     FrameWork,
     Reference,
     References,
@@ -10,9 +11,12 @@ from viveka.census import (
     coverage_rows,
     doiless_sample,
     journal_compatible,
+    journal_contained,
     match_found,
     outcome,
     reference_kind,
+    rescue_match,
+    rescue_query,
     sample_frame,
     summarize,
 )
@@ -67,13 +71,16 @@ def test_outcomes_count_only_papers_and_estimate_coverage():
     assert rows == [
         {**common, "year": 1990, "frame_works": 3, "frame_works_excluded": 2, "sampled": 2, "measured": 1,
          "unmeasured": 1, "refs": 4, "resolved": 2, "refs_excluded": 2, "refs_unclassifiable": 1, "doiless": 1,
-         "doiless_sampled": 1, "doiless_matched": 1, "doiless_unparseable": 0, "resolved_estimated": 3.0},
+         "doiless_sampled": 1, "doiless_matched": 1, "doiless_rescued": 0, "doiless_unparseable": 0,
+         "resolved_estimated": 3.0},
         {**common, "year": 1991, "frame_works": 2, "frame_works_excluded": 0, "sampled": 1, "measured": 1,
          "unmeasured": 0, "refs": 4, "resolved": 2, "refs_excluded": 2, "refs_unclassifiable": 1, "doiless": 1,
-         "doiless_sampled": 1, "doiless_matched": 0, "doiless_unparseable": 0, "resolved_estimated": 2.0},
+         "doiless_sampled": 1, "doiless_matched": 0, "doiless_rescued": 0, "doiless_unparseable": 0,
+         "resolved_estimated": 2.0},
         {**common, "year": 1992, "frame_works": 0, "frame_works_excluded": 1, "sampled": 0, "measured": 0,
          "unmeasured": 0, "refs": 0, "resolved": 0, "refs_excluded": 0, "refs_unclassifiable": 0, "doiless": 0,
-         "doiless_sampled": 0, "doiless_matched": 0, "doiless_unparseable": 0, "resolved_estimated": 0.0},
+         "doiless_sampled": 0, "doiless_matched": 0, "doiless_rescued": 0, "doiless_unparseable": 0,
+         "resolved_estimated": 0.0},
     ]
     (whole,) = summarize(rows, max_unmeasured_share=0.5)
     assert whole.coverage == 0.625 and whole.unmeasured_share == pytest.approx(1 / 3) and whole.measurable
@@ -122,6 +129,66 @@ def test_no_references_is_not_measurable():
 )
 def test_reference_kinds(reference, kind):
     assert reference_kind(reference) == kind
+
+
+def _candidate(doi="10.9/hit", score=60.0, year=1986, volume="56", page="3", journal="Physical Review Letters",
+               title="Reanalysis of the Eotvos experiment", kind="journal-article"):
+    return Candidate(doi, score, year, volume, page, journal, title, kind)
+
+
+def test_bibliographic_rescue_accepts_verified_candidates_only():
+    wrong_page = Reference(None, 1986, "56", "4", "Phys. Rev. Lett.")
+    assert rescue_match(wrong_page, [_candidate()], 40, 0.8, 1) == "10.9/hit"  # volume agrees
+    assert rescue_match(wrong_page, [_candidate(score=24)], 40, 0.8, 1) is None  # too weak a match
+    assert rescue_match(wrong_page, [_candidate(year=1990)], 40, 0.8, 1) is None  # wrong year
+    assert rescue_match(wrong_page, [_candidate(kind="book-chapter")], 40, 0.8, 1) is None
+    assert rescue_match(wrong_page, [_candidate(volume="57", page="9", journal="Nature")], 40, 0.8, 1) is None
+    swapped = Reference(None, 1972, "167", "25", "Commun. Math. Phys")  # the depositor swapped volume and page
+    assert rescue_match(swapped, [_candidate(year=1972, volume="25", page="167-171",
+                                             journal="Communications in Mathematical Physics")], 40, 0.8, 1)
+    # A free-text citation with a wrong volume and page but the title right.
+    text = Reference(None, text="Bochner BS, et al. Flow cytometric methods for the analysis of human basophil "
+                                "surface antigens and viability. J Immunol Meth 1989; 142: 180.")
+    good = _candidate(year=1989, volume="125", page="265", journal="Journal of Immunological Methods",
+                      title="Flow cytometric methods for the analysis of human basophil surface antigens and viability")
+    assert rescue_match(text, [good], 40, 0.8, 1) == "10.9/hit"
+    # A different paper by the same group: similar words, different journal, volume and page.
+    abstract = Reference(None, text="Benveniste J, et al. Highly dilute antigen increases coronary flow of isolated "
+                                    "heart from immunized guinea-pigs. FASEB J 1992; 6: A1610.")
+    other = _candidate(year=1992, volume="81", page="68", journal="British Homoeopathic Journal",
+                       title="Effect of dilute histamine on coronary flow of isolated guinea-pig heart")
+    assert rescue_match(abstract, [other], 40, 0.8, 1) is None
+    # False matches found by auditing accepted recoveries (rule v2 rejects each):
+    same_title_elsewhere = Reference(None, text="Y. Arata, Y.-C. Zhang, Sono implantation of hydrogen and deuterium "
+                                                "from water into metallic fine powders, in: 8th International "
+                                                "Conference on Cold Fusion, 2000, p. 293.")
+    apl = _candidate(year=2000, volume="76", page="2472", journal="Applied Physics Letters",
+                     title="Sono implantation of hydrogen and deuterium from water into metallic fine powders")
+    assert rescue_match(same_title_elsewhere, [apl], 40, 0.8, 1) is None
+    volume_title = Reference(None, text="T.J. Phillips, Proc. 3rd Biennial Conf. on Low Energy Antiproton Physics "
+                                        "(World Scientific, Singapore, 1995), p. 569")
+    book = _candidate(year=1995, volume=None, page="1", journal="Low Energy Antiproton Physics",
+                      title="Low Energy Antiproton Physics", kind="proceedings-article")
+    assert rescue_match(volume_title, [book], 40, 0.8, 1) is None
+    same_topic = Reference(None, text="Braginsky, V. B., Panov, V. I., Verification of the equivalence of inertial "
+                                      "and gravitational mass, Sov. Phys.-JETP, 1972, 34: 463.")
+    grg = _candidate(year=1972, volume="3", page="403", journal="General Relativity and Gravitation",
+                     title="The equivalence of inertial and passive gravitational mass")
+    assert rescue_match(same_topic, [grg], 40, 0.8, 1) is None
+    own_title = Reference(None, 2009, article_title="Anomalous heat generation in charging of Pd powders with high "
+                                                    "density hydrogen isotopes (I) Results of absorption experiments")
+    related = _candidate(year=2009, volume="373", page="3109", journal="Physics Letters A",
+                         title="Anomalous effects in charging of Pd powders with high density hydrogen isotopes")
+    assert rescue_match(own_title, [related], 40, 0.8, 1) is None
+    # Correct recoveries that rule v2 keeps: a page off by two, and a proceedings paper found as one.
+    page_off = Reference(None, 1989, "45", "279", "Hyperfine Interact.",
+                         text="E. Kuzmann et al., Hyperfine Interact., 45 /1989/ 279.")
+    assert rescue_match(page_off, [_candidate(year=1989, volume="45", page="277", journal="Hyperfine Interactions",
+                                              title="Mossbauer investigation of Fe-Zr amorphous alloys")], 40, 0.8, 1)
+    assert rescue_query(Reference(None, 1978)) is None
+    assert rescue_query(wrong_page) == "Phys. Rev. Lett. 56 4 1986"
+    assert journal_contained("J. Electroanal. Chem.", "Journal of Electroanalytical Chemistry and Interfacial "
+                                                      "Electrochemistry")
 
 
 def test_frame_kind_does_not_change_the_numbers():

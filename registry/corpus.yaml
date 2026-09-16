@@ -60,3 +60,16 @@ census:
   # references too sparse to classify are excluded and counted separately.
   paper_types: [article, review, letter, conference-paper]
   reference_classification: crossref_fields_v1
+  # A sampled DOI-less paper reference that volume and page do not match is queried once with Crossref's
+  # bibliographic matcher (free), to recover papers cited with a wrong volume, page or year. A candidate is
+  # accepted only if it is a journal article or proceedings paper scoring at least min_score, published within
+  # the year tolerance when both years are known, and either shares title_word_share of its title's words with
+  # the citation or agrees on volume, first page or journal; its DOI must then be a paper in OpenAlex.
+  # Rule v2 (after an audit of 15 accepted recoveries found 5 false matches): candidates are also rejected when
+  # the citation is to proceedings and the candidate is a journal article elsewhere, when volume and page both
+  # contradict the citation (unless the title matches strongly), and when the title has fewer than five words
+  # or, for a citation with its own title, does not match both ways.
+  bibliographic_rescue:
+    rule: crossref_bibliographic_v2
+    min_score: 40
+    title_word_share: 0.8

@@ -1,6 +1,6 @@
 from corpus_fakes import FakeSources, fake_fetcher, oa_work
 
-from viveka.census import Reference
+from viveka.census import Candidate, Reference
 from viveka.corpus import crossref, openalex, semanticscholar
 from viveka.corpus.ids import chunks, normalize_doi, short_id
 
@@ -62,6 +62,15 @@ def test_crossref_reference_lists():
     assert refs.entries[1] == Reference(None, text="book")
     assert refs.entries[2] == Reference(None, 1986, "56", "3", "Phys. Rev. Lett.")
     assert crossref.work_request("10.1/a(b)").url.endswith("/works/10.1%2Fa%28b%29")
+    query = crossref.bibliographic_request("Phys. Rev. Lett. 56 4 1986")
+    assert dict(query.params)["query.bibliographic"] == "Phys. Rev. Lett. 56 4 1986" and query.kind == "free"
+    (candidate,) = crossref.candidates_of({"message": {"items": [
+        {"DOI": "10.1103/PhysRevLett.56.3", "score": 61.5, "issued": {"date-parts": [[1986, 1]]}, "volume": "56",
+         "page": "3-6", "container-title": ["Physical Review Letters"], "title": ["Reanalysis"],
+         "type": "journal-article"}]}})
+    assert candidate == Candidate("10.1103/physrevlett.56.3", 61.5, 1986, "56", "3", "Physical Review Letters",
+                                  "Reanalysis", "journal-article")
+    assert crossref.candidates_of({"message": {"items": [{"issued": {"date-parts": [[None]]}}]}})[0].year is None
     request = openalex.biblio_request(1986, "56", "3", 1)
     assert dict(request.params)["filter"] == "publication_year:1985-1987,biblio.volume:56,biblio.first_page:3"
     assert request.kind == "list"

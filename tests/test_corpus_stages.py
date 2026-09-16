@@ -94,8 +94,8 @@ def test_census_needs_a_fetch_then_measures_coverage(world):
                                       "year": 1990, "frame_works": 6, "frame_works_excluded": 0, "sampled": 6,
                                       "measured": 6, "unmeasured": 0, "refs": 21, "resolved": 11,
                                       "refs_excluded": 0, "refs_unclassifiable": 0, "doiless": 5,
-                                      "doiless_sampled": 5, "doiless_matched": 5, "doiless_unparseable": 0,
-                                      "resolved_estimated": 16.0}
+                                      "doiless_sampled": 5, "doiless_matched": 5, "doiless_rescued": 1,
+                                      "doiless_unparseable": 0, "resolved_estimated": 16.0}
     # 1991: W11, W13, W15, W17 measured, each citing "An old book" (unclassifiable, so not counted); W19 has no DOI
     r1991 = rows[("citing", 1991)]
     assert (r1991["measured"], r1991["unmeasured"], r1991["refs"], r1991["refs_unclassifiable"],
@@ -103,9 +103,9 @@ def test_census_needs_a_fetch_then_measures_coverage(world):
     venue = rows[("venue", 1995)]
     assert (venue["frame_works"], venue["frame_works_excluded"], venue["unmeasured"], venue["refs"]) == (3, 1, 3, 0)
     report = "\n".join(lines)
-    assert "| citing | mainstream | 11 | 0 | 11 | 9.1% | 33 | 0/4 | 15.2% | 5/5 | 0/5 | 72.7% | yes |" in report
-    assert "| venue | community | 3 | 1 | 3 | 100.0% | 0 | 0/0 | n/a | 0/0 | 0/0 | n/a | no |" in report
-    assert manifest["usage"]["live_calls"]["crossref"] == {"free": 13}
+    assert "| citing | mainstream | 11 | 0 | 11 | 9.1% | 33 | 0/4 | 15.2% | 5/5 (1) | 0/5 | 72.7% | yes |" in report
+    assert "| venue | community | 3 | 1 | 3 | 100.0% | 0 | 0/0 | n/a | 0/0 (0) | 0/0 | n/a | no |" in report
+    assert manifest["usage"]["live_calls"]["crossref"] == {"free": 14}  # 13 reference lists, 1 bibliographic query
     assert all(c.url.params.get("mailto") == "test@example.invalid" for c in fake.calls
                if c.url.host == "api.crossref.org")
 

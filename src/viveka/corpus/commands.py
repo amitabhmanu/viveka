@@ -30,6 +30,8 @@ from viveka.census import (
     match_found,
     outcome,
     paper_doiless,
+    rescue_match,
+    rescue_query,
     sample_frame,
     summarize,
 )
@@ -325,21 +327,35 @@ def _manual_refs(root: Path, manual: Path | None) -> dict[str, References]:
 
 
 def match_references(fetcher: Fetcher, case_id: str, work_id: str, references: References,
-                     settings: CensusSettings) -> dict[int, bool | None]:
-    """Match a work's sampled DOI-less references in OpenAlex; None marks one whose year, volume and page
-    can't be read."""
+                     settings: CensusSettings) -> tuple[dict[int, bool | None], dict[int, str]]:
+    """Match a work's sampled DOI-less paper references in OpenAlex by year, volume and page.
+
+    Returns each sampled reference's result (None: no readable volume and page) and, for those not matched,
+    the DOI a Crossref bibliographic query recovered, still to be confirmed as a paper in OpenAlex.
+    """
     found: dict[int, bool | None] = {}
+    rescued: dict[int, str] = {}
     pool = paper_doiless(references)
     for index in doiless_sample(case_id, work_id, pool, settings.doiless_sample_per_work, settings.seed):
-        biblio = biblio_of(references.entries[index])
+        entry = references.entries[index]
+        biblio = biblio_of(entry)
         if biblio is None:
             found[index] = None
+        else:
+            response = fetcher.get(openalex.biblio_request(biblio.year, biblio.volume, biblio.first_page,
+                                                           settings.match_year_tolerance))
+            results = ((response.body or {}).get("results") or []) if response.status == 200 else []
+            found[index] = match_found(biblio, [openalex.source_name(r) for r in results]) if results else False
+        query = rescue_query(entry) if found[index] is not True else None
+        if query is None:
             continue
-        response = fetcher.get(openalex.biblio_request(biblio.year, biblio.volume, biblio.first_page,
-                                                       settings.match_year_tolerance))
-        results = ((response.body or {}).get("results") or []) if response.status == 200 else []
-        found[index] = match_found(biblio, [openalex.source_name(r) for r in results]) if results else False
-    return found
+        response = fetcher.get(crossref.bibliographic_request(query))
+        if response.status == 200:
+            doi = rescue_match(entry, crossref.candidates_of(response.body), settings.rescue_min_score,
+                               settings.rescue_title_share, settings.match_year_tolerance)
+            if doi:
+                rescued[index] = doi
+    return found, rescued
 
 
 def census_case(root: Path, case_id: str, fold: str, *, manual: Path | None = None,
@@ -382,13 +398,25 @@ def census_case(root: Path, case_id: str, fold: str, *, manual: Path | None = No
                 found = openalex.lookup_dois(fetcher, reference_dois, int(config.openalex["doi_batch"]),
                                              fields=(*openalex.ID_FIELDS, "type"))
                 doi_types = {doi: obj.get("type") for doi, obj in found.items()}
-                matches = {work_id: match_references(fetcher, case_id, work_id, refs, settings)
-                           for work_id, refs in sorted(references.items()) if refs is not None}
+                matches: dict[str, dict[int, bool | None]] = {}
+                rescued: dict[str, dict[int, str]] = {}
+                for work_id, refs in sorted(references.items()):
+                    if refs is not None:
+                        matches[work_id], rescued[work_id] = match_references(fetcher, case_id, work_id, refs,
+                                                                              settings)
+                rescued_dois = sorted({doi for by_index in rescued.values() for doi in by_index.values()})
+                confirmed = openalex.lookup_dois(fetcher, rescued_dois, int(config.openalex["doi_batch"]),
+                                                 fields=(*openalex.ID_FIELDS, "type"))
+                for work_id, by_index in rescued.items():
+                    for index, doi in by_index.items():
+                        if (confirmed.get(doi) or {}).get("type") in settings.paper_types:
+                            matches[work_id][index] = True
             finally:
                 _finish(ctx, fetcher)
         coverage, sample_rows = [], []
         for frame_id in sorted(set(draw.by_frame) | set(draw.excluded)):
-            outcomes = [outcome(w, references[w.work_id], doi_types, settings.paper_types, matches.get(w.work_id))
+            outcomes = [outcome(w, references[w.work_id], doi_types, settings.paper_types, matches.get(w.work_id),
+                                rescued.get(w.work_id, {}))
                         for w in samples.get(frame_id, [])]
             coverage += coverage_rows(case_id, frame_id, draw.kinds[frame_id], draw.by_frame.get(frame_id, []),
                                       outcomes, draw.excluded.get(frame_id))
@@ -398,7 +426,8 @@ def census_case(root: Path, case_id: str, fold: str, *, manual: Path | None = No
                              "refs": o.refs, "resolved": o.resolved, "refs_excluded": o.refs_excluded,
                              "refs_unclassifiable": o.refs_unclassifiable,
                              "doiless": o.doiless, "doiless_sampled": o.doiless_sampled,
-                             "doiless_matched": o.doiless_matched, "doiless_unparseable": o.doiless_unparseable}
+                             "doiless_matched": o.doiless_matched, "doiless_rescued": o.doiless_rescued,
+                             "doiless_unparseable": o.doiless_unparseable}
                             for o in outcomes]
         written = {}
         for name, rows in (("coverage", coverage), ("census_sample", sample_rows)):
@@ -441,6 +470,9 @@ def project_census(fetcher: Fetcher, config: CorpusConfig, samples: dict[str, li
     if unarchived_works:
         projection.unknown.append(f"{unarchived_works} reference list(s) not archived yet; assumed "
                                   f"{ASSUMED_REFS_PER_WORK} references each (an estimate, not a bound)")
+    if match_calls:
+        projection.unknown.append(f"up to {match_calls} free Crossref bibliographic queries, one per DOI-less "
+                                  "reference that volume and page do not match")
     return projection
 
 
@@ -461,7 +493,9 @@ def census_report(case: Case, run_id: str, fetch_run: str, config: CorpusConfig,
         f"counted. Up to {settings.works_per_year} papers sampled per frame and year (seed {settings.seed}). A "
         f"reference with a DOI resolves when the DOI is in OpenAlex; up to {settings.doiless_sample_per_work} paper "
         f"references without a DOI per work are matched by year (±{settings.match_year_tolerance}), volume and "
-        f"first page, and each frame-year's matched share estimates the rest. A frame or year with more than "
+        f"first page, or failing that by a Crossref bibliographic query (score at least "
+        f"{settings.rescue_min_score:g}, checked against year, volume, page, journal or title; shown in brackets), "
+        f"and each frame-year's matched share estimates the rest. A frame or year with more than "
         f"{settings.max_unmeasured_share:.0%} unmeasured papers is not measurable.",
         "",
         "Coverage is not compared with *r* here: gate 1 applies *r* per sub-window at S4.",
@@ -479,7 +513,8 @@ def census_report(case: Case, run_id: str, fetch_run: str, config: CorpusConfig,
         lines.append(f"| {s.frame_id} | {s.kind} | {s.frame_works} | {s.frame_works_excluded} | {s.sampled} | "
                      f"{_pct(s.unmeasured_share)} | {s.refs} | {s.refs_excluded}/{s.refs_unclassifiable} | "
                      f"{_pct(s.doiless / s.refs if s.refs else None)} | "
-                     f"{s.doiless_matched}/{s.doiless_sampled} | {s.doiless_unparseable}/{s.doiless_sampled} | "
+                     f"{s.doiless_matched}/{s.doiless_sampled} ({s.doiless_rescued}) | "
+                     f"{s.doiless_unparseable}/{s.doiless_sampled} | "
                      f"{_pct(s.coverage)} | {'yes' if s.measurable else 'no'} |")
     if undated:
         lines += ["", f"{undated} frame work(s) without a publication year were not sampled."]
@@ -497,7 +532,7 @@ def census_report(case: Case, run_id: str, fetch_run: str, config: CorpusConfig,
                          f"{_pct(s.unmeasured_share)} | {row['refs']} | "
                          f"{row['refs_excluded']}/{row['refs_unclassifiable']} | "
                          f"{_pct(s.doiless / s.refs if s.refs else None)} | "
-                         f"{s.doiless_matched}/{s.doiless_sampled} | {_pct(s.coverage)} | "
+                         f"{s.doiless_matched}/{s.doiless_sampled} ({s.doiless_rescued}) | {_pct(s.coverage)} | "
                          f"{'yes' if s.measurable else 'no'} |")
     return "\n".join(lines) + "\n"
 
