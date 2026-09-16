@@ -1,0 +1,14 @@
+# DRAFT for owner review (M4a, 16 Sep 2026).
+format: 1
+case: cold-fusion
+claim: cold-fusion
+role: pilot
+pair: pilot
+window: {start: 1989, end: 2025}
+notes: "Window from the framework's pilot text (1989–2025). REVIEW: the ICCF proceedings (1990–) are not an OpenAlex source and Infinite Energy is not indexed, so the community frame can only use the Journal of Condensed Matter Nuclear Science (from 2007); the residue's earlier venues are outside the corpus until ingested (decision D-8)."
+seeds:
+  - {openalex: W2131132747, doi: 10.1016/0022-0728(89)80006-3, note: "Fleischmann and Pons 1989 (founding claim)"}
+  - {openalex: W2030274785, doi: 10.1038/338737a0, note: "Jones et al. 1989, neutron observation (principal positive report)"}
+frames:
+  - {id: citing, kind: mainstream, cites: seeds, note: "Every work citing a seed in the window, proponents included."}
+  - {id: community, kind: community, sources: [S5406984507], note: "Journal of Condensed Matter Nuclear Science (ISSN-L 2227-3123), the residue's journal."}

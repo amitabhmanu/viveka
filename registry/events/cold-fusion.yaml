@@ -1,0 +1,24 @@
+# DRAFT for owner review (M4a, 16 Sep 2026). IDs and dates verified by OpenAlex lookup.
+format: 1
+claim: cold-fusion
+wording: "Electrolysis of heavy water with palladium cathodes produces excess heat, and nuclear products, from deuterium fusion at room temperature (Fleischmann and Pons 1989)."
+notes: "Pilot pair, the case expected to leave a residue community. Principal positive reports are seeds in cases/cold-fusion.yaml."
+events:
+  - id: lewis-1989
+    date: "1989-08-01"
+    kind: disconfirmation
+    works: [{openalex: W1994716753, doi: 10.1038/340525a0}]
+    note: "Caltech: no excess heat, neutrons or gamma rays from palladium electrolysis."
+    source: "OpenAlex publication_date."
+  - id: williams-1989
+    date: "1989-11-01"
+    kind: disconfirmation
+    works: [{openalex: W2009270458, doi: 10.1038/342375a0}]
+    note: "Harwell: upper bounds on cold fusion in electrolytic cells."
+    source: "OpenAlex publication_date."
+  - id: salamon-1990
+    date: "1990-03-01"
+    kind: disconfirmation
+    works: [{openalex: W2054256952, doi: 10.1038/344401a0}]
+    note: "Utah: limits on neutron, gamma, electron and proton emission from Pons and Fleischmann's own cells."
+    source: "OpenAlex publication_date."

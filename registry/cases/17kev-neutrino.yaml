@@ -1,0 +1,12 @@
+# DRAFT for owner review (M4a, 16 Sep 2026).
+format: 1
+case: 17kev-neutrino
+claim: 17kev-neutrino
+role: reserve
+pair: reserve
+window: {start: 1985, end: 2010}
+notes: "REVIEW: the framework dates the claim 1985–1993; the window runs to 2010, matching the fifth force, so closure after 1993 can be observed. No persisting community is expected."
+seeds:
+  - {openalex: W2021773371, doi: 10.1103/physrevlett.54.1891, note: "Simpson 1985, heavy-neutrino emission in beta decay (founding claim)"}
+frames:
+  - {id: citing, kind: mainstream, cites: seeds, note: "Every work citing a seed in the window, proponents included."}

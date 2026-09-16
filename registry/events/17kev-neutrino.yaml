@@ -1,0 +1,30 @@
+# DRAFT for owner review (M4a, 16 Sep 2026). IDs verified by OpenAlex lookup.
+format: 1
+claim: 17kev-neutrino
+wording: "A heavy neutrino of mass about 17 keV is emitted, with a mixing of about one per cent, in nuclear beta decay (Simpson 1985)."
+notes: "Reserve pair, the let-go case (framework pilot text names it). REVIEW: the positive replications of 1989–1991 are not yet seeds; my candidate DOI for Hime and Jelley 1991 did not resolve."
+events:
+  - id: early-null-1985
+    date: "1985"
+    kind: disconfirmation
+    works: [{openalex: W1987949384, doi: 10.1016/0370-2693(85)91336-x}]
+    note: "REVIEW: 35S beta decay, 'evidence against the 17 keV heavy neutrino'; an early null result, before the replications."
+    source: "OpenAlex title search (year only)."
+  - id: mortara-1993
+    date: "1993-01-25"
+    kind: disconfirmation
+    works: [{openalex: W2042402598, doi: 10.1103/physrevlett.70.394}]
+    note: "35S beta decay with a magnetic spectrometer: evidence against a 17 keV neutrino."
+    source: "OpenAlex publication_date."
+  - id: wietfeldt-1993
+    date: "1993-03-22"
+    kind: disconfirmation
+    works: [{openalex: W2036221687, doi: 10.1103/physrevlett.70.1759}]
+    note: "Electron-capture decay of 55Fe: no 17 keV neutrino."
+    source: "OpenAlex publication_date."
+  - id: spurious-1994
+    date: "1994"
+    kind: disconfirmation
+    works: [{openalex: W1981169491, doi: 10.1016/0370-2693(94)90963-6}]
+    note: "REVIEW: explains the 35S signal as spurious; an explanation of earlier positives rather than a new null measurement."
+    source: "OpenAlex title search (year only)."

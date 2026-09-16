@@ -1,0 +1,18 @@
+# DRAFT for owner review (M4a, 16 Sep 2026). IDs and dates verified by OpenAlex lookup.
+format: 1
+claim: water-memory
+wording: "Human basophils degranulate in response to anti-IgE antiserum diluted far beyond the point where any antibody molecule remains (Davenas et al. 1988)."
+notes: "Reserve pair, proposed residue case. REVIEW: overlaps the homeopathy calibration field (same community venues), so it cannot serve both roles without breaking fold isolation."
+events:
+  - id: maddox-1988
+    date: "1988-07-01"
+    kind: disconfirmation
+    works: [{openalex: W43384100, doi: 10.1038/334287a0}]
+    note: "Nature's investigation of the Benveniste laboratory: blinded runs showed no effect."
+    source: "OpenAlex publication_date."
+  - id: hirst-1993
+    date: "1993-12-01"
+    kind: disconfirmation
+    works: [{openalex: W1973679084, doi: 10.1038/366525a0}]
+    note: "Independent replication: basophil degranulation is not triggered by very dilute anti-IgE."
+    source: "OpenAlex publication_date."

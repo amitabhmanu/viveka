@@ -1,0 +1,13 @@
+# DRAFT for owner review (M4a, 16 Sep 2026).
+format: 1
+case: water-memory
+claim: water-memory
+role: reserve
+pair: reserve
+window: {start: 1988, end: 2025}
+notes: "Window matches cold fusion's span after the claim. REVIEW: both community venues are homeopathy journals, which the homeopathy calibration field would also use."
+seeds:
+  - {openalex: W2087907215, doi: 10.1038/333816a0, note: "Davenas et al. 1988 (founding claim)"}
+frames:
+  - {id: citing, kind: mainstream, cites: seeds, note: "Every work citing the seed in the window, proponents included."}
+  - {id: community, kind: community, sources: [S4310451, S4210225608], note: "Homeopathy (ISSN-L 1475-4916) and its predecessor, the British Homeopathic Journal (ISSN-L 0007-0785)."}

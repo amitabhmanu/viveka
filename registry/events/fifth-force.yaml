@@ -1,0 +1,24 @@
+# DRAFT for owner review (M4a, 16 Sep 2026). IDs and dates verified by OpenAlex lookup.
+format: 1
+claim: fifth-force
+wording: "A composition-dependent force of intermediate range, beyond gravity and the known interactions, acts between ordinary bodies, as proposed from a reanalysis of the Eötvös experiment (Fischbach et al. 1986)."
+notes: "Pilot pair, the case expected to be let go cleanly. Principal positive reports are seeds in cases/fifth-force.yaml."
+events:
+  - id: stubbs-1987
+    date: "1987-03-16"
+    kind: disconfirmation
+    works: [{openalex: W2082342571, doi: 10.1103/physrevlett.58.1070}]
+    note: "Eöt-Wash torsion balance: no intermediate-range composition-dependent interaction at the proposed strength."
+    source: "OpenAlex publication_date; framework pilot text (Eöt-Wash torsion-balance experiments)."
+  - id: adelberger-1987
+    date: "1987-08-24"
+    kind: disconfirmation
+    works: [{openalex: W2065845018, doi: 10.1103/physrevlett.59.849}]
+    note: "Eöt-Wash: new constraints on composition-dependent interactions weaker than gravity."
+    source: "OpenAlex publication_date."
+  - id: heckel-1989
+    date: "1989-12-18"
+    kind: disconfirmation
+    works: [{openalex: W2051915405, doi: 10.1103/physrevlett.63.2705}]
+    note: "REVIEW: bounds on ultralow-mass boson interactions; extends the null results to longer ranges, arguably a different parameter region."
+    source: "OpenAlex publication_date."

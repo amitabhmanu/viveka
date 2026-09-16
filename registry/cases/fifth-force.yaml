@@ -1,0 +1,14 @@
+# DRAFT for owner review (M4a, 16 Sep 2026).
+format: 1
+case: fifth-force
+claim: fifth-force
+role: pilot
+pair: pilot
+window: {start: 1986, end: 2010}
+notes: "Window from the framework's pilot text (1986–2010). No persisting community is expected, so the only frame is the citing literature."
+seeds:
+  - {openalex: W3157736569, doi: 10.1103/physrevlett.56.3, note: "Fischbach et al. 1986, reanalysis of the Eötvös experiment (founding claim)"}
+  - {openalex: W2037169065, doi: 10.1103/physrevlett.58.1066, note: "Thieberger 1987, floating-ball accelerometer (principal positive report)"}
+  - {openalex: W2062688225, doi: 10.1103/physrevlett.59.1385, note: "Boynton et al. 1987, torsion pendulum (principal positive report)"}
+frames:
+  - {id: citing, kind: mainstream, cites: seeds, note: "Every work citing a seed in the window, proponents included."}
