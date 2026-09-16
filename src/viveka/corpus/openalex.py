@@ -42,6 +42,20 @@ def list_request(filter_value: str, cursor: str, per_page: int, fields: Sequence
                          select=_select(fields))
 
 
+def biblio_request(year: int, volume: str, first_page: str, year_tolerance: int) -> Request:
+    """Works at a year (± tolerance), volume and first page: the census's match for a DOI-less reference.
+
+    Volume and page are single tokens (see ``census.biblio_of``), so they cannot break the filter syntax.
+    """
+    flt = (f"publication_year:{year - year_tolerance}-{year + year_tolerance},"
+           f"biblio.volume:{volume},biblio.first_page:{first_page}")
+    return Request.build(SOURCE, "list", f"{BASE}/works", filter=flt, per_page=25, select="id,primary_location")
+
+
+def source_name(obj: dict) -> str | None:
+    return (((obj.get("primary_location") or {}).get("source")) or {}).get("display_name")
+
+
 def title_search_request(title: str) -> Request:
     return Request.build(SOURCE, "search", f"{BASE}/works", search=title, per_page=5, select=_select(WORK_FIELDS))
 

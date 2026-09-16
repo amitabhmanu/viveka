@@ -65,13 +65,16 @@
     },
     "census": {
       "type": "object",
-      "required": ["works_per_year", "max_unmeasured_share", "seed", "resolution"],
+      "required": ["works_per_year", "max_unmeasured_share", "seed", "resolution", "doiless_sample_per_work",
+                   "match_year_tolerance"],
       "additionalProperties": false,
       "properties": {
         "works_per_year": {"type": "integer", "minimum": 1},
         "max_unmeasured_share": {"type": "number", "minimum": 0, "maximum": 1},
         "seed": {"type": "integer", "minimum": 0},
-        "resolution": {"enum": ["crossref_doi_in_openalex"]}
+        "resolution": {"enum": ["crossref_doi_plus_sampled_biblio_match"]},
+        "doiless_sample_per_work": {"type": "integer", "minimum": 0},
+        "match_year_tolerance": {"type": "integer", "minimum": 0, "maximum": 5}
       }
     }
   },

@@ -1,0 +1,105 @@
+{
+  "run_id": "2026-09-16T1434Z-s1-fifth-force-e7b8",
+  "stage": "S1",
+  "case": "fifth-force",
+  "fold": "dev",
+  "status": "ok",
+  "error": null,
+  "git_commit": "8785c75f62aa52b5ddd597f8f584f729c3ffb473",
+  "git_dirty": true,
+  "registry": {
+    "version": 0,
+    "components": {
+      "schemas": "draft:sha256:712af817b92ee0fcdeae707f084912ada39647ba15e99f9f8c1bb15777c316e8",
+      "corpus": "draft:sha256:da75d1e9af331d8f05fa6d684251eb458b8eae0185c4d2aeec20fc1dfd39dd0c",
+      "events/fifth-force": "draft:sha256:f8735da9c8b13880114f20c52756e82e6d3a7875bda37497630d8136f6633be8",
+      "cases/fifth-force": "draft:sha256:878782a0d4fb7d312e11de078e5a76a98f80cfc7b3511b5bd19fd5c65c7380d0"
+    }
+  },
+  "inputs": [
+    {
+      "path": "data/raw/openalex/c5/c5ee1f209066c81b5d71e36f948e228bb9426c86d275ef5bf7b238f428efd804.json",
+      "sha256": "sha256:a3bafc3232f9e3a863b8369d8bcac92a5bdd9396c13344fc33540d0bc014fc55"
+    },
+    {
+      "path": "data/raw/openalex/4b/4ba0378e6a8b50facf820fc9645cc55f7efe1531877e9c0b72eb8c0e60a20349.json",
+      "sha256": "sha256:427a797745947bcaa0df1014d532ee78dc18198c08c4c8ef0815586ff6b33731"
+    },
+    {
+      "path": "data/raw/openalex/60/60638da879287c41a460552cb41eba060c51d35c6429741682e68fb24d936b28.json",
+      "sha256": "sha256:3ab954ca336b01b1d0ea89ac378c52e7929ee643e96675d83c051be703100eed"
+    },
+    {
+      "path": "data/raw/openalex/4f/4fa6f9f7023ddcabcf900838bf81fb7f7f0a8831e68e10e079ca84c25dacad3b.json",
+      "sha256": "sha256:5fca16ddcd8032353283ad9da620a6952ea5804ac68b998b9dd1d5240da29a84"
+    },
+    {
+      "path": "data/raw/openalex/f1/f1d867b915713f366df2a55e68d7596b539d3970d89a53029c5fb37c03b750a8.json",
+      "sha256": "sha256:fb4a495895d424cc499da9a22c1d0b7daeeb5034d9fa183b6aff955b274e8974"
+    },
+    {
+      "path": "data/raw/openalex/e9/e96c741c3fc034727f1a80e93b8e0e0c09fa94eb3f39a1afb6d37bd3cabe96d4.json",
+      "sha256": "sha256:19d8a2a4d2df9b056b918221f159b30ee13a18e8a43e7ab205b4b8accc339b90"
+    },
+    {
+      "path": "data/raw/openalex/ce/ce34b3eaaea6110ae16e1e4208640d92d8a1e0cfd800f1031bd90ed781d1d490.json",
+      "sha256": "sha256:d7d831c374771f8d03966f681ddc5ca8dd7f7805ca25044d298a7e83b3bba297"
+    },
+    {
+      "path": "data/raw/openalex/6a/6a6a6ca38b77ca3167870afcb60409ab74ab558b2f36fcc4cb8d4b8bdcd76494.json",
+      "sha256": "sha256:5ad8a7534abdea0abe1667be5bbe0ae65eba4f27762ed40ed21c175b971917da"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "data/derived/a3/a32a55ff3df7a33be6e095a6fe21b047ae236f7c6e2ba813ba10445f95d1a19c.parquet",
+      "sha256": "sha256:a32a55ff3df7a33be6e095a6fe21b047ae236f7c6e2ba813ba10445f95d1a19c",
+      "rows": 384
+    },
+    {
+      "path": "data/derived/f0/f05b97ec09b4fbf8b3e122627581eebe18dba019071dfa55d098acd4e3cd7a3e.parquet",
+      "sha256": "sha256:f05b97ec09b4fbf8b3e122627581eebe18dba019071dfa55d098acd4e3cd7a3e",
+      "rows": 929
+    },
+    {
+      "path": "data/derived/4a/4a2d8c64b4a6312e524172c2c3938691b059a85fd909ce1c922ac67adcfd9bc9.parquet",
+      "sha256": "sha256:4a2d8c64b4a6312e524172c2c3938691b059a85fd909ce1c922ac67adcfd9bc9",
+      "rows": 929
+    },
+    {
+      "path": "data/derived/f3/f34d1e7c53a758fe495d018747546cc6a4f72c40f988ff975ac91bda84c63f8f.parquet",
+      "sha256": "sha256:f34d1e7c53a758fe495d018747546cc6a4f72c40f988ff975ac91bda84c63f8f",
+      "rows": 16889
+    },
+    {
+      "path": "data/derived/3b/3b03e4260864928672bd85b02bcdd04d956ccaaf41d469ee8ecbab202f81881e.parquet",
+      "sha256": "sha256:3b03e4260864928672bd85b02bcdd04d956ccaaf41d469ee8ecbab202f81881e",
+      "rows": 383
+    }
+  ],
+  "coders": [],
+  "usage": {
+    "live_calls": {},
+    "replayed": {
+      "openalex": 8
+    },
+    "usd": {}
+  },
+  "seed": null,
+  "params": {
+    "window": [
+      1986,
+      2010
+    ],
+    "tables": {
+      "works": "data/derived/a3/a32a55ff3df7a33be6e095a6fe21b047ae236f7c6e2ba813ba10445f95d1a19c.parquet",
+      "authors": "data/derived/f0/f05b97ec09b4fbf8b3e122627581eebe18dba019071dfa55d098acd4e3cd7a3e.parquet",
+      "authorships": "data/derived/4a/4a2d8c64b4a6312e524172c2c3938691b059a85fd909ce1c922ac67adcfd9bc9.parquet",
+      "citations": "data/derived/f3/f34d1e7c53a758fe495d018747546cc6a4f72c40f988ff975ac91bda84c63f8f.parquet",
+      "frames": "data/derived/3b/3b03e4260864928672bd85b02bcdd04d956ccaaf41d469ee8ecbab202f81881e.parquet"
+    }
+  },
+  "started": "2026-09-16T14:34:40+00:00",
+  "ended": "2026-09-16T14:34:40+00:00",
+  "viveka_version": "0.1.0"
+}

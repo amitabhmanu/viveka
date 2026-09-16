@@ -27,6 +27,8 @@ class CensusSettings:
     max_unmeasured_share: float
     seed: int
     resolution: str
+    doiless_sample_per_work: int
+    match_year_tolerance: int
 
 
 @dataclass(frozen=True)
@@ -61,7 +63,8 @@ def from_mapping(data: Mapping[str, Any]) -> CorpusConfig:
         sources=sources,
         api={name: dict(settings) for name, settings in data["api"].items()},
         census=CensusSettings(int(census["works_per_year"]), float(census["max_unmeasured_share"]),
-                              int(census["seed"]), str(census["resolution"])),
+                              int(census["seed"]), str(census["resolution"]), int(census["doiless_sample_per_work"]),
+                              int(census["match_year_tolerance"])),
     )
 
 

@@ -2,8 +2,11 @@
 
 A frame's works are stratified by publication year and sampled with a generator seeded from the
 registry. A sampled work is *measured* when its full reference list is known, from Crossref or a
-manual import, and *unmeasured* otherwise; a reference *resolves* when its DOI is in the corpus
-index. Coverage is resolved references over all references of measured works. Every frame,
+manual import, and *unmeasured* otherwise. A reference with a DOI resolves when the DOI is in the
+corpus index. References without a DOI (books, proceedings, older papers never matched to a DOI)
+are sampled per work and matched by year, volume and first page, with the journal name breaking
+ties; each frame-year's matched share estimates how many of its DOI-less references resolve.
+Coverage is estimated resolved references over all references of measured works. Every frame,
 community or mainstream, goes through the same code, and the census never compares coverage with
 r: gate 1 does that at S4, per sub-window (spec §7).
 """
@@ -11,8 +14,9 @@ r: gate 1 does that at S4, per sub-window (spec §7).
 from __future__ import annotations
 
 import hashlib
+import re
 from collections import Counter, defaultdict
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 
 import numpy as np
@@ -26,13 +30,42 @@ class FrameWork:
 
 
 @dataclass(frozen=True)
+class Reference:
+    doi: str | None
+    year: int | None = None
+    volume: str | None = None
+    first_page: str | None = None
+    journal: str | None = None
+    text: str | None = None  # the unstructured citation string, when there is one
+
+
+@dataclass(frozen=True)
 class References:
-    dois: tuple[str | None, ...]  # one entry per reference; None where the reference has no DOI
+    entries: tuple[Reference, ...]
     source: str  # crossref or manual
+
+    @classmethod
+    def from_dois(cls, dois: Iterable[str | None], source: str) -> References:
+        return cls(tuple(Reference(d) for d in dois), source)
 
     @property
     def total(self) -> int:
-        return len(self.dois)
+        return len(self.entries)
+
+    @property
+    def dois(self) -> tuple[str | None, ...]:
+        return tuple(e.doi for e in self.entries)
+
+    def doiless(self) -> list[int]:
+        return [i for i, e in enumerate(self.entries) if e.doi is None]
+
+
+@dataclass(frozen=True)
+class Biblio:
+    year: int
+    volume: str
+    first_page: str
+    journal: str | None
 
 
 @dataclass(frozen=True)
@@ -40,6 +73,10 @@ class SampleOutcome:
     work: FrameWork
     references: References | None
     resolved: int
+    doiless: int = 0
+    doiless_sampled: int = 0
+    doiless_matched: int = 0
+    doiless_unparseable: int = 0
 
     @property
     def status(self) -> str:
@@ -67,14 +104,106 @@ def sample_frame(case_id: str, frame_id: str, works: Iterable[FrameWork], per_ye
     return chosen
 
 
-def outcome(work: FrameWork, references: References | None, known_dois: set[str]) -> SampleOutcome:
-    resolved = 0 if references is None else sum(1 for d in references.dois if d is not None and d in known_dois)
-    return SampleOutcome(work, references, resolved)
+def doiless_sample(case_id: str, work_id: str, references: References, per_work: int, seed: int) -> list[int]:
+    """Indices of up to ``per_work`` DOI-less references, reproducible from the seed."""
+    pool = references.doiless()
+    if len(pool) <= per_work:
+        return pool
+    rng = np.random.default_rng(np.random.SeedSequence(entropy=seed,
+                                                       spawn_key=(stable_key(case_id), stable_key(work_id))))
+    return sorted(pool[i] for i in rng.choice(len(pool), size=per_work, replace=False).tolist())
+
+
+# ---------------------------------------------------------------- bibliographic matching
+
+# A volume may carry a section letter ("D33", "125B", "A 404"); OpenAlex stores only its number.
+_VOLUME = re.compile(r"^[A-Za-z]{0,2}\s?(\d{1,4})[A-Za-z]?$")
+_PAGE = re.compile(r"^([A-Za-z]?\d{1,6}[A-Za-z]?)(?:\s*(?:ff\.?|[-–]\s*[A-Za-z]?\d+))?$")
+_YEAR = r"(?P<year>(?:18|19|20)\d{2})[a-z]?"
+_VOL = r"(?P<volume>[A-Z]{0,2}\d{1,4}[A-Z]?)"
+_PG = r"(?P<page>[A-Za-z]?\d{1,6})"
+_RANGE = r"(?:\s*[-–]\s*[A-Za-z]?\d+)?"
+_CITATIONS = (
+    # "56, 3 (1986)" and "D33 3487 (1986)"
+    re.compile(rf"\b{_VOL}\s*[,:]?\s+{_PG}{_RANGE}\s*\(\s*{_YEAR}\s*\)"),
+    # "261:301-308 (1989)"
+    re.compile(rf"\b{_VOL}\s*[,:]\s*{_PG}{_RANGE}\s*\(\s*{_YEAR}\s*\)"),
+    # "25 (1994) 478"
+    re.compile(rf"\b{_VOL}\s*\(\s*{_YEAR}\s*\)\s*,?\s*(?:p+\.\s*)?{_PG}"),
+    # "1989. 261: p. 301" and "1988;333(6176):816"
+    re.compile(rf"\b{_YEAR}\s*[.;,]\s*(?P<volume>\d{{1,4}})(?:\s*\(\d+\))?\s*:\s*(?:p+\.\s*)?{_PG}"),
+)
+_STOPWORDS = frozenset({"of", "the", "and", "for", "in", "on", "a", "an", "section", "der", "die", "und", "de", "la"})
+
+
+def _volume(value: str) -> str | None:
+    found = _VOLUME.match(value.strip())
+    return found.group(1) if found else None
+
+
+def _page(value: str) -> str | None:
+    found = _PAGE.match(value.strip())
+    return found.group(1) if found else None
+
+
+def biblio_of(ref: Reference) -> Biblio | None:
+    """Year, volume number and first page, from structured fields or a citation string.
+
+    None means the reference has no readable volume and page, which is typical of books, theses, reports,
+    preprints and proceedings.
+    """
+    if ref.year and ref.volume and ref.first_page:
+        volume, page = _volume(ref.volume), _page(ref.first_page)
+        return Biblio(ref.year, volume, page, ref.journal) if volume and page else None
+    for pattern in _CITATIONS:
+        found = pattern.search(ref.text or "")
+        if found:
+            volume, page = _volume(found["volume"]), _page(found["page"])
+            if volume and page:
+                return Biblio(int(found["year"]), volume, page, ref.journal)
+    return None
+
+
+def _journal_words(name: str) -> list[str]:
+    main = name.split(":", 1)[0]
+    return [w for w in re.findall(r"[a-z0-9]+", main.lower()) if w not in _STOPWORDS]
+
+
+def journal_compatible(cited: str, candidate: str) -> bool:
+    """'Phys. Rev. Lett.' is compatible with 'Physical Review Letters': word by word, each is a prefix."""
+    a, b = _journal_words(cited), _journal_words(candidate)
+    return bool(a) and len(a) == len(b) and all(y.startswith(x) for x, y in zip(a, b, strict=True))
+
+
+def match_found(biblio: Biblio, candidate_journals: Sequence[str | None]) -> bool:
+    """A single work at that year, volume and page is a match; among several, the journal must agree."""
+    if len(candidate_journals) == 1:
+        return True
+    return biblio.journal is not None and any(n and journal_compatible(biblio.journal, n) for n in candidate_journals)
+
+
+# ---------------------------------------------------------------- coverage
+
+
+def outcome(work: FrameWork, references: References | None, known_dois: set[str],
+            matches: Mapping[int, bool | None] | None = None) -> SampleOutcome:
+    """``matches`` maps each sampled DOI-less reference to matched (True), unmatched (False) or unparseable (None)."""
+    if references is None:
+        return SampleOutcome(work, None, 0)
+    matches = matches or {}
+    return SampleOutcome(
+        work, references,
+        resolved=sum(1 for d in references.dois if d is not None and d in known_dois),
+        doiless=len(references.doiless()),
+        doiless_sampled=len(matches),
+        doiless_matched=sum(1 for m in matches.values() if m is True),
+        doiless_unparseable=sum(1 for m in matches.values() if m is None),
+    )
 
 
 def coverage_rows(case_id: str, frame_id: str, kind: str, works: Sequence[FrameWork],
                   outcomes: Sequence[SampleOutcome]) -> list[dict]:
-    """One row per publication year of the frame."""
+    """One row per publication year of the frame, with the year's estimate of resolved references."""
     frame_counts = Counter(w.year for w in works)
     per_year: dict[int, list[SampleOutcome]] = defaultdict(list)
     for o in outcomes:
@@ -83,14 +212,25 @@ def coverage_rows(case_id: str, frame_id: str, kind: str, works: Sequence[FrameW
     for year in sorted(frame_counts):
         sampled = per_year.get(year, [])
         measured = [o for o in sampled if o.references is not None]
-        rows.append({
+        row = {
             "case_id": case_id, "frame_id": frame_id, "kind": kind, "year": year,
             "frame_works": frame_counts[year], "sampled": len(sampled), "measured": len(measured),
             "unmeasured": len(sampled) - len(measured),
             "refs": sum(o.references.total for o in measured if o.references is not None),
             "resolved": sum(o.resolved for o in measured),
-        })
+            "doiless": sum(o.doiless for o in measured),
+            "doiless_sampled": sum(o.doiless_sampled for o in measured),
+            "doiless_matched": sum(o.doiless_matched for o in measured),
+            "doiless_unparseable": sum(o.doiless_unparseable for o in measured),
+        }
+        share = row["doiless_matched"] / row["doiless_sampled"] if row["doiless_sampled"] else 0.0
+        row["resolved_estimated"] = round(row["resolved"] + row["doiless"] * share, 6)
+        rows.append(row)
     return rows
+
+
+_SUMMED = ("frame_works", "sampled", "measured", "unmeasured", "refs", "resolved", "doiless", "doiless_sampled",
+           "doiless_matched", "doiless_unparseable", "resolved_estimated")
 
 
 @dataclass(frozen=True)
@@ -104,6 +244,11 @@ class Summary:
     unmeasured: int
     refs: int
     resolved: int
+    doiless: int
+    doiless_sampled: int
+    doiless_matched: int
+    doiless_unparseable: int
+    resolved_estimated: float
     coverage: float | None
     unmeasured_share: float | None
     measurable: bool
@@ -113,13 +258,12 @@ def summarize(rows: Iterable[dict], max_unmeasured_share: float) -> list[Summary
     """Coverage per frame over the given rows (pass one frame-year's row for a per-year reading)."""
     totals: dict[tuple[str, str, str], Counter] = defaultdict(Counter)
     for row in rows:
-        totals[(row["case_id"], row["frame_id"], row["kind"])].update(
-            {k: row[k] for k in ("frame_works", "sampled", "measured", "unmeasured", "refs", "resolved")})
+        totals[(row["case_id"], row["frame_id"], row["kind"])].update({k: row[k] for k in _SUMMED})
     summaries = []
     for (case_id, frame_id, kind), t in sorted(totals.items()):
-        coverage = t["resolved"] / t["refs"] if t["refs"] else None
+        coverage = t["resolved_estimated"] / t["refs"] if t["refs"] else None
         share = t["unmeasured"] / t["sampled"] if t["sampled"] else None
         measurable = coverage is not None and share is not None and share <= max_unmeasured_share
-        summaries.append(Summary(case_id, frame_id, kind, t["frame_works"], t["sampled"], t["measured"],
-                                 t["unmeasured"], t["refs"], t["resolved"], coverage, share, measurable))
+        summaries.append(Summary(case_id, frame_id, kind, *(int(t[k]) for k in _SUMMED[:-1]),
+                                 float(t["resolved_estimated"]), coverage, share, measurable))
     return summaries

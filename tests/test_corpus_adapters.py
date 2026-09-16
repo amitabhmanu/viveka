@@ -1,5 +1,6 @@
 from corpus_fakes import FakeSources, fake_fetcher, oa_work
 
+from viveka.census import Reference
 from viveka.corpus import crossref, openalex, semanticscholar
 from viveka.corpus.ids import chunks, normalize_doi, short_id
 
@@ -54,9 +55,16 @@ def test_rows_from_a_work():
 def test_crossref_reference_lists():
     assert crossref.references_of({"message": {"reference-count": 0}}) is None
     assert crossref.references_of(None) is None
-    refs = crossref.references_of({"message": {"reference": [{"DOI": "10.1/A"}, {"unstructured": "book"}]}})
-    assert refs.dois == ("10.1/a", None) and refs.total == 2 and refs.source == "crossref"
+    refs = crossref.references_of({"message": {"reference": [
+        {"DOI": "10.1/A"}, {"unstructured": "book"},
+        {"journal-title": "Phys. Rev. Lett.", "volume": "56", "first-page": "3", "year": "1986b"}]}})
+    assert refs.dois == ("10.1/a", None, None) and refs.total == 3 and refs.source == "crossref"
+    assert refs.entries[1] == Reference(None, text="book")
+    assert refs.entries[2] == Reference(None, 1986, "56", "3", "Phys. Rev. Lett.")
     assert crossref.work_request("10.1/a(b)").url.endswith("/works/10.1%2Fa%28b%29")
+    request = openalex.biblio_request(1986, "56", "3", 1)
+    assert dict(request.params)["filter"] == "publication_year:1985-1987,biblio.volume:56,biblio.first_page:3"
+    assert request.kind == "list"
 
 
 def test_semantic_scholar_paging_and_offset_limit(tmp_path):

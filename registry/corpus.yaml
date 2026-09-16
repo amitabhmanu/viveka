@@ -47,4 +47,10 @@ census:
   works_per_year: 10               # sampled per frame and publication year
   max_unmeasured_share: 0.5        # above it, coverage is not measurable for that frame or year
   seed: 20260915
-  resolution: crossref_doi_in_openalex  # a reference resolves when its Crossref-deposited or Crossref-matched DOI is in OpenAlex
+  resolution: crossref_doi_plus_sampled_biblio_match
+  # A reference with a Crossref-deposited or Crossref-matched DOI resolves when the DOI is in OpenAlex.
+  # References without a DOI are sampled per work and matched in OpenAlex by year (± tolerance), volume
+  # and first page, with the journal name breaking ties; the matched share estimates the rest of that
+  # frame-year's DOI-less references. A reference whose year, volume and page cannot be read counts as unmatched.
+  doiless_sample_per_work: 3
+  match_year_tolerance: 1

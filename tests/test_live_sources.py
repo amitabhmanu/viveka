@@ -38,6 +38,11 @@ def test_openalex_crossref_and_s2_shapes(fetcher):
     assert "next_cursor" in listing.body["meta"]  # only present when a cursor is requested, as iter_pages does
     doi = openalex.work_row(work)["doi"]
 
+    match = fetcher.get(openalex.biblio_request(1986, "56", "3", 1))  # Phys. Rev. Lett. 56, 3 (1986)
+    assert match.status == 200
+    assert "W3157736569" in {r["id"].rsplit("/", 1)[-1] for r in match.body["results"]}
+    assert all("primary_location" in r for r in match.body["results"])
+
     record = fetcher.get(crossref.work_request(doi))
     assert record.status == 200 and "reference-count" in record.body["message"]
 

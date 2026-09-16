@@ -13,6 +13,7 @@ Record a reason or a decision with the script below. Never edit `ledger/changes.
    - If the reason isn't clear, ask the user. Don't invent one.
 2. If the user has decided one of D-1 to D-8, include `--decision D-n --resolve`.
    - `--decision D-n` without `--resolve` adds a note and leaves the decision open.
+   - When the user wants a new owner decision recorded, use `--decision D-<next number> --open`; the reason becomes its title.
 3. Run:
 
 ```bash

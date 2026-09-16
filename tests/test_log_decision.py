@@ -54,6 +54,17 @@ def test_unknown_decision_is_rejected(project, log_decision):
     assert result.returncode == 2
 
 
+def test_open_registers_a_new_decision_once(project, log_decision):
+    new = "D-50"  # the project fixture copies the real decision log, so use an id it cannot contain
+    result = log_decision(project, "--session", "s1", "--reason", "Full-text access", "--decision", new, "--open")
+    assert result.returncode == 0, result.stderr
+    assert decision_status(project)[new] == ("OPEN", "Full-text access")
+    assert log_decision(project, "--session", "s1", "--reason", "again", "--decision", new, "--open").returncode == 2
+    assert log_decision(project, "--session", "s1", "--reason", "x", "--decision", "X9", "--open").returncode == 2
+    assert log_decision(project, "--session", "s1", "--reason", "x", "--decision", "D-51", "--open",
+                        "--resolve").returncode == 2
+
+
 def test_resolve_requires_a_decision(project, log_decision):
     _seed_change(project)
     assert log_decision(project, "--session", "s1", "--reason", "x", "--resolve").returncode == 2

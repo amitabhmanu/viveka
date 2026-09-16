@@ -17,14 +17,17 @@ OA = "https://openalex.org/"
 
 
 def oa_work(wid: str, year: int, doi: str | None = None, refs=(), source: str | None = None,
-            authors=(("A1", "Ann Author"),), title: str | None = None) -> dict:
+            authors=(("A1", "Ann Author"),), title: str | None = None, source_name: str | None = None,
+            biblio: tuple[str, str] | None = None) -> dict:
     return {
         "id": OA + wid,
         "doi": f"https://doi.org/{doi}" if doi else None,
         "display_name": title or f"Work {wid}",
         "publication_year": year,
         "type": "article",
-        "primary_location": {"source": {"id": OA + source, "display_name": f"Venue {source}"}} if source else None,
+        "biblio": {"volume": biblio[0], "first_page": biblio[1]} if biblio else {},
+        "primary_location": ({"source": {"id": OA + source, "display_name": source_name or f"Venue {source}"}}
+                             if source else None),
         "authorships": [{"author_position": "first" if i == 0 else "middle",
                          "author": {"id": OA + aid, "display_name": name},
                          "institutions": [{"id": OA + "I1"}]} for i, (aid, name) in enumerate(authors)],
@@ -36,7 +39,7 @@ def oa_work(wid: str, year: int, doi: str | None = None, refs=(), source: str | 
 @dataclass
 class FakeSources:
     works: dict[str, dict] = field(default_factory=dict)
-    crossref_refs: dict[str, list[str | None]] = field(default_factory=dict)  # doi -> one DOI (or None) per reference
+    crossref_refs: dict[str, list] = field(default_factory=dict)  # doi -> per reference: a DOI, None, or a raw entry
     s2_citations: dict[str, list[dict]] = field(default_factory=dict)  # doi -> citation items
     calls: list[httpx.Request] = field(default_factory=list)
 
@@ -91,6 +94,9 @@ class FakeSources:
             elif key == "primary_location.source.id":
                 selected = [w for w in selected
                             if w["primary_location"] and short_id(w["primary_location"]["source"]["id"]) in values]
+            elif key in ("biblio.volume", "biblio.first_page"):
+                field_name = key.split(".", 1)[1]
+                selected = [w for w in selected if w.get("biblio", {}).get(field_name) in values]
             elif key == "publication_year":
                 start, end = (int(x) for x in value.split("-"))
                 selected = [w for w in selected if start <= w["publication_year"] <= end]
@@ -109,7 +115,8 @@ class FakeSources:
     def _crossref(self, path: str) -> httpx.Response:
         doi = normalize_doi(path.removeprefix("/works/"))
         if doi in self.crossref_refs:
-            refs = [{"key": f"ref{i}", **({"DOI": d} if d else {"unstructured": "An old book"})}
+            refs = [{"key": f"ref{i}", **(d if isinstance(d, dict) else {"DOI": d} if d else
+                                          {"unstructured": "An old book"})}
                     for i, d in enumerate(self.crossref_refs[doi])]
             return httpx.Response(200, json={"status": "ok", "message": {"DOI": doi, "reference-count": len(refs),
                                                                          "reference": refs}})
@@ -181,7 +188,11 @@ def small_world() -> FakeSources:
         fake.add(oa_work(f"W{10 + i}", year, doi=doi, refs=["W1", "W2"], authors=((f"A{10 + i}", "Author"),)))
     for i in range(3):
         fake.add(oa_work(f"W{30 + i}", 1995, doi=f"10.3/v{i}", source="S5"))
+    # A DOI-less article that OpenAlex has, findable by volume and page.
+    fake.add(oa_work("W3", 1986, source="S9", source_name="Physical Review Letters", biblio=("56", "3")))
+    structured = {"journal-title": "Phys. Rev. Lett.", "volume": "56", "first-page": "3", "year": "1986"}
     for i in range(9):  # every citing work with a DOI: 2 resolvable references, 1 unknown DOI, 1 without DOI
-        fake.crossref_refs[f"10.2/c{i}"] = ["10.1/seed", "10.1/null", "10.9/not-indexed", None]
+        fake.crossref_refs[f"10.2/c{i}"] = ["10.1/seed", "10.1/null", "10.9/not-indexed",
+                                            structured if i % 2 == 0 else None]
     fake.crossref_refs["10.1/null"] = ["10.1/seed"]
     return fake

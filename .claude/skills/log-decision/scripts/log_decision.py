@@ -7,6 +7,7 @@ Both ledgers are append-only: this script never rewrites an existing line.
   It is validated against the ledger record schema before it is written.
 * A decision line is appended to ledger/decisions.md. With --resolve its status
   is DECIDED; without it the decision keeps its current status and the line is a note.
+  With --open, --decision names a new decision, registered OPEN and titled by --reason.
 """
 
 from __future__ import annotations
@@ -14,6 +15,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -27,6 +29,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--reason", required=True, help="One-line reason")
     parser.add_argument("--decision", help="Decision id such as D-1")
     parser.add_argument("--resolve", action="store_true", help="Mark the decision DECIDED")
+    parser.add_argument("--open", action="store_true",
+                        help="Register --decision as a new OPEN decision titled by --reason")
     parser.add_argument("--root", type=Path, help="Project root (default: CLAUDE_PROJECT_DIR or the script's project)")
     args = parser.parse_args(argv)
 
@@ -35,11 +39,18 @@ def main(argv: list[str] | None = None) -> int:
     reason = " ".join(args.reason.split())
     if not reason:
         parser.error("--reason must not be empty")
-    if args.resolve and not args.decision:
-        parser.error("--resolve requires --decision")
+    if (args.resolve or args.open) and not args.decision:
+        parser.error("--resolve and --open require --decision")
+    if args.resolve and args.open:
+        parser.error("--open registers a decision as OPEN; resolve it with a later call")
 
     decisions = ledger.decision_status(root)
-    if args.decision and args.decision not in decisions:
+    if args.open:
+        if not re.fullmatch(r"D-\d+", args.decision):
+            parser.error(f"decision ids look like D-9, not {args.decision!r}")
+        if args.decision in decisions:
+            parser.error(f"decision {args.decision} already exists; add a note or resolve it instead")
+    elif args.decision and args.decision not in decisions:
         parser.error(f"unknown decision {args.decision!r}; known: {', '.join(sorted(decisions)) or 'none'}")
 
     pending = ledger.unreasoned(ledger.records(root), args.session)
@@ -60,7 +71,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Recorded a reason for {len(pending)} change(s): {', '.join(pending)}")
 
     if args.decision:
-        status = "DECIDED" if args.resolve else decisions[args.decision][0]
+        status = "DECIDED" if args.resolve else "OPEN" if args.open else decisions[args.decision][0]
         path = root / DECISIONS
         existing = path.read_bytes()
         prefix = b"" if existing.endswith(b"\n") or not existing else b"\n"

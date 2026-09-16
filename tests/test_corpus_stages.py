@@ -88,16 +88,21 @@ def test_census_needs_a_fetch_then_measures_coverage(world):
     manifest = load_manifest(root, run_id)
     assert verify_run(root, run_id) == [] and manifest["seed"] == 20260915
     rows = {(r["frame_id"], r["year"]): r for r in table(root, manifest, "coverage")}
-    # 1990: W10, W12, W14, W16, W18 and the null result W2 (one reference, resolvable)
+    # 1990: W10, W12, W14, W16, W18 (each with a DOI-less reference findable by volume and page) and the null
+    # result W2 (one reference, resolvable)
     assert rows[("citing", 1990)] == {"case_id": "cold-fusion", "frame_id": "citing", "kind": "mainstream",
                                       "year": 1990, "frame_works": 6, "sampled": 6, "measured": 6,
-                                      "unmeasured": 0, "refs": 21, "resolved": 11}
-    # 1991: W11, W13, W15, W17 measured; W19 has no DOI
-    assert rows[("citing", 1991)]["measured"] == 4 and rows[("citing", 1991)]["unmeasured"] == 1
+                                      "unmeasured": 0, "refs": 21, "resolved": 11, "doiless": 5,
+                                      "doiless_sampled": 5, "doiless_matched": 5, "doiless_unparseable": 0,
+                                      "resolved_estimated": 16.0}
+    # 1991: W11, W13, W15, W17 measured, each with an unparseable DOI-less reference; W19 has no DOI
+    r1991 = rows[("citing", 1991)]
+    assert (r1991["measured"], r1991["unmeasured"], r1991["doiless_unparseable"], r1991["resolved_estimated"]) == \
+        (4, 1, 4, 8.0)
     assert rows[("venue", 1995)]["unmeasured"] == 3 and rows[("venue", 1995)]["refs"] == 0
     report = "\n".join(lines)
-    assert "| citing | mainstream | 11 | 11 | 9.1% | 37 | 19 | 51.4% | yes |" in report
-    assert "| venue | community | 3 | 3 | 100.0% | 0 | 0 | n/a | no |" in report
+    assert "| citing | mainstream | 11 | 11 | 9.1% | 37 | 24.3% | 5/9 | 4/9 | 64.9% | yes |" in report
+    assert "| venue | community | 3 | 3 | 100.0% | 0 | n/a | 0/0 | 0/0 | n/a | no |" in report
     assert manifest["usage"]["live_calls"]["crossref"] == {"free": 13}
     assert all(c.url.params.get("mailto") == "test@example.invalid" for c in fake.calls
                if c.url.host == "api.crossref.org")
