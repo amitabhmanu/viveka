@@ -68,10 +68,11 @@ def test_filters_must_name_an_existing_claim(registry_root):
     flt = registry_root / "registry" / "filters" / "cf.yaml"
     write_lf(flt, "format: 0\n")
     assert any("must name its 'claim'" in p for p in validate(registry_root, ["filters/cf"]))
-    write_lf(flt, "format: 0\nclaim: cold-fusion\n")
+    write_lf(flt, "format: 0\nclaim: test-claim\n")
     assert any("has no registry/events" in p for p in validate(registry_root, ["filters/cf"]))
-    write_lf(registry_root / "registry" / "events" / "cold-fusion.yaml", EVENTS_YAML)
-    assert validate(registry_root, ["filters/cf", "events/cold-fusion"]) == []
+    write_lf(registry_root / "registry" / "events" / "test-claim.yaml",
+             EVENTS_YAML.replace("claim: cold-fusion", "claim: test-claim"))
+    assert validate(registry_root, ["filters/cf", "events/test-claim"]) == []
 
 
 def test_per_file_components_need_a_format_key(registry_root):

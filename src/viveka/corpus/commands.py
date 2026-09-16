@@ -55,11 +55,14 @@ def make_fetcher(root: Path, config: CorpusConfig, *, need: Sequence[str] = (), 
             secrets["openalex"] = {"params": {"api_key": env.require(env.OPENALEX_API_KEY)}}
         if "crossref" in need:
             secrets["crossref"] = {"params": {"mailto": env.require(env.CONTACT_EMAIL)}}
-        if "semanticscholar" in need:
+        if "semanticscholar" in need and env.get(env.S2_API_KEY):  # optional: the public API needs no account
             secrets["semanticscholar"] = {"headers": {"x-api-key": env.require(env.S2_API_KEY)}}
+    rates = {s: config.rate(s) for s in LIVE_SOURCES}
+    if "semanticscholar" not in secrets:
+        rates["semanticscholar"] = float(config.semanticscholar["keyless_requests_per_second"])
     meter = UsageMeter(root, prices={s: config.api[s].get("prices_usd", {}) for s in LIVE_SOURCES},
                        caps={"openalex": float(config.openalex["daily_usd_cap"])})
-    return Fetcher(root, rates={s: config.rate(s) for s in LIVE_SOURCES}, meter=meter, terms=config.terms,
+    return Fetcher(root, rates=rates, meter=meter, terms=config.terms,
                    secrets=secrets, contact_email=None if offline else env.get(env.CONTACT_EMAIL),
                    transport=transport, offline=offline, run_id=run_id)
 
@@ -249,7 +252,8 @@ def fetch_contexts(root: Path, case_id: str, fold: str, *, transport: httpx.Base
                 _finish(ctx, fetcher)
         path = ctx.store(tables.to_parquet("contexts", rows), "parquet", rows=len(rows))
         ctx.params.update({"tables": {"contexts": rel_posix(path, root)}, "truncated": sorted(truncated),
-                           "without_doi": sorted(without_doi)})
+                           "without_doi": sorted(without_doi),
+                           "semanticscholar_key": env.get(env.S2_API_KEY) is not None})
     out(f"run {ctx.run_id}: {len(rows)} citation contexts"
         + (f"; truncated at the offset limit for {', '.join(truncated)}" if truncated else "")
         + (f"; no DOI for {', '.join(without_doi)}" if without_doi else ""))

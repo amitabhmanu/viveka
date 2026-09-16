@@ -52,10 +52,11 @@
         },
         "semanticscholar": {
           "type": "object",
-          "required": ["requests_per_second", "page_size", "max_offset"],
+          "required": ["requests_per_second", "keyless_requests_per_second", "page_size", "max_offset"],
           "additionalProperties": false,
           "properties": {
             "requests_per_second": {"$ref": "#/$defs/rate"},
+            "keyless_requests_per_second": {"$ref": "#/$defs/rate"},
             "page_size": {"type": "integer", "minimum": 1, "maximum": 1000},
             "max_offset": {"type": "integer", "minimum": 2}
           }

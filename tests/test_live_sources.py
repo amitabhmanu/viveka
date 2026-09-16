@@ -22,8 +22,8 @@ def fetcher(tmp_path, monkeypatch):
         if env.get(name) is None:
             pytest.skip(f"{name} is not set")
     config = load_corpus_config(REPO)
-    need = ("openalex", "crossref") + (("semanticscholar",) if env.get(env.S2_API_KEY) else ())
-    with make_fetcher(tmp_path, config, need=need) as live:  # archive and usage log go to tmp_path
+    with make_fetcher(tmp_path, config, need=("openalex", "crossref", "semanticscholar")) as live:
+        # archive and usage log go to tmp_path; Semantic Scholar runs keyless unless S2_API_KEY is set
         yield live
 
 
@@ -41,8 +41,7 @@ def test_openalex_crossref_and_s2_shapes(fetcher):
     record = fetcher.get(crossref.work_request(doi))
     assert record.status == 200 and "reference-count" in record.body["message"]
 
-    if env.get(env.S2_API_KEY):
-        citations = fetcher.get(semanticscholar.citations_request(doi, 0, 1))
-        assert citations.status in (200, 404)
-        if citations.status == 200:
-            assert "data" in citations.body
+    citations = fetcher.get(semanticscholar.citations_request(doi, 0, 1))
+    assert citations.status in (200, 404)
+    if citations.status == 200:
+        assert "data" in citations.body

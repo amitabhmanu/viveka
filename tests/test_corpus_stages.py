@@ -71,10 +71,11 @@ def test_rerun_replays_from_the_archive_with_identical_tables(world):
 def test_unresolved_registered_work_fails_the_run(world):
     root, fake = world
     del fake.works["W2"]
+    before = {p.parent.name for p in (root / "runs").glob("*/manifest.json")}  # the copy includes real runs
     with pytest.raises(CaseError, match="W2"):
         commands.fetch_case(root, "cold-fusion", "dev", transport=fake.transport(), out=lambda s: None)
-    manifests = [load_manifest(root, p.parent.name) for p in (root / "runs").glob("*-s1-*/manifest.json")]
-    assert [m["status"] for m in manifests] == ["failed"]
+    new = [p.parent.name for p in (root / "runs").glob("*/manifest.json") if p.parent.name not in before]
+    assert [load_manifest(root, run)["status"] for run in new] == ["failed"]
 
 
 def test_census_needs_a_fetch_then_measures_coverage(world):
@@ -156,7 +157,26 @@ def test_contexts_stage(world):
     assert [(r["cited_work"], r["citing_doi"], r["context_index"]) for r in rows] == [
         ("W1", "10.2/c0", 0), ("W1", "10.2/c0", 1)]
     assert manifest["params"]["truncated"] == [] and manifest["params"]["without_doi"] == []
+    assert manifest["params"]["semanticscholar_key"] is True
     assert all(c.headers.get("x-api-key") == "S2-SECRET" for c in fake.calls if c.url.host.endswith("scholar.org"))
+
+
+def test_contexts_run_without_a_semantic_scholar_key_at_the_keyless_rate(world, monkeypatch):
+    root, fake = world
+    monkeypatch.delenv("S2_API_KEY")
+    fake.s2_citations["10.1/seed"] = [{"contexts": ["as reported [1]"], "intents": [], "isInfluential": False,
+                                       "citingPaper": {"paperId": "p1", "externalIds": {}}}]
+    sleeps = []
+    monkeypatch.setattr("viveka.corpus.http.time.sleep", sleeps.append)
+    run_id = commands.fetch_contexts(root, "cold-fusion", "dev", transport=fake.transport(), out=lambda s: None)
+    manifest = load_manifest(root, run_id)
+    assert manifest["params"]["semanticscholar_key"] is False
+    assert len(table(root, manifest, "contexts")) == 1
+    s2_calls = [c for c in fake.calls if c.url.host.endswith("scholar.org")]
+    assert s2_calls and not any("x-api-key" in c.headers for c in s2_calls)
+    config = commands.load_corpus_config(root)
+    assert any(s == pytest.approx(1 / config.semanticscholar["keyless_requests_per_second"], rel=0.05)
+               for s in sleeps) or len(s2_calls) == 1
 
 
 def test_missing_credentials_are_named(world, monkeypatch):

@@ -22,7 +22,7 @@ sources:
   - name: semanticscholar
     kind: citation_contexts
     url: "https://api.semanticscholar.org/graph/v1"
-    terms_reference: "https://www.semanticscholar.org/product/api (license terms to confirm when the key is issued)"
+    terms_reference: "https://www.semanticscholar.org/product/api (API license applies; used without a key: unauthenticated requests share a pool of 1000 per second, throttled when busy; checked 16 Sep 2026)"
   - name: manual
     kind: manual
     url: ""
@@ -38,7 +38,8 @@ api:
   crossref:
     requests_per_second: 5         # polite pool, with contact email
   semanticscholar:
-    requests_per_second: 1         # introductory authenticated limit
+    requests_per_second: 1         # introductory authenticated limit, with a key
+    keyless_requests_per_second: 0.2  # without a key: the public pool is shared and throttled, so stay well below it
     page_size: 1000
     max_offset: 10000              # offset + limit must stay below this
 

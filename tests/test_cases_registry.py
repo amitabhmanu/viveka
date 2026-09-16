@@ -47,10 +47,11 @@ def test_invalid_definitions_are_reported(registry_root, events, case, message):
 
 
 def test_case_needs_its_claim(registry_root):
+    (registry_root / "registry" / "events" / "cold-fusion.yaml").unlink(missing_ok=True)
     write_lf(registry_root / "registry" / "cases" / "cold-fusion.yaml", CASE_YAML)
     assert any("has no registry/events/cold-fusion.yaml" in p for p in validate(registry_root, ["cases/cold-fusion"]))
-    with pytest.raises(CaseError, match="no registry/cases/fifth-force.yaml"):
-        load_case(registry_root, "fifth-force")
+    with pytest.raises(CaseError, match="no registry/cases/not-a-case.yaml"):
+        load_case(registry_root, "not-a-case")
 
 
 def test_instrument_no_longer_holds_the_corpus(registry_root):
