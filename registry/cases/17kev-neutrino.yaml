@@ -1,12 +1,17 @@
-# DRAFT for owner review (M4a, 16 Sep 2026).
+# Reviewed with the owner 16 Sep 2026 (M4a); ready to freeze. Seeds verified by Crossref bibliographic query and OpenAlex lookup.
 format: 1
 case: 17kev-neutrino
 claim: 17kev-neutrino
 role: reserve
 pair: reserve
 window: {start: 1985, end: 2010}
-notes: "REVIEW: the framework dates the claim 1985–1993; the window runs to 2010, matching the fifth force, so closure after 1993 can be observed. No persisting community is expected."
+notes: "The framework dates the claim 1985–1993; the window runs to 2010, matching the fifth force, so closure after 1993 can be observed (owner confirmed). No persisting community is expected."
 seeds:
   - {openalex: W2021773371, doi: 10.1103/physrevlett.54.1891, note: "Simpson 1985, heavy-neutrino emission in beta decay (founding claim)"}
+  - {openalex: W2325466264, doi: 10.1103/physrevd.39.1825, note: "Simpson and Hime 1989, the 17 keV neutrino in the 35S beta spectrum (positive replication)"}
+  - {openalex: W4244381689, doi: 10.1103/physrevd.39.1837, note: "Hime and Simpson 1989, the 17 keV neutrino in the tritium beta spectrum (positive replication)"}
+  - {openalex: W2064896673, doi: 10.1016/0370-2693(91)91922-i, note: "Hime and Jelley 1991, new evidence for the 17 keV neutrino (positive replication)"}
+  - {openalex: W1974035997, doi: 10.1103/physrevlett.66.2444, note: "Sur et al. 1991, 17 keV neutrino in 14C beta decay (positive replication)"}
+  - {openalex: W2083244852, doi: 10.1103/physrevlett.67.560, note: "Zlimen et al. 1991, 17 keV neutrino in the 71Ge internal bremsstrahlung spectrum (positive replication)"}
 frames:
   - {id: citing, kind: mainstream, cites: seeds, note: "Every work citing a seed in the window, proponents included."}

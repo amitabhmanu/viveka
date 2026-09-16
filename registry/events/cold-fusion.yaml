@@ -1,4 +1,4 @@
-# DRAFT for owner review (M4a, 16 Sep 2026). IDs and dates verified by OpenAlex lookup.
+# Reviewed with the owner 16 Sep 2026 (M4a); ready to freeze. IDs and dates verified by OpenAlex lookup.
 format: 1
 claim: cold-fusion
 wording: "Electrolysis of heavy water with palladium cathodes produces excess heat, and nuclear products, from deuterium fusion at room temperature (Fleischmann and Pons 1989)."

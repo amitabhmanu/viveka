@@ -1,4 +1,5 @@
-# DRAFT for owner review (M4a, 16 Sep 2026). IDs and dates verified by OpenAlex lookup.
+# Reviewed with the owner 16 Sep 2026 (M4a); ready to freeze. IDs and dates verified by OpenAlex lookup.
+# Heckel et al. 1989 was dropped: it bounds ultralow-mass boson interactions, a longer-range region than the claim.
 format: 1
 claim: fifth-force
 wording: "A composition-dependent force of intermediate range, beyond gravity and the known interactions, acts between ordinary bodies, as proposed from a reanalysis of the Eötvös experiment (Fischbach et al. 1986)."
@@ -15,10 +16,4 @@ events:
     kind: disconfirmation
     works: [{openalex: W2065845018, doi: 10.1103/physrevlett.59.849}]
     note: "Eöt-Wash: new constraints on composition-dependent interactions weaker than gravity."
-    source: "OpenAlex publication_date."
-  - id: heckel-1989
-    date: "1989-12-18"
-    kind: disconfirmation
-    works: [{openalex: W2051915405, doi: 10.1103/physrevlett.63.2705}]
-    note: "REVIEW: bounds on ultralow-mass boson interactions; extends the null results to longer ranges, arguably a different parameter region."
     source: "OpenAlex publication_date."

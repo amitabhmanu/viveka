@@ -1,11 +1,11 @@
-# DRAFT for owner review (M4a, 16 Sep 2026).
+# Reviewed with the owner 16 Sep 2026 (M4a); ready to freeze.
 format: 1
 case: water-memory
 claim: water-memory
 role: reserve
 pair: reserve
 window: {start: 1988, end: 2025}
-notes: "Window matches cold fusion's span after the claim. REVIEW: both community venues are homeopathy journals, which the homeopathy calibration field would also use."
+notes: "Window matches cold fusion's span to the present (owner confirmed). Both community venues are homeopathy journals, also used by the homeopathy calibration field; if this reserve pair is ever activated, homeopathy leaves the calibration set (owner decision, 16 Sep 2026)."
 seeds:
   - {openalex: W2087907215, doi: 10.1038/333816a0, note: "Davenas et al. 1988 (founding claim)"}
 frames:

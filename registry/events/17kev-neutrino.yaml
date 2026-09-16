@@ -1,14 +1,14 @@
-# DRAFT for owner review (M4a, 16 Sep 2026). IDs verified by OpenAlex lookup.
+# Reviewed with the owner 16 Sep 2026 (M4a); ready to freeze. IDs verified by OpenAlex lookup.
 format: 1
 claim: 17kev-neutrino
 wording: "A heavy neutrino of mass about 17 keV is emitted, with a mixing of about one per cent, in nuclear beta decay (Simpson 1985)."
-notes: "Reserve pair, the let-go case (framework pilot text names it). REVIEW: the positive replications of 1989–1991 are not yet seeds; my candidate DOI for Hime and Jelley 1991 did not resolve."
+notes: "Reserve pair, the let-go case (framework pilot text names it). The positive replications of 1989–1991 are seeds in cases/17kev-neutrino.yaml. The owner kept the 1985 null and the 1994 explanation of the signal as events."
 events:
   - id: early-null-1985
     date: "1985"
     kind: disconfirmation
     works: [{openalex: W1987949384, doi: 10.1016/0370-2693(85)91336-x}]
-    note: "REVIEW: 35S beta decay, 'evidence against the 17 keV heavy neutrino'; an early null result, before the replications."
+    note: "35S beta decay, 'evidence against the 17 keV heavy neutrino'; an early null result, before the replications."
     source: "OpenAlex title search (year only)."
   - id: mortara-1993
     date: "1993-01-25"
@@ -26,5 +26,5 @@ events:
     date: "1994"
     kind: disconfirmation
     works: [{openalex: W1981169491, doi: 10.1016/0370-2693(94)90963-6}]
-    note: "REVIEW: explains the 35S signal as spurious; an explanation of earlier positives rather than a new null measurement."
+    note: "Explains the 35S signal as spurious: a closing disconfirmation of earlier positives rather than a new null measurement."
     source: "OpenAlex title search (year only)."

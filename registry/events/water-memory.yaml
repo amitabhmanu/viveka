@@ -1,8 +1,8 @@
-# DRAFT for owner review (M4a, 16 Sep 2026). IDs and dates verified by OpenAlex lookup.
+# Reviewed with the owner 16 Sep 2026 (M4a); ready to freeze. IDs and dates verified by OpenAlex lookup.
 format: 1
 claim: water-memory
 wording: "Human basophils degranulate in response to anti-IgE antiserum diluted far beyond the point where any antibody molecule remains (Davenas et al. 1988)."
-notes: "Reserve pair, proposed residue case. REVIEW: overlaps the homeopathy calibration field (same community venues), so it cannot serve both roles without breaking fold isolation."
+notes: "Reserve pair, residue case. It shares community venues with the homeopathy calibration field. Owner decision (16 Sep 2026): if the reserve pair ever replaces the pilot pair, homeopathy leaves the calibration set, so the two validations never rest on the same literature."
 events:
   - id: maddox-1988
     date: "1988-07-01"
