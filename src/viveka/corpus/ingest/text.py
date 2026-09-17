@@ -54,9 +54,15 @@ _ABBREVIATION = re.compile(r"^(?:[A-Z][a-z]{0,6}\.|[A-Z]{2,8}|&|of|and|the)$")
 
 def pdf_text(content: bytes) -> str:
     """The PDF's text layer, page by page; empty when it has none or cannot be read."""
+    import logging
+
     from pypdf import PdfReader
     from pypdf.errors import PdfReadError
 
+    # pypdf logs a warning per unparsed font encoding or damaged cross-reference; the text is unaffected (checked on
+    # 516 archived CRSQ and JOM documents with and without fontTools: identical reference counts), and the warnings
+    # would drown a run's output.
+    logging.getLogger("pypdf").setLevel(logging.ERROR)
     try:
         reader = PdfReader(io.BytesIO(content))
         return "\n".join(page.extract_text() or "" for page in reader.pages)
