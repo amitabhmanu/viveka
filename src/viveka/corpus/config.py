@@ -57,6 +57,7 @@ class IngestionSettings:
     reference_extraction: str
     catalogue_match: str
     venues: Mapping[str, Venue]
+    audit_references: int = 60
 
 
 @dataclass(frozen=True)
@@ -102,7 +103,8 @@ def from_mapping(data: Mapping[str, Any]) -> CorpusConfig:
                              v.get("first_volume_year"))
                   for vid, v in (block.get("venues") or {}).items()}
         ingestion = IngestionSettings(float(block["requests_per_second"]), str(block["text_extraction"]),
-                                      str(block["reference_extraction"]), str(block["catalogue_match"]), venues)
+                                      str(block["reference_extraction"]), str(block["catalogue_match"]), venues,
+                                      int(block["audit_references"]))
     return CorpusConfig(
         sources=sources,
         api={name: dict(settings) for name, settings in data["api"].items()},

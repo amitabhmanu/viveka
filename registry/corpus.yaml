@@ -116,6 +116,9 @@ calibration_selection:
 #     papers of the subject's ingested venues: its journal must be one of the venue's aliases, its volume
 #     equal, its year within the census year tolerance, and either its first page equal or, when the listing
 #     has no page, the listed paper's first author's family name must open the reference.
+#   audit_references: the ingestion audit (decision D-1) checks this many extracted references, drawn at random
+#     over the references of a census run's sampled ingested papers, by hand against their documents, together
+#     with each of their papers' true reference counts; the census report states the verdict counts.
 # Venue types map the archive's item type or contents-page section to a work type; the census counts only
 # the registered paper types, so editorials, reviews of books and obituaries are excluded and counted.
 ingestion:
@@ -123,6 +126,7 @@ ingestion:
   text_extraction: pypdf_text_v1
   reference_extraction: reference_section_v1
   catalogue_match: ingested_catalogue_v1
+  audit_references: 60
   venues:
     crsq:
       name: Creation Research Society Quarterly

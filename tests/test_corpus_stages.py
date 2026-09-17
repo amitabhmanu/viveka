@@ -9,6 +9,7 @@ from pdf_fixture import text_pdf
 from viveka import cli
 from viveka.cases import CaseError
 from viveka.corpus import commands, tables
+from viveka.corpus.audit import AuditError, write_once
 from viveka.provenance import ProvenanceError, load_manifest, verify_run
 from viveka.registry.errors import RegistryError
 
@@ -273,6 +274,28 @@ def test_an_ingested_venue_is_listed_extracted_and_matched_against_its_own_catal
     assert "Venues ingested from their own archives (crsq)" in "\n".join(lines)
     code, text = run_cli(root, "census", "--field", "test-field", "--fold", "dev", "--dry-run", transport=no_network())
     assert code == 0 and "2 sampled works" in text  # documents replay from the archive
+
+    # The audit: sheets from the census, filled in by hand, then stated in the report of a re-run census.
+    code, text = run_cli(root, "corpus", "audit", "--field", "test-field", "--fold", "dev", transport=no_network())
+    assert code == 0 and "3 references from 1 papers" in text
+    sheet = root / "data" / "raw" / "manual" / "audit" / f"test-field-{census['run_id']}-references.csv"
+    rows = sheet.read_text(encoding="utf-8").splitlines()
+    assert rows[0].startswith("work_id,ref_index,document_url,extracted_text") and len(rows) == 4
+    code, text = run_cli(root, "census", "--field", "test-field", "--fold", "dev", "--audit", str(sheet),
+                         transport=no_network())
+    assert code == 1 and "verdict must be one of" in text  # an unfilled sheet is refused
+    verdicts = iter(["correct", "correct", "merged"])
+    write_lf(sheet, "\n".join([rows[0], *(r[: -len(",,,")] + f",{next(verdicts)},,AM" for r in rows[1:])]) + "\n")
+    works = sheet.with_name(sheet.name.replace("-references", "-works"))
+    head, row = works.read_text(encoding="utf-8").splitlines()
+    write_lf(works, f"{head}\n{row[: -len(',,')]},4,AM\n")
+    lines = []
+    commands.census_case(root, "test-field", "dev", field=True, audit=sheet, transport=no_network(), out=lines.append)
+    report = "\n".join(lines)
+    assert "3 extracted references checked against their documents: correct 2, wrong fields 0, merged 1" in report
+    assert "have 3 extracted references against 4 in the documents" in report and "not yet audited" not in report
+    with pytest.raises(AuditError, match="never overwritten"):
+        write_once(sheet, b"x")
 
 
 def test_field_overlap_is_a_registered_run_over_the_latest_fetches(world):

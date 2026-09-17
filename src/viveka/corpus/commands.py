@@ -38,6 +38,8 @@ from viveka.census import (
     summarize,
 )
 from viveka.corpus import crossref, ingest, openalex, semanticscholar, tables
+from viveka.corpus.audit import AUDIT_DIR, AuditError, AuditResult, draw, read_audit, report_lines, sheets, works_sheet
+from viveka.corpus.audit import write_once as write_sheet
 from viveka.corpus.config import LIVE_SOURCES, CensusSettings, CorpusConfig, load_corpus_config
 from viveka.corpus.http import Fetcher, FetchError, UsageMeter
 from viveka.corpus.ids import normalize_doi, short_id
@@ -356,6 +358,48 @@ def _catalogue(config: CorpusConfig, listing: dict[str, dict], works_rows: list[
             for work_id, row in sorted(listing.items()) if work_id in papers]
 
 
+def _audit(root: Path, audit: Path | None, sampled: set[str]) -> AuditResult | None:
+    if audit is None:
+        return None
+    resolved = audit.resolve()
+    if not resolved.is_relative_to((root / AUDIT_DIR).resolve()):
+        raise AuditError(f"audit sheets must be placed under {AUDIT_DIR}/")
+    return read_audit(resolved, sampled)
+
+
+def audit_sheets(root: Path, subject_id: str, fold: str, *, field: bool = False, out: Out = print) -> Path:
+    """Write the audit sheets for the latest census of a subject's ingested venues (no network)."""
+    case, _ = load_subject(root, subject_id, field)
+    config = load_corpus_config(root)
+    if config.ingestion is None:
+        raise CaseError("corpus.yaml registers no ingestion settings")
+    components = require_frozen(root, [case.component], fold)
+    census = latest_run(root, "S2", subject_id, fold, components)
+    if census is None:
+        raise CaseError(f"no successful census of {subject_id} in fold {fold} with the current registry")
+    fetch = next((m for m in recent_runs(root, limit=10_000) if m["run_id"] == census["params"]["fetch_run"]), None)
+    listing = _listing(root, fetch) if fetch else {}
+    sample = tables.read(root / census["params"]["tables"]["census_sample"])
+    works = sorted({r["work_id"] for r in sample if r["reference_source"] == "ingested"})
+    if not works:
+        raise CaseError(f"census {census['run_id']} measured no paper from an ingested venue")
+    references = {}
+    with make_fetcher(root, config, offline=True) as fetcher:
+        for work_id in works:
+            refs = ingest.references(fetcher, listing[work_id]["venue"], listing[work_id]["document_url"])
+            if refs is not None:
+                references[work_id] = refs
+    chosen = draw(census["run_id"], references, config.ingestion.audit_references, config.census.seed)
+    reference_sheet, work_sheet = sheets(chosen, references, {w: listing[w]["document_url"] for w in works})
+    path = root / AUDIT_DIR / f"{subject_id}-{census['run_id']}-references.csv"
+    write_sheet(works_sheet(path), work_sheet)
+    write_sheet(path, reference_sheet)
+    out(f"audit sheets for census {census['run_id']}: {len(chosen)} references from "
+        f"{len({w for w, _ in chosen})} papers in {rel_posix(path, root)} and {works_sheet(path).name}; fill in "
+        f"verdict and document_count, then run the census again with --audit {rel_posix(path, root)}")
+    return path
+
+
 def _manual_refs(root: Path, manual: Path | None) -> dict[str, References]:
     if manual is None:
         return {}
@@ -403,7 +447,7 @@ def match_references(fetcher: Fetcher, case_id: str, work_id: str, references: R
 
 
 def census_case(root: Path, case_id: str, fold: str, *, field: bool = False, manual: Path | None = None,
-                transport: httpx.BaseTransport | None = None, out: Out = print) -> str:
+                audit: Path | None = None, transport: httpx.BaseTransport | None = None, out: Out = print) -> str:
     case, _ = load_subject(root, case_id, field)
     config = load_corpus_config(root)
     settings = config.census
@@ -411,6 +455,7 @@ def census_case(root: Path, case_id: str, fold: str, *, field: bool = False, man
     draw = draw_sample(case, frames_rows, works_rows, settings.works_per_year, settings.seed, settings.paper_types)
     samples = draw.samples
     manual_refs = _manual_refs(root, manual)
+    audit_result = _audit(root, audit, {w.work_id for sample in samples.values() for w in sample})
     listing = _listing(root, fetch)
     catalogue = _catalogue(config, listing, works_rows)
     extra = {"ingestion": {"text_extraction": config.ingestion.text_extraction,
@@ -428,6 +473,9 @@ def census_case(root: Path, case_id: str, fold: str, *, field: bool = False, man
         ctx.record_input(root / fetch["params"]["tables"]["works"])
         if listing:
             ctx.record_input(root / fetch["params"]["tables"]["ingested"])
+        if audit is not None:
+            ctx.record_input(audit.resolve())
+            ctx.record_input(works_sheet(audit.resolve()))
         if manual is not None:
             ctx.record_input(manual.resolve())
         with make_fetcher(root, config, need=("openalex", "crossref"), transport=transport,
@@ -487,7 +535,8 @@ def census_case(root: Path, case_id: str, fold: str, *, field: bool = False, man
         written = {}
         for name, rows in (("coverage", coverage), ("census_sample", sample_rows)):
             written[name] = rel_posix(ctx.store(tables.to_parquet(name, rows), "parquet", rows=len(rows)), root)
-        report = census_report(case, ctx.run_id, fetch["run_id"], config, coverage, draw.undated, bool(listing))
+        report = census_report(case, ctx.run_id, fetch["run_id"], config, coverage, draw.undated, bool(listing),
+                               audit_result, rel_posix(audit.resolve(), root) if audit is not None else None)
         written["report"] = rel_posix(ctx.store(report.encode("utf-8"), "md"), root)
         ctx.params["tables"] = written
     out(report)
@@ -608,7 +657,8 @@ def field_overlap(root: Path, fold: str, *, out: Out = print) -> str:
 
 
 def census_report(case: Case, run_id: str, fetch_run: str, config: CorpusConfig, coverage: list[dict],
-                  undated: int, ingested: bool = False) -> str:
+                  undated: int, ingested: bool = False, audit: AuditResult | None = None,
+                  audit_sheet: str | None = None) -> str:
     settings = config.census
     ingestion_note = []
     if ingested and config.ingestion is not None:
@@ -618,8 +668,10 @@ def census_report(case: Case, run_id: str, fetch_run: str, config: CorpusConfig,
             f"document (`{config.ingestion.text_extraction}`, `{config.ingestion.reference_extraction}`), and "
             "DOI-less references are first matched against the ingested venues' listings "
             f"(`{config.ingestion.catalogue_match}`). A paper whose document has no readable reference list is "
-            "unmeasured. The extraction is not yet audited against the documents (decision D-1).",
+            "unmeasured." + ("" if audit is not None else " The extraction is not yet audited against the documents "
+                                                          "(decision D-1)."),
             "",
+            *(report_lines(audit, audit_sheet or "") if audit is not None else []),
         ]
     whole = {s.frame_id: s for s in summarize(coverage, settings.max_unmeasured_share)}
     lines = [
@@ -746,6 +798,11 @@ def add_parsers(sub: argparse._SubParsersAction, common: argparse.ArgumentParser
             p.add_argument("--probe", action="store_true",
                            help="Live: resolve registered works and first pages only, then project")
 
+    p = csub.add_parser("audit", parents=[common],
+                        help="Write ingestion audit sheets for the latest census of ingested venues (no network)")
+    _subject_arguments(p)
+    p.add_argument("--fold", required=True, choices=FOLDS)
+
     case = sub.add_parser("case", help="Case definitions")
     casesub = case.add_subparsers(dest="action", required=True)
     p = casesub.add_parser("validate", parents=[common], help="Validate a case, its claim and the corpus settings")
@@ -764,6 +821,7 @@ def add_parsers(sub: argparse._SubParsersAction, common: argparse.ArgumentParser
     p.add_argument("--fold", required=True, choices=FOLDS)
     p.add_argument("--dry-run", action="store_true", help="Project live calls from the archive; no network")
     p.add_argument("--manual", type=Path, help=f"CSV of hand-entered reference lists under {MANUAL_DIR}/")
+    p.add_argument("--audit", type=Path, help=f"A completed ingestion audit (<name>-references.csv under {AUDIT_DIR}/)")
 
 
 def _subject_arguments(parser: argparse.ArgumentParser) -> None:
@@ -821,6 +879,9 @@ def run(args: argparse.Namespace, root: Path, *, transport: httpx.BaseTransport 
             return resolve_lookup(root, doi=args.doi, openalex_id=args.openalex_id, title=args.title,
                                   source_name=args.source_name, transport=transport, out=out)
         subject_id, is_field = _subject(args)
+        if args.command == "corpus" and args.action == "audit":
+            audit_sheets(root, subject_id, args.fold, field=is_field, out=out)
+            return 0
         if getattr(args, "probe", False):
             case, claim = load_subject(root, subject_id, is_field)
             config = load_corpus_config(root)
@@ -831,12 +892,13 @@ def run(args: argparse.Namespace, root: Path, *, transport: httpx.BaseTransport 
         if args.dry_run:
             return _dry_run(root, args, out)
         if args.command == "census":
-            census_case(root, subject_id, args.fold, field=is_field, manual=args.manual, transport=transport, out=out)
+            census_case(root, subject_id, args.fold, field=is_field, manual=args.manual, audit=args.audit,
+                        transport=transport, out=out)
         elif args.action == "fetch":
             fetch_case(root, subject_id, args.fold, field=is_field, transport=transport, out=out)
         else:
             fetch_contexts(root, subject_id, args.fold, field=is_field, transport=transport, out=out)
         return 0
-    except (CaseError, FetchError, env.MissingCredential, ManualImportError) as exc:
+    except (CaseError, FetchError, env.MissingCredential, ManualImportError, AuditError) as exc:
         out(f"viveka: {exc}")
         return 1
