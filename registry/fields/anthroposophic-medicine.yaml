@@ -4,7 +4,7 @@ field: anthroposophic-medicine
 role: calibration
 side: pseudoscience
 window: {start: 1986, end: 2025}
-notes: "Added from the pseudoscience candidates: the only candidate with a community venue in OpenAlex. A single German-language venue."
+notes: "Added from the pseudoscience candidates: the only candidate with a community venue in OpenAlex. A single German-language venue. Qualifying evidence for the selection rule (D-10) is not yet identified: no formal body or court judgement found so far, and a Swiss health technology assessment was partly favourable; the field is dropped at review if none is found. Author overlap with homeopathy is to be measured."
 frames:
   - {id: venues, kind: community, sources: [S4210209047], note: "Der Merkurstab (ISSN-L 0935-798X), the journal of anthroposophic medicine."}
 absent_venues: []

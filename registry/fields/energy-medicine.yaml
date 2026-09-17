@@ -1,0 +1,10 @@
+# Drafted 17 Sep 2026 (M4b) from OpenAlex venue lookups; awaiting owner review.
+format: 1
+field: energy-medicine
+role: calibration
+side: pseudoscience
+window: {start: 1986, end: 2025}
+notes: "Added with the owner's approval of the enlarged pseudoscience set (17 Sep 2026): biofield and energy therapies (therapeutic touch, energy psychology). Small: the census decides. ISSSEEM, publisher of Subtle Energies, also hosted psi research, so author overlap with the parapsychology case must be measured under the selection rule (D-10). Qualifying evidence for the selection rule is not yet identified (no formal body or court judgement found so far); the field is dropped at review if none is found."
+frames:
+  - {id: venues, kind: community, sources: [S2764506119, S4210205894], note: "Subtle Energies & Energy Medicine (ISSN-L 1099-6591), about 288 works; Energy Psychology (1949-6575), about 161 works, DOIs from 2009."}
+absent_venues: []

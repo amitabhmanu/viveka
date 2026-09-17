@@ -4,7 +4,7 @@ field: homeopathy
 role: calibration
 side: pseudoscience
 window: {start: 1986, end: 2025}
-notes: "Homeopathy and the British Homeopathic Journal are also the water-memory reserve case's community frame; if that reserve pair is activated, homeopathy leaves the calibration set (owner decision, 16 Sep 2026)."
+notes: "Homeopathy and the British Homeopathic Journal are also the water-memory reserve case's community frame; if that reserve pair is activated, homeopathy leaves the calibration set (owner decision, 16 Sep 2026). Qualifying evidence for the selection rule (D-10, to check at review): the UK House of Commons Science and Technology Committee's Evidence Check 2 on homeopathy (2010) and Australia's NHMRC statement on homeopathy (2015)."
 frames:
   - {id: venues, kind: community, sources: [S4310451, S4210225608, S4210212727, S4210168090, S2764361555, S2764825727], note: "Homeopathy (ISSN-L 1475-4916) and its predecessor the British Homeopathic Journal (0007-0785); Allgemeine Homöopathische Zeitung (0002-5887); Zeitschrift für Klassische Homöopathie (0935-0853); Indian Journal of Research in Homoeopathy (0974-7168); International Journal of High Dilution Research (1982-6206)."}
 absent_venues:

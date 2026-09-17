@@ -1,0 +1,11 @@
+# Drafted 17 Sep 2026 (M4b) from OpenAlex venue lookups; awaiting owner review.
+format: 1
+field: astrology
+role: calibration
+side: pseudoscience
+window: {start: 1986, end: 2025}
+notes: "Named in the framework's calibration set. No astrology venue was found in OpenAlex or Crossref (searches for Correlation, the Astrological Journal, The Mountain Astrologer, NCGR and AFA publications). Kept as a candidate with no frame, so the census records it rather than it being dropped unseen. The framework expects it to be replaced: its literature lies largely outside indexed journals and its references are mostly books, which the census excludes. Culture and Cosmos (OpenAlex S4363606453) is an academic history-of-astrology journal, not the practitioner community, and is not used. Qualifying evidence for the selection rule (D-10, to check at review): the US National Science Board's Science and Engineering Indicators classify astrology as pseudoscience."
+frames: []
+absent_venues:
+  - {name: "Correlation (Astrological Association research journal)", issn_l: null, note: "Not found in OpenAlex or Crossref; not proposed for ingestion because its references are mostly books."}
+  - {name: "The Astrological Journal (Astrological Association)", issn_l: null, note: "Not found in OpenAlex or Crossref; a practitioner magazine."}

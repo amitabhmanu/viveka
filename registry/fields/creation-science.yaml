@@ -4,11 +4,11 @@ field: creation-science
 role: calibration
 side: pseudoscience
 window: {start: 1986, end: 2025}
-notes: "Only the conference proceedings are indexed; the community's core journals are absent. Likely venue-blocked unless ingested (as planned for ICCF, D-8)."
+notes: "Only the conference proceedings are indexed; the community's core journals are absent. Likely venue-blocked unless ingested (as planned for ICCF, D-8). Ingestion of the four absent journals approved in principle by the owner (17 Sep 2026), subject to their archives being online. Qualifying evidence for the selection rule (D-10, to check at review): McLean v. Arkansas Board of Education (1982) and Edwards v. Aguillard (1987)."
 frames:
   - {id: venues, kind: community, sources: [S4210186600], note: "Proceedings of the International Conference on Creationism (ISSN-L 2639-3999), 131 works in OpenAlex."}
 absent_venues:
-  - {name: "Creation Research Society Quarterly", issn_l: "0092-9166", note: "Not found in OpenAlex."}
-  - {name: "Journal of Creation (formerly Creation Ex Nihilo Technical Journal)", issn_l: "1036-2916", note: "Not found in OpenAlex."}
-  - {name: "Answers Research Journal", issn_l: "1937-9056", note: "Not found in OpenAlex."}
-  - {name: "Origins (Geoscience Research Institute)", issn_l: null, note: "OpenAlex source S4393913078 (Origins/Originsonline.com, ISSN-L 0093-609X) lists no works; an unlabelled source S4306521666 named Origins (490 works) is unverified and not used."}
+  - {name: "Creation Research Society Quarterly", issn_l: "0092-9166", note: "Not found in OpenAlex. Whole-issue PDFs for 1964-2026 are free at crsq.creationresearch.org, and the Internet Archive holds 1985-2014 (checked 17 Sep 2026); no HTML tables of contents."}
+  - {name: "Journal of Creation (formerly Creation Ex Nihilo Technical Journal)", issn_l: "1036-2916", note: "Not found in OpenAlex. Digital back issues are for subscribers only at creation.com (checked 17 Sep 2026), so ingestion needs a subscription or library copies."}
+  - {name: "Answers Research Journal", issn_l: "1937-9056", note: "Not found in OpenAlex. Open access from 2008 at answersresearchjournal.org, with HTML article pages listed by volume (checked 17 Sep 2026)."}
+  - {name: "Origins (Geoscience Research Institute)", issn_l: null, note: "OpenAlex source S4393913078 (Origins/Originsonline.com, ISSN-L 0093-609X) lists no works; an unlabelled source S4306521666 named Origins (490 works) is unverified and not used. grisda.org hosts an Origins archive; its format is not yet checked."}

@@ -1,0 +1,11 @@
+# Drafted 17 Sep 2026 (M4b) from OpenAlex venue lookups; awaiting owner review.
+format: 1
+field: intelligent-design
+role: calibration
+side: pseudoscience
+window: {start: 1986, end: 2025}
+notes: "Added with the owner's approval of the enlarged pseudoscience set (17 Sep 2026). A community that separated from creation science, with its own organisations and venues; author overlap with creation science is to be measured under the selection rule (D-10). Small: the census decides. Qualifying evidence for the selection rule (to check at review): Kitzmiller v. Dover Area School District (2005) and the US National Academy of Sciences' Science, Evolution, and Creationism (2008)."
+frames:
+  - {id: venues, kind: community, sources: [S4210180729], note: "BIO-Complexity (ISSN-L 2151-7444), Biologic Institute; about 60 works, DOIs from 2010 with no deposited reference lists."}
+absent_venues:
+  - {name: "Progress in Complexity, Information, and Design (ISCID, 2002-2005)", issn_l: "1555-5089", note: "Not found in OpenAlex or Crossref. The iscid.org site is gone; copies may survive only in the Wayback Machine (not yet checked)."}
