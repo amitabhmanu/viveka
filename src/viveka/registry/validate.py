@@ -152,6 +152,20 @@ def _duplicates(values: list[str]) -> list[str]:
     return sorted({v for v in values if values.count(v) > 1})
 
 
+def _unknown_venues(root: Path, rel: str, frames: list[dict]) -> list[str]:
+    """Frames may only ingest venues that the corpus settings register."""
+    wanted = sorted({v for f in frames for v in f.get("ingest") or ()})
+    if not wanted:
+        return []
+    try:
+        corpus = yaml.safe_load((root / comp.SINGLE_FILES["corpus"]).read_text(encoding="utf-8")) or {}
+    except (OSError, yaml.YAMLError):
+        return [f"{rel}: ingested venues need a readable {comp.SINGLE_FILES['corpus']}"]
+    known = set((corpus.get("ingestion") or {}).get("venues") or {})
+    return [f"{rel}: ingested venue {v!r} is not registered in {comp.SINGLE_FILES['corpus']}"
+            for v in wanted if v not in known]
+
+
 def _check_events(root: Path, rel: str) -> list[str]:
     data, problems = _load_yaml(root, rel)
     if problems:
@@ -185,6 +199,7 @@ def _check_cases(root: Path, rel: str) -> list[str]:
     dupes = _duplicates([f["id"] for f in data["frames"]])
     if dupes:
         problems.append(f"{rel}: duplicate frame ids: {', '.join(dupes)}")
+    problems += _unknown_venues(root, rel, data["frames"])
     return problems
 
 
@@ -205,6 +220,7 @@ def _check_fields(root: Path, rel: str) -> list[str]:
     dupes = _duplicates([f["id"] for f in data["frames"]])
     if dupes:
         problems.append(f"{rel}: duplicate frame ids: {', '.join(dupes)}")
+    problems += _unknown_venues(root, rel, data["frames"])
     return problems
 
 

@@ -1,7 +1,10 @@
+import json
+
 import httpx
 import pytest
 from conftest import write_lf
 from corpus_fakes import FIELD_YAML, small_world, write_case, write_field
+from pdf_fixture import text_pdf
 
 from viveka import cli
 from viveka.cases import CaseError
@@ -229,6 +232,47 @@ def test_a_field_without_frames_gets_an_empty_census_listing_its_absent_venues(w
     assert table(root, census, "coverage") == []
     report = "\n".join(lines)
     assert "No frames: none of this field's venues" in report and "- An unindexed bulletin" in report
+
+
+def test_an_ingested_venue_is_listed_extracted_and_matched_against_its_own_catalogue(world):
+    root, fake = world
+    base = "https://crsq.creationresearch.org"
+    listing = [
+        {"eprintid": 11, "title": "Rapid erosion", "date": "1995-06", "volume": 32, "number": 1, "type": "article",
+         "creators": [{"name": {"family": "Wills", "given": "E. L."}}],
+         "documents": [{"format": "application/pdf", "files": [{"uri": f"{base}/id/file/11"}]}]},
+        {"eprintid": 12, "title": "Trace marks", "date": "1995-09", "volume": 32, "number": 2, "type": "article",
+         "creators": [{"name": {"family": "Cole", "given": "J. H."}}],
+         "documents": [{"format": "application/pdf", "files": [{"uri": f"{base}/id/file/12"}]}]},
+        {"eprintid": 13, "title": "Index", "date": "1995-12", "volume": 32, "number": 3, "type": "book_section"},
+    ]
+    fake.documents[f"{base}/cgi/exportview/year/1995/JSON/1995.js"] = (json.dumps(listing).encode(), "application/json")
+    fake.documents[f"{base}/id/file/11"] = (text_pdf([
+        "Rapid erosion", "Body text.", "References",
+        "Cole, J. H. 1995. Trace marks in sediments. CRSQ 32:10-12.",
+        "Doe, A. 1990. A long book. University Press. York.",
+        "Roe, B. 1986. Reanalysis. Physical Review Letters 56:3-6."]), "application/pdf")
+    fake.documents[f"{base}/id/file/12"] = (text_pdf(["Trace marks", "No reference list."]), "application/pdf")
+    write_field(root, FIELD_YAML.replace("sources: [S5]}", "ingest: [crsq]}"))
+    fetch = load_manifest(root, commands.fetch_case(root, "test-field", "dev", field=True, transport=fake.transport(),
+                                                    out=lambda s: None))
+    assert fetch["params"]["ingestion"] == {"venues": {"crsq": "eprints_json_v1"}}
+    assert {w["work_id"]: w["type"] for w in table(root, fetch, "works")} == {
+        "X:crsq:11": "article", "X:crsq:12": "article", "X:crsq:13": "other"}
+    assert {a["author_id"] for a in table(root, fetch, "authors")} == {"name:wills:e", "name:cole:j"}
+    lines = []
+    census = load_manifest(root, commands.census_case(root, "test-field", "dev", field=True,
+                                                      transport=fake.transport(), out=lines.append))
+    (row,) = table(root, census, "coverage")
+    assert (row["frame_works"], row["frame_works_excluded"], row["sampled"], row["measured"], row["unmeasured"],
+            row["refs"], row["refs_excluded"], row["doiless_sampled"], row["doiless_matched"]) == (2, 1, 2, 1, 1, 2, 1,
+                                                                                                 2, 2)
+    sample = {r["work_id"]: r["reference_source"] for r in table(root, census, "census_sample")}
+    assert sample == {"X:crsq:11": "ingested", "X:crsq:12": "none"}
+    assert census["params"]["ingestion"]["catalogue_match"] == "ingested_catalogue_v1"
+    assert "Venues ingested from their own archives (crsq)" in "\n".join(lines)
+    code, text = run_cli(root, "census", "--field", "test-field", "--fold", "dev", "--dry-run", transport=no_network())
+    assert code == 0 and "2 sampled works" in text  # documents replay from the archive
 
 
 def test_a_calibration_fold_refuses_a_draft_field(world):

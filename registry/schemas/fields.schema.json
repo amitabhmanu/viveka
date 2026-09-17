@@ -24,12 +24,14 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "kind", "sources"],
+        "required": ["id", "kind"],
         "additionalProperties": false,
+        "anyOf": [{"required": ["sources"]}, {"required": ["ingest"]}],
         "properties": {
           "id": {"$ref": "#/$defs/slug"},
           "kind": {"enum": ["community", "mainstream"]},
           "sources": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^S\\d+$"}},
+          "ingest": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/slug"}},
           "note": {"type": "string"}
         }
       }

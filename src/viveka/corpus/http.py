@@ -70,6 +70,17 @@ class Response:
     live: bool
 
 
+@dataclass(frozen=True)
+class Document:
+    """A non-JSON response (a web page or PDF from an ingested venue), archived byte for byte."""
+
+    status: int
+    content: bytes | None
+    content_type: str | None
+    raw_path: Path
+    live: bool
+
+
 @dataclass
 class Usage:
     live_calls: dict[str, dict[str, int]] = field(default_factory=dict)
@@ -171,6 +182,35 @@ class Archive:
             fh.write(json.dumps(meta, indent=2, ensure_ascii=False) + "\n")
         return body_path
 
+    def document_paths(self, request: Request) -> tuple[Path, Path]:
+        key = request.key()
+        base = self.root / RAW / request.source / key[:2]
+        return base / f"{key}.bin", base / f"{key}.meta.json"
+
+    def get_document(self, request: Request) -> tuple[int, bytes | None, str | None, Path] | None:
+        body_path, meta_path = self.document_paths(request)
+        if not meta_path.is_file():
+            return None
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        content = body_path.read_bytes() if body_path.is_file() else None
+        return int(meta["status"]), content, meta.get("content_type"), meta_path
+
+    def put_document(self, request: Request, status: int, content: bytes | None, content_type: str | None) -> Path:
+        body_path, meta_path = self.document_paths(request)
+        body_path.parent.mkdir(parents=True, exist_ok=True)
+        if meta_path.exists():
+            return meta_path  # archived files are never overwritten
+        if content is not None:
+            with open(body_path, "xb") as fh:
+                fh.write(content)
+        meta = {"source": request.source, "kind": request.kind, "url": request.url, "params": dict(request.params),
+                "status": status, "content_type": content_type, "retrieved_at": _now(),
+                "terms_reference": self.terms(request.source),
+                "sha256": sha256_bytes(content) if content is not None else None, "viveka_version": __version__}
+        with open(meta_path, "x", encoding="utf-8", newline="\n") as fh:
+            fh.write(json.dumps(meta, indent=2, ensure_ascii=False) + "\n")
+        return meta_path
+
 
 def _retry_after(response: httpx.Response, attempt: int) -> float:
     header = response.headers.get("Retry-After", "")
@@ -228,6 +268,48 @@ class Fetcher:
         path = self.archive.put(request, status, body)
         self.used_paths[str(path)] = path
         return Response(status, body, path, live=True)
+
+    def get_document(self, request: Request) -> Document:
+        """A web page or PDF, archive first; the archive keeps the bytes and their content type."""
+        hit = self.archive.get_document(request)
+        if hit is not None:
+            self.usage.replay(request)
+            self.used_paths[str(hit[3])] = hit[3]
+            return Document(hit[0], hit[1], hit[2], hit[3], live=False)
+        if self.offline:
+            raise NotArchived(f"{request.source}: {request.url} is not in the raw archive")
+        status, content, content_type = self._live_document(request)
+        path = self.archive.put_document(request, status, content, content_type)
+        self.used_paths[str(path)] = path
+        if content is not None:
+            body_path = self.archive.document_paths(request)[0]
+            self.used_paths[str(body_path)] = body_path
+        return Document(status, content, content_type, path, live=True)
+
+    def document_archived(self, request: Request) -> bool:
+        return self.archive.get_document(request) is not None
+
+    def _live_document(self, request: Request) -> tuple[int, bytes | None, str | None]:
+        problem = "no attempt made"
+        for attempt in range(MAX_ATTEMPTS):
+            self.usage.charge(request, self.meter.charge(request, self.run_id))
+            self._wait(request.source)
+            try:
+                response = self.client.get(request.url, params=dict(request.params))
+            except httpx.TransportError as exc:
+                problem = type(exc).__name__
+                self.sleep(min(2.0**attempt, 60.0))
+                continue
+            content_type = response.headers.get("content-type", "").split(";")[0].strip() or None
+            if response.status_code == 200:
+                return 200, response.content, content_type
+            if response.status_code in (404, 410):  # gone for good; anything else is not archived
+                return response.status_code, None, content_type
+            problem = f"HTTP {response.status_code}"
+            if response.status_code not in RETRY_STATUSES:
+                break
+            self.sleep(_retry_after(response, attempt))
+        raise FetchError(f"{request.source} {request.url}: {problem}")
 
     def _wait(self, source: str) -> None:
         rate = self.rates.get(source)

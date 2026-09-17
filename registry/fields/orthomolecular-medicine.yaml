@@ -4,8 +4,7 @@ field: orthomolecular-medicine
 role: calibration
 side: pseudoscience
 window: {start: 1986, end: 2025}
-notes: "Added with the owner's approval of the enlarged pseudoscience set (17 Sep 2026): megavitamin therapy, including vitamin C against cancer, whose community discounted the Mayo Clinic trials (Creagan et al. 1979; Moertel et al. 1985). Only 36 works of its journal are indexed, so the field depends on ingestion. The Journal of Nutritional & Environmental Medicine (S120761728) was considered and left out as a mixed venue. Qualifying evidence for the selection rule (D-10, to check at review): the American Psychiatric Association task force report on megavitamin and orthomolecular therapy in psychiatry (1973)."
+notes: "Added with the owner's approval of the enlarged pseudoscience set (17 Sep 2026): megavitamin therapy, including vitamin C against cancer, whose community discounted the Mayo Clinic trials (Creagan et al. 1979; Moertel et al. 1985). Only 36 works of its journal are indexed in OpenAlex (S976703018), so the whole run is ingested from its own archive instead (owner approval, 17 Sep 2026) and the OpenAlex source is not used, which would count those papers twice. The Journal of Nutritional & Environmental Medicine (S120761728) was considered and left out as a mixed venue. Qualifying evidence for the selection rule (D-10, to check at review): the American Psychiatric Association task force report on megavitamin and orthomolecular therapy in psychiatry (1973)."
 frames:
-  - {id: venues, kind: community, sources: [S976703018], note: "Journal of Orthomolecular Medicine (ISSN-L 0834-4825); only 36 works indexed in OpenAlex."}
-absent_venues:
-  - {name: "Journal of Orthomolecular Medicine, unindexed issues", issn_l: "0834-4825", note: "OpenAlex holds 36 works of the run from 1986. orthomolecular.org (Riordan Clinic) has HTML tables of contents per issue from 1986 with a free PDF per article, and the Internet Archive also holds scans (checked 17 Sep 2026); PDFs of older issues may be image scans needing OCR."}
+  - {id: venues, kind: community, ingest: [jom], note: "Journal of Orthomolecular Medicine (ISSN-L 0834-4825), ingested from orthomolecular.org: contents pages per issue from 1986 with a PDF per article. PDFs without a text layer leave their papers unmeasured (no OCR, decision D-1)."}
+absent_venues: []

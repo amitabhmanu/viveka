@@ -231,6 +231,50 @@ def match_found(biblio: Biblio, candidate_journals: Sequence[str | None]) -> boo
     return biblio.journal is not None and any(n and journal_compatible(biblio.journal, n) for n in candidate_journals)
 
 
+@dataclass(frozen=True)
+class CatalogueEntry:
+    """A paper listed by an ingested venue, for matching references to it (rule ingested_catalogue_v1)."""
+
+    aliases: tuple[str, ...]
+    year: int | None
+    volume: str | None
+    first_page: str | None
+    first_author: str | None  # folded family name
+
+
+def fold(text: str) -> str:
+    """Letters only, lower case, accents removed: how names are compared."""
+    import unicodedata
+
+    plain = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
+    return re.sub(r"[^a-z]", "", plain.lower())
+
+
+def catalogue_match(ref: Reference, entries: Sequence[CatalogueEntry], year_tolerance: int) -> bool:
+    """Whether a DOI-less reference is to a paper an ingested venue lists.
+
+    The reference's journal must be one of the venue's names, its volume equal and its year within the
+    tolerance when both are known; then its first page must equal the listed one or, when the listing has no
+    page, the listed first author's family name must open the reference.
+    """
+    volume = _volume(ref.volume) if ref.volume else None
+    page = _page(ref.first_page) if ref.first_page else None
+    if not ref.journal or volume is None:
+        return False
+    opening = fold((ref.text or "")[:60])
+    for entry in entries:
+        if entry.volume != volume or not any(journal_compatible(ref.journal, a) for a in entry.aliases):
+            continue
+        if ref.year is not None and entry.year is not None and abs(ref.year - entry.year) > year_tolerance:
+            continue
+        if entry.first_page is not None and page is not None:
+            if entry.first_page == page:
+                return True
+        elif entry.first_author and opening.startswith(entry.first_author):
+            return True
+    return False
+
+
 def paper_doiless(references: References) -> list[int]:
     """Indices of DOI-less references that count as papers: the pool the match sample is drawn from."""
     return [i for i, e in enumerate(references.entries) if e.doi is None and reference_kind(e) == "paper"]

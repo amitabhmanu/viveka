@@ -46,6 +46,8 @@ def test_field_upstream_is_the_corpus_only(registry_root):
          "duplicate frame ids"),
         (NO_FRAMES.replace(FIELD_YAML[FIELD_YAML.index("absent_venues"):], "absent_venues: []\n"),
          "must list its absent venues"),
+        (FIELD_YAML.replace("sources: [S5]}", "ingest: [nowhere]}"), "ingested venue 'nowhere' is not registered"),
+        (FIELD_YAML.replace("kind: community, sources: [S5]}", "kind: community}"), "frames"),
     ],
 )
 def test_invalid_fields_are_reported(registry_root, text, message):

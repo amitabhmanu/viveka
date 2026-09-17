@@ -38,6 +38,7 @@ class Frame:
     kind: str  # community or mainstream
     cites_seeds: bool
     sources: tuple[str, ...]
+    ingest: tuple[str, ...] = ()  # community venues ingested from their own archives
 
 
 @dataclass(frozen=True)
@@ -101,8 +102,8 @@ def load_case(root: Path, case_id: str) -> tuple[Case, Claim]:
     problems = validate(root, ["corpus"])
     if problems:
         raise CaseError("; ".join(problems))
-    frames = tuple(Frame(f["id"], f["kind"], f.get("cites") == "seeds", tuple(f.get("sources") or ()))
-                   for f in data["frames"])
+    frames = tuple(Frame(f["id"], f["kind"], f.get("cites") == "seeds", tuple(f.get("sources") or ()),
+                         tuple(f.get("ingest") or ())) for f in data["frames"])
     case = Case(data["case"], data["claim"], data["role"], data["pair"], int(data["window"]["start"]),
                 int(data["window"]["end"]), tuple(_ref(s) for s in data["seeds"]), frames)
     return case, load_claim(root, case.claim)
@@ -113,7 +114,8 @@ def load_field(root: Path, field_id: str) -> Case:
     problems = validate(root, ["corpus"])
     if problems:
         raise CaseError("; ".join(problems))
-    frames = tuple(Frame(f["id"], f["kind"], False, tuple(f["sources"])) for f in data["frames"])
+    frames = tuple(Frame(f["id"], f["kind"], False, tuple(f.get("sources") or ()), tuple(f.get("ingest") or ()))
+                   for f in data["frames"])
     absent = tuple(f"{v['name']}" + (f" (ISSN-L {v['issn_l']})" if v.get("issn_l") else "") + f": {v['note']}"
                    for v in data["absent_venues"])
     return Case(data["field"], None, data["role"], data["side"], int(data["window"]["start"]),

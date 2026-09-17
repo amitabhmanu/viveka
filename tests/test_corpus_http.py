@@ -107,3 +107,37 @@ def test_rate_limit_spaces_calls(tmp_path):
         fetcher.get(listing("a"))
         fetcher.get(listing("b"))
     assert sleeps == [pytest.approx(0.2)]
+
+
+def page(url):
+    return Request.build("crsq", "document", url)
+
+
+def test_documents_are_archived_byte_for_byte_and_replayed(tmp_path):
+    seen = []
+
+    def handler(request):
+        seen.append(request)
+        if request.url.path.endswith("/gone.pdf"):
+            return httpx.Response(404)
+        if request.url.path.endswith("/busy.pdf"):
+            return httpx.Response(403)
+        return httpx.Response(200, content=b"%PDF-1.4 bytes", headers={"content-type": "application/pdf; x=1"})
+
+    with make(tmp_path, handler) as fetcher:
+        first = fetcher.get_document(page("https://example.org/a.pdf"))
+        second = fetcher.get_document(page("https://example.org/a.pdf"))
+        gone = fetcher.get_document(page("https://example.org/gone.pdf"))
+        with pytest.raises(FetchError, match="HTTP 403"):
+            fetcher.get_document(page("https://example.org/busy.pdf"))
+        assert fetcher.document_archived(page("https://example.org/gone.pdf"))
+        assert not fetcher.document_archived(page("https://example.org/busy.pdf"))  # not archived: retried later
+    assert first.live and not second.live and second.content == b"%PDF-1.4 bytes"
+    assert second.content_type == "application/pdf" and (gone.status, gone.content) == (404, None)
+    assert "api_key" not in seen[0].url.params  # credentials belong to their own source only
+    meta = json.loads(first.raw_path.read_text(encoding="utf-8"))
+    assert meta["sha256"].startswith("sha256:") and meta["terms_reference"] == "terms:crsq"
+    with make(tmp_path, handler, offline=True) as offline:
+        assert offline.get_document(page("https://example.org/a.pdf")).content == b"%PDF-1.4 bytes"
+        with pytest.raises(NotArchived):
+            offline.get_document(page("https://example.org/new.pdf"))

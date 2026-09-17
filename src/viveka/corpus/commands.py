@@ -21,10 +21,12 @@ import httpx
 from viveka import env
 from viveka.cases import Case, CaseError, Claim, WorkRef, bearing_set, load_subject
 from viveka.census import (
+    CatalogueEntry,
     FrameWork,
     References,
     Summary,
     biblio_of,
+    catalogue_match,
     coverage_rows,
     doiless_sample,
     match_found,
@@ -35,7 +37,7 @@ from viveka.census import (
     sample_frame,
     summarize,
 )
-from viveka.corpus import crossref, openalex, semanticscholar, tables
+from viveka.corpus import crossref, ingest, openalex, semanticscholar, tables
 from viveka.corpus.config import LIVE_SOURCES, CensusSettings, CorpusConfig, load_corpus_config
 from viveka.corpus.http import Fetcher, FetchError, UsageMeter
 from viveka.corpus.ids import normalize_doi, short_id
@@ -66,6 +68,8 @@ def make_fetcher(root: Path, config: CorpusConfig, *, need: Sequence[str] = (), 
     rates = {s: config.rate(s) for s in LIVE_SOURCES}
     if "semanticscholar" not in secrets:
         rates["semanticscholar"] = float(config.semanticscholar["keyless_requests_per_second"])
+    if config.ingestion is not None:
+        rates.update({venue: config.ingestion.requests_per_second for venue in config.ingestion.venues})
     meter = UsageMeter(root, prices={s: config.api[s].get("prices_usd", {}) for s in LIVE_SOURCES},
                        caps={"openalex": float(config.openalex["daily_usd_cap"])})
     return Fetcher(root, rates=rates, meter=meter, terms=config.terms,
@@ -110,22 +114,32 @@ def collect_corpus(fetcher: Fetcher, config: CorpusConfig, case: Case, claim: Cl
     per_page = int(config.openalex["per_page"])
     works: dict[str, dict] = {short_id(obj["id"]): obj for obj in resolved.values() if obj}
     frame_rows = []
+    listed: dict[str, list[dict]] = defaultdict(list)
     for frame in case.frames:
         values = seed_ids if frame.cites_seeds else list(frame.sources)
-        for flt in openalex.frame_filters(frame.cites_seeds, values, case.start, case.end):
+        filters = openalex.frame_filters(frame.cites_seeds, values, case.start, case.end) if values else []
+        for flt in filters:
             for page in openalex.iter_pages(fetcher, flt, per_page):
                 for obj in (page.body or {}).get("results") or []:
                     work_id = short_id(obj.get("id"))
                     works.setdefault(work_id, obj)
                     frame_rows.append({"case_id": case.case_id, "frame_id": frame.frame_id, "kind": frame.kind,
                                        "work_id": work_id, "year": obj.get("publication_year")})
+        for venue_id in frame.ingest:
+            venue = config.venue(venue_id)
+            found = ingest.rows(ingest.list_works(fetcher, venue, case.start, case.end), venue)
+            for name, found_rows in found.items():
+                listed[name] += found_rows
+            frame_rows += [{"case_id": case.case_id, "frame_id": frame.frame_id, "kind": frame.kind,
+                            "work_id": row["work_id"], "year": row["year"]} for row in found["works"]]
     objs = list(works.values())
     return {
-        "works": [openalex.work_row(o) for o in objs],
-        "authors": [row for o in objs for row in openalex.author_rows(o)],
-        "authorships": [row for o in objs for row in openalex.authorship_rows(o)],
+        "works": [openalex.work_row(o) for o in objs] + listed["works"],
+        "authors": [row for o in objs for row in openalex.author_rows(o)] + listed["authors"],
+        "authorships": [row for o in objs for row in openalex.authorship_rows(o)] + listed["authorships"],
         "citations": [row for o in objs for row in openalex.citation_rows(o)],
         "frames": frame_rows,
+        "ingested": listed["ingested"],
     }
 
 
@@ -178,7 +192,12 @@ def project_fetch(fetcher: Fetcher, config: CorpusConfig, case: Case, claim: Cla
     seed_ids = _seed_ids(case, resolved)
     per_page = int(config.openalex["per_page"])
     for frame in case.frames:
+        for venue_id in frame.ingest:
+            projection.unknown.append(f"frame {frame.frame_id}: ingested venue {venue_id} is listed from its archive "
+                                      "(free; one request per year, issue or volume page not yet archived)")
         values = seed_ids if frame.cites_seeds else list(frame.sources)
+        if not values:
+            continue
         for flt in openalex.frame_filters(frame.cites_seeds, values, case.start, case.end):
             first = fetcher.archived(openalex.list_request(flt, "*", per_page))
             if first is None:
@@ -203,7 +222,7 @@ def probe(fetcher: Fetcher, config: CorpusConfig, case: Case, claim: Claim | Non
     seed_ids = _seed_ids(case, resolved)
     for frame in case.frames:
         values = seed_ids if frame.cites_seeds else list(frame.sources)
-        for flt in openalex.frame_filters(frame.cites_seeds, values, case.start, case.end):
+        for flt in openalex.frame_filters(frame.cites_seeds, values, case.start, case.end) if values else []:
             fetcher.get(openalex.list_request(flt, "*", int(config.openalex["per_page"])))
 
 
@@ -211,15 +230,18 @@ def fetch_case(root: Path, case_id: str, fold: str, *, field: bool = False,
                transport: httpx.BaseTransport | None = None, out: Out = print) -> str:
     case, claim = load_subject(root, case_id, field)
     config = load_corpus_config(root)
-    with RunContext(root, "S1", case_id, fold, [case.component],
-                    params={"window": [case.start, case.end]}) as ctx:
+    params: dict = {"window": [case.start, case.end]}
+    venues = sorted({v for f in case.frames for v in f.ingest})
+    if venues:
+        params["ingestion"] = {"venues": {v: config.venue(v).adapter for v in venues}}
+    with RunContext(root, "S1", case_id, fold, [case.component], params=params) as ctx:
         with make_fetcher(root, config, need=("openalex",), transport=transport, run_id=ctx.run_id) as fetcher:
             try:
                 rows = collect_corpus(fetcher, config, case, claim)
             finally:
                 _finish(ctx, fetcher)
         written = {}
-        for name in ("works", "authors", "authorships", "citations", "frames"):
+        for name in ("works", "authors", "authorships", "citations", "frames", *(("ingested",) if venues else ())):
             path = ctx.store(tables.to_parquet(name, rows[name]), "parquet", rows=len(rows[name]))
             written[name] = rel_posix(path, root)
         ctx.params["tables"] = written
@@ -320,6 +342,19 @@ def _fetch_inputs(root: Path, case: Case, fold: str) -> tuple[dict, list[dict], 
             tables.read(root / fetch["params"]["tables"]["works"]))
 
 
+def _listing(root: Path, fetch: dict) -> dict[str, dict]:
+    """The ingested venues' listed papers from an S1 run, by work id (empty when no venue was ingested)."""
+    path = fetch["params"]["tables"].get("ingested")
+    return {row["work_id"]: row for row in tables.read(root / path)} if path else {}
+
+
+def _catalogue(config: CorpusConfig, listing: dict[str, dict], works_rows: list[dict]) -> list[CatalogueEntry]:
+    papers = {w["work_id"]: w for w in works_rows if w.get("type") in config.census.paper_types}
+    return [CatalogueEntry(config.venue(row["venue"]).aliases, papers[work_id]["year"], row["volume"],
+                           row["first_page"], row["first_author"])
+            for work_id, row in sorted(listing.items()) if work_id in papers]
+
+
 def _manual_refs(root: Path, manual: Path | None) -> dict[str, References]:
     if manual is None:
         return {}
@@ -330,8 +365,10 @@ def _manual_refs(root: Path, manual: Path | None) -> dict[str, References]:
 
 
 def match_references(fetcher: Fetcher, case_id: str, work_id: str, references: References,
-                     settings: CensusSettings) -> tuple[dict[int, bool | None], dict[int, str]]:
-    """Match a work's sampled DOI-less paper references in OpenAlex by year, volume and page.
+                     settings: CensusSettings, catalogue: Sequence[CatalogueEntry] = ()
+                     ) -> tuple[dict[int, bool | None], dict[int, str]]:
+    """Match a work's sampled DOI-less paper references: first against the ingested venues' listings, then in
+    OpenAlex by year, volume and page.
 
     Returns each sampled reference's result (None: no readable volume and page) and, for those not matched,
     the DOI a Crossref bibliographic query recovered, still to be confirmed as a paper in OpenAlex.
@@ -341,6 +378,9 @@ def match_references(fetcher: Fetcher, case_id: str, work_id: str, references: R
     pool = paper_doiless(references)
     for index in doiless_sample(case_id, work_id, pool, settings.doiless_sample_per_work, settings.seed):
         entry = references.entries[index]
+        if catalogue and catalogue_match(entry, catalogue, settings.match_year_tolerance):
+            found[index] = True
+            continue
         biblio = biblio_of(entry)
         if biblio is None:
             found[index] = None
@@ -370,8 +410,13 @@ def census_case(root: Path, case_id: str, fold: str, *, field: bool = False, man
     draw = draw_sample(case, frames_rows, works_rows, settings.works_per_year, settings.seed, settings.paper_types)
     samples = draw.samples
     manual_refs = _manual_refs(root, manual)
+    listing = _listing(root, fetch)
+    catalogue = _catalogue(config, listing, works_rows)
+    extra = {"ingestion": {"text_extraction": config.ingestion.text_extraction,
+                           "reference_extraction": config.ingestion.reference_extraction,
+                           "catalogue_match": config.ingestion.catalogue_match}} if listing and config.ingestion else {}
     with RunContext(root, "S2", case_id, fold, [case.component], seed=settings.seed,
-                    params={"fetch_run": fetch["run_id"], "works_per_year": settings.works_per_year,
+                    params={**extra, "fetch_run": fetch["run_id"], "works_per_year": settings.works_per_year,
                             "max_unmeasured_share": settings.max_unmeasured_share,
                             "resolution": settings.resolution,
                             "doiless_sample_per_work": settings.doiless_sample_per_work,
@@ -380,6 +425,8 @@ def census_case(root: Path, case_id: str, fold: str, *, field: bool = False, man
                             "reference_classification": settings.reference_classification}) as ctx:
         ctx.record_input(root / fetch["params"]["tables"]["frames"])
         ctx.record_input(root / fetch["params"]["tables"]["works"])
+        if listing:
+            ctx.record_input(root / fetch["params"]["tables"]["ingested"])
         if manual is not None:
             ctx.record_input(manual.resolve())
         with make_fetcher(root, config, need=("openalex", "crossref"), transport=transport,
@@ -391,6 +438,10 @@ def census_case(root: Path, case_id: str, fold: str, *, field: bool = False, man
                         continue
                     if work.work_id in manual_refs:
                         references[work.work_id] = manual_refs[work.work_id]
+                    elif ingest.is_ingested(work.work_id):
+                        row = listing.get(work.work_id) or {}
+                        references[work.work_id] = ingest.references(fetcher, row.get("venue") or "",
+                                                                     row.get("document_url"))
                     elif work.doi:
                         response = fetcher.get(crossref.work_request(work.doi))
                         references[work.work_id] = (crossref.references_of(response.body)
@@ -406,7 +457,7 @@ def census_case(root: Path, case_id: str, fold: str, *, field: bool = False, man
                 for work_id, refs in sorted(references.items()):
                     if refs is not None:
                         matches[work_id], rescued[work_id] = match_references(fetcher, case_id, work_id, refs,
-                                                                              settings)
+                                                                              settings, catalogue)
                 rescued_dois = sorted({doi for by_index in rescued.values() for doi in by_index.values()})
                 confirmed = openalex.lookup_dois(fetcher, rescued_dois, int(config.openalex["doi_batch"]),
                                                  fields=(*openalex.ID_FIELDS, "type"))
@@ -435,7 +486,7 @@ def census_case(root: Path, case_id: str, fold: str, *, field: bool = False, man
         written = {}
         for name, rows in (("coverage", coverage), ("census_sample", sample_rows)):
             written[name] = rel_posix(ctx.store(tables.to_parquet(name, rows), "parquet", rows=len(rows)), root)
-        report = census_report(case, ctx.run_id, fetch["run_id"], config, coverage, draw.undated)
+        report = census_report(case, ctx.run_id, fetch["run_id"], config, coverage, draw.undated, bool(listing))
         written["report"] = rel_posix(ctx.store(report.encode("utf-8"), "md"), root)
         ctx.params["tables"] = written
     out(report)
@@ -444,14 +495,27 @@ def census_case(root: Path, case_id: str, fold: str, *, field: bool = False, man
 
 
 def project_census(fetcher: Fetcher, config: CorpusConfig, samples: dict[str, list[FrameWork]],
-                   manual_refs: dict[str, References]) -> Projection:
+                   manual_refs: dict[str, References], listing: dict[str, dict] | None = None) -> Projection:
     projection = Projection()
     reference_dois: list[str] = []
     unarchived_works = 0
     per_work = config.census.doiless_sample_per_work
     match_calls = sum(min(per_work, len(paper_doiless(r))) for r in manual_refs.values())
     seen: set[str] = set()
+    listing = listing or {}
     for work in (w for sample in samples.values() for w in sample):
+        if work.work_id not in seen and work.work_id not in manual_refs and work.work_id in listing:
+            seen.add(work.work_id)
+            row = listing[work.work_id]
+            if not row["document_url"]:
+                continue
+            if not fetcher.document_archived(ingest.document_request(row["venue"], row["document_url"])):
+                projection.calls[(row["venue"], "document")] += 1
+                match_calls += per_work
+                continue
+            refs = ingest.references(fetcher, row["venue"], row["document_url"])
+            match_calls += min(per_work, len(paper_doiless(refs))) if refs else 0
+            continue
         if work.work_id in seen or work.work_id in manual_refs or not work.doi:
             seen.add(work.work_id)
             continue
@@ -484,8 +548,19 @@ def _pct(value: float | None) -> str:
 
 
 def census_report(case: Case, run_id: str, fetch_run: str, config: CorpusConfig, coverage: list[dict],
-                  undated: int) -> str:
+                  undated: int, ingested: bool = False) -> str:
     settings = config.census
+    ingestion_note = []
+    if ingested and config.ingestion is not None:
+        venues = ", ".join(sorted({v for f in case.frames for v in f.ingest}))
+        ingestion_note = [
+            f"Venues ingested from their own archives ({venues}): references are extracted from each sampled paper's "
+            f"document (`{config.ingestion.text_extraction}`, `{config.ingestion.reference_extraction}`), and "
+            "DOI-less references are first matched against the ingested venues' listings "
+            f"(`{config.ingestion.catalogue_match}`). A paper whose document has no readable reference list is "
+            "unmeasured. The extraction is not yet audited against the documents (decision D-1).",
+            "",
+        ]
     whole = {s.frame_id: s for s in summarize(coverage, settings.max_unmeasured_share)}
     lines = [
         f"# Coverage census: {case.case_id}",
@@ -503,6 +578,7 @@ def census_report(case: Case, run_id: str, fetch_run: str, config: CorpusConfig,
         "",
         "Coverage is not compared with *r* here: gate 1 applies *r* per sub-window at S4.",
         "",
+        *ingestion_note,
         "| frame | kind | papers | excluded works | sampled | unmeasured | paper refs | excluded refs "
         "(non-paper/unclassifiable) | no DOI | DOI-less matched | no volume/page | coverage (est.) | measurable |",
         "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|",
@@ -643,10 +719,11 @@ def _dry_run(root: Path, args: argparse.Namespace, out: Out) -> int:
     config = load_corpus_config(root)
     with make_fetcher(root, config, offline=True) as fetcher:
         if args.command == "census":
-            _, frames_rows, works_rows = _fetch_inputs(root, case, args.fold)
+            fetch, frames_rows, works_rows = _fetch_inputs(root, case, args.fold)
             samples = draw_sample(case, frames_rows, works_rows, config.census.works_per_year, config.census.seed,
                                   config.census.paper_types).samples
-            projection = project_census(fetcher, config, samples, _manual_refs(root, args.manual))
+            projection = project_census(fetcher, config, samples, _manual_refs(root, args.manual),
+                                        _listing(root, fetch))
             out(f"census dry run for {subject_id}: {sum(len(s) for s in samples.values())} sampled works")
         else:
             projection = project_fetch(fetcher, config, case, claim)
@@ -669,7 +746,9 @@ def run(args: argparse.Namespace, root: Path, *, transport: httpx.BaseTransport 
         if args.command == "field":
             case, _ = load_subject(root, args.field, True)
             sources = sum(len(f.sources) for f in case.frames)
-            out(f"field {case.case_id} valid: {case.pair}, {len(case.frames)} frame(s) over {sources} source(s), "
+            ingested = sorted({v for f in case.frames for v in f.ingest})
+            out(f"field {case.case_id} valid: {case.pair}, {len(case.frames)} frame(s) over {sources} source(s)"
+                + (f" and ingested venue(s) {', '.join(ingested)}" if ingested else "") + ", "
                 f"window {case.start}–{case.end}, {len(case.absent_venues)} absent venue(s)")
             return 0
         if args.command == "corpus" and args.action == "resolve":

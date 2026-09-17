@@ -36,10 +36,40 @@ class CensusSettings:
 
 
 @dataclass(frozen=True)
+class Venue:
+    """A community venue ingested directly from its own archive (decision D-1)."""
+
+    venue_id: str
+    name: str
+    issn_l: str | None
+    adapter: str
+    url: str
+    aliases: tuple[str, ...]
+    types: Mapping[str, str]  # the archive's item type or section -> work type
+    default_type: str
+    first_volume_year: int | None = None
+
+
+@dataclass(frozen=True)
+class IngestionSettings:
+    requests_per_second: float
+    text_extraction: str
+    reference_extraction: str
+    catalogue_match: str
+    venues: Mapping[str, Venue]
+
+
+@dataclass(frozen=True)
 class CorpusConfig:
     sources: Mapping[str, Source]
     api: Mapping[str, Mapping[str, Any]]
     census: CensusSettings
+    ingestion: IngestionSettings | None = None
+
+    def venue(self, venue_id: str) -> Venue:
+        if self.ingestion is None or venue_id not in self.ingestion.venues:
+            raise KeyError(f"no ingested venue {venue_id!r} in {CORPUS}")
+        return self.ingestion.venues[venue_id]
 
     def rate(self, source: str) -> float:
         return float(self.api[source]["requests_per_second"])
@@ -63,6 +93,15 @@ class CorpusConfig:
 def from_mapping(data: Mapping[str, Any]) -> CorpusConfig:
     sources = {s["name"]: Source(s["name"], s["kind"], s["url"], s.get("terms_reference")) for s in data["sources"]}
     census = data["census"]
+    ingestion = None
+    if data.get("ingestion"):
+        block = data["ingestion"]
+        venues = {vid: Venue(vid, v["name"], v.get("issn_l"), v["adapter"], v["url"].rstrip("/"),
+                             tuple(v["aliases"]), dict(v.get("types") or {}), v["default_type"],
+                             v.get("first_volume_year"))
+                  for vid, v in (block.get("venues") or {}).items()}
+        ingestion = IngestionSettings(float(block["requests_per_second"]), str(block["text_extraction"]),
+                                      str(block["reference_extraction"]), str(block["catalogue_match"]), venues)
     return CorpusConfig(
         sources=sources,
         api={name: dict(settings) for name, settings in data["api"].items()},
@@ -72,6 +111,7 @@ def from_mapping(data: Mapping[str, Any]) -> CorpusConfig:
                               str(census["reference_classification"]),
                               float(census["bibliographic_rescue"]["min_score"]),
                               float(census["bibliographic_rescue"]["title_word_share"])),
+        ingestion=ingestion,
     )
 
 

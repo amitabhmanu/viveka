@@ -27,6 +27,19 @@ sources:
     kind: manual
     url: ""
     terms_reference: null
+  # Community venues ingested from their own archives (owner decisions D-1 and D-10, 17 Sep 2026).
+  - name: crsq
+    kind: community_venue
+    url: "https://crsq.creationresearch.org"
+    terms_reference: "https://crsq.creationresearch.org (Creation Research Society repository; issue and article PDFs free to guests; checked 17 Sep 2026)"
+  - name: jom
+    kind: community_venue
+    url: "https://orthomolecular.org/library/jom"
+    terms_reference: "https://orthomolecular.org/library/jom/ (Riordan Clinic archive; articles free of charge as PDFs; checked 17 Sep 2026)"
+  - name: arj
+    kind: community_venue
+    url: "https://answersresearchjournal.org"
+    terms_reference: "https://answersresearchjournal.org/about/ (Answers in Genesis; open access online; checked 17 Sep 2026)"
 
 api:
   openalex:
@@ -73,3 +86,54 @@ census:
     rule: crossref_bibliographic_v2
     min_score: 40
     title_word_share: 0.8
+
+# Community venues that OpenAlex does not index, ingested from their own archives (framework corpus row:
+# "each community's own venues ingested directly"; owner decision D-1, 17 Sep 2026: no GROBID, text layers
+# only, with a hand audit). An adapter lists each venue's papers as works with local ids X:<venue>:<key>
+# and authors by name; a paper's document is fetched only when the census samples it. Every response is
+# archived like the API responses, so a run replays exactly.
+#   pypdf_text_v1: a PDF's text layer as pypdf extracts it; a web page's text. No OCR: a document without
+#     text has no reference list, and its work is unmeasured.
+#   reference_section_v1: the list after the last "References" (or "Literature cited", "Bibliography",
+#     "Works cited") heading, to an appendix or about-the-author heading or, in a web page, the next heading;
+#     one reference per paragraph in a web page, and in PDF text a new reference at a line opening with a
+#     number, an author or a lost ditto rule after a finished sentence. A DOI, year, journal, volume and first
+#     page are read from each reference's text; classification and matching then follow the census rules.
+#   ingested_catalogue_v1: before OpenAlex, a sampled DOI-less paper reference is matched against the listed
+#     papers of the subject's ingested venues: its journal must be one of the venue's aliases, its volume
+#     equal, its year within the census year tolerance, and either its first page equal or, when the listing
+#     has no page, the listed paper's first author's family name must open the reference.
+# Venue types map the archive's item type or contents-page section to a work type; the census counts only
+# the registered paper types, so editorials, reviews of books and obituaries are excluded and counted.
+ingestion:
+  requests_per_second: 0.5
+  text_extraction: pypdf_text_v1
+  reference_extraction: reference_section_v1
+  catalogue_match: ingested_catalogue_v1
+  venues:
+    crsq:
+      name: Creation Research Society Quarterly
+      issn_l: "0092-9166"
+      adapter: eprints_json_v1
+      url: "https://crsq.creationresearch.org"
+      aliases: [CRSQ, Creation Research Society Quarterly, Creation Research Soc. Quarterly]
+      types: {article: article}
+      default_type: other
+      note: "The repository holds research articles with their PDFs; departments (letters, notes) are not deposited, so they are outside the frame and not counted."
+    jom:
+      name: Journal of Orthomolecular Medicine
+      issn_l: "0834-4825"
+      adapter: orthomolecular_toc_v1
+      url: "https://orthomolecular.org/library/jom"
+      aliases: [Journal of Orthomolecular Medicine, J Orthomol Med, J. Orthomol. Med, J. Orthomolecular Med, J Orthomolecular Med]
+      types: {Articles: article, Case Reports: article, A Case From The Center: article, Correspondence: letter, Letters: letter, Editorials: editorial, Editorial: editorial, In Memoriam: other, Book Reviews: other}
+      default_type: other
+    arj:
+      name: Answers Research Journal
+      issn_l: "1937-9056"
+      adapter: arj_volumes_v1
+      url: "https://answersresearchjournal.org"
+      aliases: [Answers Research Journal, ARJ]
+      default_type: article
+      first_volume_year: 2008
+      note: "Every item in a volume is a peer-reviewed paper or a comment and reply on one."
