@@ -89,6 +89,15 @@
         }
       }
     },
+    "calibration_selection": {
+      "type": "object",
+      "required": ["overlap_measure", "max_overlap"],
+      "additionalProperties": false,
+      "properties": {
+        "overlap_measure": {"enum": ["overlap_coefficient_names_v1"]},
+        "max_overlap": {"type": "number", "exclusiveMinimum": 0, "maximum": 1}
+      }
+    },
     "ingestion": {
       "type": "object",
       "required": ["requests_per_second", "text_extraction", "reference_extraction", "catalogue_match", "venues"],

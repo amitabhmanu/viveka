@@ -275,6 +275,21 @@ def test_an_ingested_venue_is_listed_extracted_and_matched_against_its_own_catal
     assert code == 0 and "2 sampled works" in text  # documents replay from the archive
 
 
+def test_field_overlap_is_a_registered_run_over_the_latest_fetches(world):
+    root, fake = world
+    write_field(root)
+    commands.fetch_case(root, "test-field", "dev", field=True, transport=fake.transport(), out=lambda s: None)
+    commands.fetch_case(root, "cold-fusion", "dev", transport=fake.transport(), out=lambda s: None)
+    code, text = run_cli(root, "field", "overlap", "--fold", "dev")
+    assert code == 0 and "| cold-fusion | test-field | 1 | 1 | 1 | 100.0% | yes: cold-fusion |" in text
+    run = next(m for m in (load_manifest(root, p.parent.name) for p in (root / "runs").glob("*/manifest.json"))
+               if m["stage"] == "S1-overlap")
+    assert run["params"]["max_overlap"] == 0.2 and "17kev-neutrino" in run["params"]["without_fetch"]
+    (row,) = [r for r in table(root, run, "overlap") if {r["subject_a"], r["subject_b"]} == {"cold-fusion",
+                                                                                             "test-field"}]
+    assert (row["shared"], row["exceeds"]) == (1, True)  # the fake venue works share one author
+
+
 def test_a_calibration_fold_refuses_a_draft_field(world):
     root, fake = world
     write_field(root)

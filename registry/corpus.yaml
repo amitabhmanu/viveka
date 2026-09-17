@@ -87,6 +87,19 @@ census:
     min_score: 40
     title_word_share: 0.8
 
+# Calibration field selection (decision D-10, owner approved 17 Sep 2026), fixed before any calibration census.
+# Folds are whole fields, so calibration fields must be distinct communities. Before the census, the overlap
+# between any two calibration fields, and between a field and a pilot or reserve case, is measured on the
+# authors of the works in their community frames (a case's mainstream citing frame is not a community under
+# calibration), from their latest fetches in the same fold: the number of authors two subjects share divided by
+# the smaller one's number of authors (the
+# overlap coefficient, which Jaccard would understate for a small field inside a large one). Authors are
+# compared by name (folded family name and first initial), for indexed and ingested works alike, so
+# namesakes can only raise the overlap. Above max_overlap, the smaller field is dropped and recorded.
+calibration_selection:
+  overlap_measure: overlap_coefficient_names_v1
+  max_overlap: 0.2
+
 # Community venues that OpenAlex does not index, ingested from their own archives (framework corpus row:
 # "each community's own venues ingested directly"; owner decision D-1, 17 Sep 2026: no GROBID, text layers
 # only, with a hand audit). An adapter lists each venue's papers as works with local ids X:<venue>:<key>

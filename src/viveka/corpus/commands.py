@@ -42,7 +42,8 @@ from viveka.corpus.config import LIVE_SOURCES, CensusSettings, CorpusConfig, loa
 from viveka.corpus.http import Fetcher, FetchError, UsageMeter
 from viveka.corpus.ids import normalize_doi, short_id
 from viveka.corpus.manual import MANUAL_DIR, ManualImportError, load_manual
-from viveka.paths import rel_posix
+from viveka.corpus.overlap import community_authors, overlaps
+from viveka.paths import REGISTRY, rel_posix
 from viveka.provenance import FOLDS, RunContext, recent_runs
 from viveka.registry.verify import require_frozen
 
@@ -547,6 +548,65 @@ def _pct(value: float | None) -> str:
     return "n/a" if value is None else f"{value:.1%}"
 
 
+# ---------------------------------------------------------------- calibration selection: author overlap
+
+
+def _subjects(root: Path) -> list[tuple[str, bool]]:
+    return [(p.stem, kind == "fields") for kind in ("cases", "fields")
+            for p in sorted((root / REGISTRY / kind).glob("*.yaml"))]
+
+
+def field_overlap(root: Path, fold: str, *, out: Out = print) -> str:
+    """Author overlap between calibration fields, and between fields and cases, from their latest fetches."""
+    config = load_corpus_config(root)
+    if config.calibration_selection is None:
+        raise CaseError("corpus.yaml registers no calibration_selection rule")
+    measure, limit = config.calibration_selection
+    authors: dict[str, set[str]] = {}
+    fields, missing, fetches, components = set(), [], {}, []
+    for subject_id, is_field in _subjects(root):
+        case, _ = load_subject(root, subject_id, is_field)
+        components.append(case.component)
+        if is_field:
+            fields.add(subject_id)
+        fetch = latest_run(root, "S1", subject_id, fold, require_frozen(root, [case.component], fold))
+        if fetch is None:
+            missing.append(subject_id)
+            continue
+        fetches[subject_id] = fetch
+        read = {name: tables.read(root / fetch["params"]["tables"][name])
+                for name in ("frames", "authorships", "authors")}
+        authors[subject_id] = community_authors(read["frames"], read["authorships"], read["authors"])
+    pairs = overlaps(authors, fields)
+    with RunContext(root, "S1-overlap", "calibration", fold, components,
+                    params={"measure": measure, "max_overlap": limit,
+                            "fetch_runs": {s: f["run_id"] for s, f in sorted(fetches.items())},
+                            "without_fetch": missing}) as ctx:
+        for fetch in fetches.values():
+            for name in ("frames", "authorships", "authors"):
+                ctx.record_input(root / fetch["params"]["tables"][name])
+        rows = [{"subject_a": p.a, "subject_b": p.b, "authors_a": p.authors_a, "authors_b": p.authors_b,
+                 "shared": p.shared, "coefficient": p.coefficient,
+                 "exceeds": p.coefficient is not None and p.coefficient > limit} for p in pairs]
+        table_path = ctx.store(tables.to_parquet("overlap", rows), "parquet", rows=len(rows))
+        lines = [f"# Author overlap: calibration fields ({fold} fold)", "",
+                 f"Run `{ctx.run_id}`. Rule `{measure}` (decision D-10): shared author names over the smaller "
+                 f"subject's author names, from the works in each subject's community frames; above {limit:g} the "
+                 "smaller field is dropped. Pairs of two cases are not shown.", "",
+                 "| subject | subject | authors | authors | shared | overlap | above limit |",
+                 "|---|---|---:|---:|---:|---:|---|"]
+        for p, row in zip(pairs, rows, strict=True):
+            lines.append(f"| {p.a} | {p.b} | {p.authors_a} | {p.authors_b} | {p.shared} | {_pct(p.coefficient)} | "
+                         f"{'yes: ' + p.smaller if row['exceeds'] else 'no'} |")
+        if missing:
+            lines += ["", f"Without a successful fetch in this fold, so not measured: {', '.join(missing)}."]
+        report = "\n".join(lines) + "\n"
+        ctx.params["tables"] = {"overlap": rel_posix(table_path, root),
+                                "report": rel_posix(ctx.store(report.encode("utf-8"), "md"), root)}
+    out(report)
+    return ctx.run_id
+
+
 def census_report(case: Case, run_id: str, fetch_run: str, config: CorpusConfig, coverage: list[dict],
                   undated: int, ingested: bool = False) -> str:
     settings = config.census
@@ -695,6 +755,9 @@ def add_parsers(sub: argparse._SubParsersAction, common: argparse.ArgumentParser
     fieldsub = field.add_subparsers(dest="action", required=True)
     p = fieldsub.add_parser("validate", parents=[common], help="Validate a calibration field and the corpus settings")
     p.add_argument("field")
+    p = fieldsub.add_parser("overlap", parents=[common],
+                            help="Author overlap between calibration fields and with cases (decision D-10)")
+    p.add_argument("--fold", required=True, choices=FOLDS)
 
     p = sub.add_parser("census", parents=[common], help="S2: coverage census for a case or calibration field")
     _subject_arguments(p)
@@ -742,6 +805,9 @@ def run(args: argparse.Namespace, root: Path, *, transport: httpx.BaseTransport 
             out(f"case {case.case_id} valid: claim {claim.claim_id} ({len(claim.events)} events), "
                 f"{len(case.seeds)} seeds, frames {', '.join(f'{f.frame_id} ({f.kind})' for f in case.frames)}, "
                 f"window {case.start}–{case.end}")
+            return 0
+        if args.command == "field" and args.action == "overlap":
+            field_overlap(root, args.fold, out=out)
             return 0
         if args.command == "field":
             case, _ = load_subject(root, args.field, True)
