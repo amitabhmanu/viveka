@@ -1,0 +1,10 @@
+# Drafted 17 Sep 2026 (M4b) from OpenAlex venue lookups; awaiting owner review.
+format: 1
+field: crystallography
+role: calibration
+side: science
+window: {start: 1986, end: 2025}
+notes: "Added from the science candidates. Section C (structure reports) and Section D (biological) left out as mostly structure reports or another community."
+frames:
+  - {id: venues, kind: community, sources: [S150871906, S4393918093, S4210171216, S4210168249, S79162954], note: "Acta Crystallographica Section A (ISSN-L 0108-7673, to 2013) and its continuation Foundations and Advances (2053-2733); Section B Structural Science (0108-7681, to 2013) and its continuation Structural Science, Crystal Engineering and Materials (2052-5192); Journal of Applied Crystallography (0021-8898)."}
+absent_venues: []

@@ -4,8 +4,8 @@ Components are derived from a fixed map, never configured by hand:
 
 * ``thresholds``, ``instrument``, ``simulation`` and ``corpus`` are single files;
 * ``schemas``, ``codebook`` and ``prompts`` are whole directories;
-* ``events/<claim>``, ``cases/<case>``, ``filters/<commitment>``, ``predictions/<case>``
-  and ``redaction/<case>`` are one YAML file each.
+* ``events/<claim>``, ``cases/<case>``, ``fields/<field>``, ``filters/<commitment>``,
+  ``predictions/<case>`` and ``redaction/<case>`` are one YAML file each.
 
 ``.gitkeep`` files and ``FROZEN.json`` belong to no component. Any other file under
 ``registry/`` that matches no component is an orphan, which validation rejects.
@@ -27,7 +27,7 @@ SINGLE_FILES = {
     "corpus": "registry/corpus.yaml",
 }
 DIRECTORIES = ("schemas", "codebook", "prompts")
-PER_FILE_DIRS = ("events", "cases", "filters", "predictions", "redaction")
+PER_FILE_DIRS = ("events", "cases", "fields", "filters", "predictions", "redaction")
 IGNORED_NAMES = frozenset({".gitkeep"})
 
 _PER_FILE_NAME = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
@@ -119,7 +119,7 @@ def direct_upstream(root: Path, name: str) -> list[str]:
     upstream = list(STATIC_UPSTREAM.get(name, ()))
     if name.startswith("filters/"):
         upstream.append("codebook")
-    if name.startswith("cases/"):
+    if name.startswith(("cases/", "fields/")):
         upstream.append("corpus")
     if name.startswith(("filters/", "cases/")):
         claim = _claim_of(root, name)

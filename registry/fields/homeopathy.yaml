@@ -1,0 +1,11 @@
+# Drafted 17 Sep 2026 (M4b) from OpenAlex venue lookups; awaiting owner review.
+format: 1
+field: homeopathy
+role: calibration
+side: pseudoscience
+window: {start: 1986, end: 2025}
+notes: "Homeopathy and the British Homeopathic Journal are also the water-memory reserve case's community frame; if that reserve pair is activated, homeopathy leaves the calibration set (owner decision, 16 Sep 2026)."
+frames:
+  - {id: venues, kind: community, sources: [S4310451, S4210225608, S4210212727, S4210168090, S2764361555, S2764825727], note: "Homeopathy (ISSN-L 1475-4916) and its predecessor the British Homeopathic Journal (0007-0785); Allgemeine Homöopathische Zeitung (0002-5887); Zeitschrift für Klassische Homöopathie (0935-0853); Indian Journal of Research in Homoeopathy (0974-7168); International Journal of High Dilution Research (1982-6206)."}
+absent_venues:
+  - {name: "Journal of the American Institute of Homeopathy", issn_l: "0002-8967", note: "OpenAlex source S2764844109 lists 1 work; its back issues are not indexed."}

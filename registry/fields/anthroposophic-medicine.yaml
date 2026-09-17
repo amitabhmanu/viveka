@@ -1,0 +1,10 @@
+# Drafted 17 Sep 2026 (M4b) from OpenAlex venue lookups; awaiting owner review.
+format: 1
+field: anthroposophic-medicine
+role: calibration
+side: pseudoscience
+window: {start: 1986, end: 2025}
+notes: "Added from the pseudoscience candidates: the only candidate with a community venue in OpenAlex. A single German-language venue."
+frames:
+  - {id: venues, kind: community, sources: [S4210209047], note: "Der Merkurstab (ISSN-L 0935-798X), the journal of anthroposophic medicine."}
+absent_venues: []

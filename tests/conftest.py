@@ -51,7 +51,8 @@ def freeze():
 
 
 def _copy_registry(root: Path) -> Path:
-    shutil.copytree(REPO / "registry", root / "registry")
+    # The copy starts unfrozen: tests freeze what they need, independent of the real registry version.
+    shutil.copytree(REPO / "registry", root / "registry", ignore=shutil.ignore_patterns("FROZEN.json"))
     (root / "ledger").mkdir(parents=True)
     (root / "ledger" / "changes.jsonl").write_bytes(b"")
     shutil.copy(REPO / "ledger" / "decisions.md", root / "ledger" / "decisions.md")

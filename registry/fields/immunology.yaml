@@ -1,0 +1,10 @@
+# Drafted 17 Sep 2026 (M4b) from OpenAlex venue lookups; awaiting owner review.
+format: 1
+field: immunology
+role: calibration
+side: science
+window: {start: 1986, end: 2025}
+notes: "Added from the science candidates: a medical-biological science, a counterpart to the medical pseudosciences. The Journal of Immunology is large (about 108k works), which costs fetch time and disk, not sample size."
+frames:
+  - {id: venues, kind: community, sources: [S38008053, S126191069, S79173686], note: "The Journal of Immunology (ISSN-L 0022-1767), European Journal of Immunology (0014-2980) and Scandinavian Journal of Immunology (0300-9475)."}
+absent_venues: []

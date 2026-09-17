@@ -188,6 +188,26 @@ def _check_cases(root: Path, rel: str) -> list[str]:
     return problems
 
 
+def _check_fields(root: Path, rel: str) -> list[str]:
+    data, problems = _load_yaml(root, rel)
+    if problems:
+        return problems
+    problems = _against_schema(root, rel, data, "fields")
+    if problems:
+        return problems
+    stem = Path(rel).stem
+    if data["field"] != stem:
+        problems.append(f"{rel}: field {data['field']!r} must match the file name {stem!r}")
+    if not data["frames"] and not data["absent_venues"]:
+        problems.append(f"{rel}: a field with no frames must list its absent venues")
+    if data["window"]["start"] > data["window"]["end"]:
+        problems.append(f"{rel}: window starts after it ends")
+    dupes = _duplicates([f["id"] for f in data["frames"]])
+    if dupes:
+        problems.append(f"{rel}: duplicate frame ids: {', '.join(dupes)}")
+    return problems
+
+
 def _check_schema_file(root: Path, rel: str) -> list[str]:
     if not rel.endswith(".schema.json"):
         return [f"{rel}: files in {SCHEMA_DIR}/ must be named <name>.schema.json"]
@@ -247,6 +267,7 @@ _CHECKERS = {
     "prompts": _check_prompt,
     "events": _check_events,
     "cases": _check_cases,
+    "fields": _check_fields,
     "filters": _check_per_file,
     "predictions": _check_per_file,
     "redaction": _check_per_file,

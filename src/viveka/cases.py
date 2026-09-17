@@ -1,4 +1,9 @@
-"""Case definitions and claims from the registry: ``cases/<case>`` and ``events/<claim>``."""
+"""Case definitions, calibration fields and claims from the registry.
+
+``cases/<case>`` names a claim (``events/<claim>``), seed works and frames. ``fields/<field>`` (M4b) names only
+the venues of a calibration field; its commitments are registered later, so a field has no claim and no seeds.
+Both load as a ``Case`` so the corpus and census stages treat them alike.
+"""
 
 from __future__ import annotations
 
@@ -55,13 +60,19 @@ class Claim:
 @dataclass(frozen=True)
 class Case:
     case_id: str
-    claim: str
-    role: str
-    pair: str
+    claim: str | None  # None for a calibration field
+    role: str  # pilot, reserve or calibration
+    pair: str  # the case's pair; a field's side (science or pseudoscience)
     start: int
     end: int
     seeds: tuple[WorkRef, ...]
     frames: tuple[Frame, ...]
+    is_field: bool = False
+    absent_venues: tuple[str, ...] = ()  # a field's core venues that are not in the corpus source
+
+    @property
+    def component(self) -> str:
+        return f"{'fields' if self.is_field else 'cases'}/{self.case_id}"
 
 
 def _ref(entry: dict) -> WorkRef:
@@ -97,11 +108,29 @@ def load_case(root: Path, case_id: str) -> tuple[Case, Claim]:
     return case, load_claim(root, case.claim)
 
 
-def bearing_set(case: Case, claim: Claim) -> tuple[WorkRef, ...]:
+def load_field(root: Path, field_id: str) -> Case:
+    data = _load(root, f"fields/{field_id}")
+    problems = validate(root, ["corpus"])
+    if problems:
+        raise CaseError("; ".join(problems))
+    frames = tuple(Frame(f["id"], f["kind"], False, tuple(f["sources"])) for f in data["frames"])
+    absent = tuple(f"{v['name']}" + (f" (ISSN-L {v['issn_l']})" if v.get("issn_l") else "") + f": {v['note']}"
+                   for v in data["absent_venues"])
+    return Case(data["field"], None, data["role"], data["side"], int(data["window"]["start"]),
+                int(data["window"]["end"]), (), frames, is_field=True, absent_venues=absent)
+
+
+def load_subject(root: Path, subject_id: str, is_field: bool) -> tuple[Case, Claim | None]:
+    """A case with its claim, or a calibration field (no claim)."""
+    return (load_field(root, subject_id), None) if is_field else load_case(root, subject_id)
+
+
+def bearing_set(case: Case, claim: Claim | None) -> tuple[WorkRef, ...]:
     """The seeds and every event's works, first occurrence kept: the works citations bearing on p point to."""
     seen: set[str] = set()
     refs = []
-    for ref in (*case.seeds, *(w for e in claim.events for w in e.works)):
+    events = claim.events if claim is not None else ()
+    for ref in (*case.seeds, *(w for e in events for w in e.works)):
         if ref.key not in seen:
             seen.add(ref.key)
             refs.append(ref)

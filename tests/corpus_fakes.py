@@ -178,6 +178,23 @@ frames:
 """
 
 
+FIELD_YAML = """\
+format: 1
+field: test-field
+role: calibration
+side: pseudoscience
+window: {start: 1989, end: 2000}
+frames:
+  - {id: venues, kind: community, sources: [S5]}
+absent_venues:
+  - {name: "An unindexed bulletin", issn_l: null, note: "Not an OpenAlex source."}
+"""
+
+
+def write_field(root: Path, text: str = FIELD_YAML) -> None:
+    write_lf(root / "registry" / "fields" / "test-field.yaml", text)
+
+
 def write_case(root: Path, events: str = EVENTS_YAML, case: str = CASE_YAML) -> None:
     write_lf(root / "registry" / "events" / "cold-fusion.yaml", events)
     write_lf(root / "registry" / "cases" / "cold-fusion.yaml", case)

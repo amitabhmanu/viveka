@@ -130,7 +130,7 @@ def main(argv: list[str] | None = None) -> int:
             from viveka.sim.commands import run as run_sim
 
             return run_sim(args, root)
-        if args.command in ("corpus", "case", "census"):
+        if args.command in ("corpus", "case", "field", "census"):
             from viveka.corpus.commands import run as run_corpus
 
             return run_corpus(args, root)

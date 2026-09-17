@@ -48,8 +48,8 @@ def test_discover_and_orphans(registry_root):
     write_lf(registry_root / "registry" / "notes.txt", "x")
     found = set(comp.discover(registry_root))
     assert {"thresholds", "instrument", "schemas", "simulation", "corpus"} <= found
-    assert all(name.startswith(("events/", "cases/")) for name in found - {"thresholds", "instrument", "schemas",
-                                                                            "simulation", "corpus"})
+    singles = {"thresholds", "instrument", "schemas", "simulation", "corpus"}
+    assert all(name.startswith(("events/", "cases/", "fields/")) for name in found - singles)
     assert comp.orphans(registry_root) == ["registry/notes.txt"]
 
 

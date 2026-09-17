@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/amitabhmanu/viveka/registry/schemas/fields.schema.json",
+  "title": "Viveka calibration field, corpus part (registry/fields/<field>.yaml)",
+  "type": "object",
+  "required": ["format", "field", "role", "side", "window", "frames", "absent_venues"],
+  "additionalProperties": false,
+  "properties": {
+    "format": {"const": 1},
+    "field": {"$ref": "#/$defs/slug"},
+    "role": {"const": "calibration"},
+    "side": {"enum": ["science", "pseudoscience"]},
+    "notes": {"type": "string"},
+    "window": {
+      "type": "object",
+      "required": ["start", "end"],
+      "additionalProperties": false,
+      "properties": {
+        "start": {"type": "integer", "minimum": 1800, "maximum": 2100},
+        "end": {"type": "integer", "minimum": 1800, "maximum": 2100}
+      }
+    },
+    "frames": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "sources"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"$ref": "#/$defs/slug"},
+          "kind": {"enum": ["community", "mainstream"]},
+          "sources": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^S\\d+$"}},
+          "note": {"type": "string"}
+        }
+      }
+    },
+    "absent_venues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "issn_l", "note"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "issn_l": {"type": ["string", "null"], "pattern": "^\\d{4}-\\d{3}[\\dX]$"},
+          "note": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "slug": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]*$"}
+  }
+}

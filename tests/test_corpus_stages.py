@@ -1,7 +1,7 @@
 import httpx
 import pytest
 from conftest import write_lf
-from corpus_fakes import small_world, write_case
+from corpus_fakes import FIELD_YAML, small_world, write_case, write_field
 
 from viveka import cli
 from viveka.cases import CaseError
@@ -192,6 +192,51 @@ def test_missing_credentials_are_named(world, monkeypatch):
     code, text = run_cli(root, "corpus", "fetch", "--case", "cold-fusion", "--fold", "dev",
                          transport=fake.transport())
     assert code == 1 and "OPENALEX_API_KEY" in text and fake.calls == []
+
+
+def test_a_calibration_field_runs_through_fetch_and_census(world):
+    root, fake = world
+    write_field(root)
+    code, text = run_cli(root, "field", "validate", "test-field")
+    assert code == 0 and "pseudoscience, 1 frame(s) over 1 source(s)" in text and "1 absent venue(s)" in text
+    run_id = commands.fetch_case(root, "test-field", "dev", field=True, transport=fake.transport(), out=lambda s: None)
+    manifest = load_manifest(root, run_id)
+    assert manifest["registry"]["components"]["fields/test-field"].startswith("draft:")
+    assert "cases/cold-fusion" not in manifest["registry"]["components"]
+    assert {w["work_id"] for w in table(root, manifest, "works")} == {"W30", "W31", "W32", "W33"}  # no seeds
+    lines = []
+    census = load_manifest(root, commands.census_case(root, "test-field", "dev", field=True,
+                                                      transport=fake.transport(), out=lines.append))
+    assert set(census["registry"]["components"]) == {"schemas", "corpus", "fields/test-field"}
+    (row,) = table(root, census, "coverage")
+    assert (row["frame_id"], row["frame_works"], row["frame_works_excluded"], row["unmeasured"]) == ("venues", 3, 1, 3)
+    report = "\n".join(lines)
+    assert "| venues | community | 3 | 1 | 3 | 100.0% |" in report and "- An unindexed bulletin" in report
+    code, text = run_cli(root, "corpus", "contexts", "--field", "test-field", "--fold", "dev",
+                         transport=no_network())
+    assert code == 1 and "no bearing set" in text
+    code, text = run_cli(root, "census", "--field", "test-field", "--fold", "dev", "--dry-run", transport=no_network())
+    assert code == 0 and "census dry run for test-field: 3 sampled works" in text
+
+
+def test_a_field_without_frames_gets_an_empty_census_listing_its_absent_venues(world):
+    root, fake = world
+    write_field(root, FIELD_YAML.replace("frames:\n  - {id: venues, kind: community, sources: [S5]}\n", "frames: []\n"))
+    commands.fetch_case(root, "test-field", "dev", field=True, transport=fake.transport(), out=lambda s: None)
+    lines = []
+    census = load_manifest(root, commands.census_case(root, "test-field", "dev", field=True,
+                                                      transport=fake.transport(), out=lines.append))
+    assert table(root, census, "coverage") == []
+    report = "\n".join(lines)
+    assert "No frames: none of this field's venues" in report and "- An unindexed bulletin" in report
+
+
+def test_a_calibration_fold_refuses_a_draft_field(world):
+    root, fake = world
+    write_field(root)
+    with pytest.raises(RegistryError, match="fields/test-field"):
+        commands.fetch_case(root, "test-field", "calibration", field=True, transport=no_network(),
+                            out=lambda s: None)
 
 
 def test_case_validate_and_resolve(world):

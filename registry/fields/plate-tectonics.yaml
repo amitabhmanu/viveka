@@ -1,0 +1,10 @@
+# Drafted 17 Sep 2026 (M4b) from OpenAlex venue lookups; awaiting owner review.
+format: 1
+field: plate-tectonics
+role: calibration
+side: science
+window: {start: 1986, end: 2025}
+notes: "Core tectonics and geodynamics journals; broad geoscience journals (Earth and Planetary Science Letters, Geophysical Journal International) left out."
+frames:
+  - {id: venues, kind: community, sources: [S6410836, S195250905, S140409716, S82978933], note: "Tectonics (ISSN-L 0278-7407), Tectonophysics (0040-1951), Journal of Geodynamics (0264-3707) and Marine Geophysical Research (0025-3235)."}
+absent_venues: []

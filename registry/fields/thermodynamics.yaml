@@ -1,0 +1,10 @@
+# Drafted 17 Sep 2026 (M4b) from OpenAlex venue lookups; awaiting owner review.
+format: 1
+field: thermodynamics
+role: calibration
+side: science
+window: {start: 1986, end: 2025}
+notes: "Core thermodynamics journals only; general chemistry and physics journals left out. Thermochimica Acta (S160957154, thermal analysis) was considered and left out as a neighbouring field."
+frames:
+  - {id: venues, kind: community, sources: [S173979593, S201183278, S34870678, S101466443], note: "The Journal of Chemical Thermodynamics (ISSN-L 0021-9614), Journal of Non-Equilibrium Thermodynamics (0340-0204), Fluid Phase Equilibria (0378-3812) and International Journal of Thermophysics (0195-928X)."}
+absent_venues: []

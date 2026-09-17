@@ -19,7 +19,7 @@ from pathlib import Path
 import httpx
 
 from viveka import env
-from viveka.cases import Case, CaseError, Claim, WorkRef, bearing_set, load_case
+from viveka.cases import Case, CaseError, Claim, WorkRef, bearing_set, load_subject
 from viveka.census import (
     FrameWork,
     References,
@@ -197,7 +197,7 @@ def project_fetch(fetcher: Fetcher, config: CorpusConfig, case: Case, claim: Cla
     return projection
 
 
-def probe(fetcher: Fetcher, config: CorpusConfig, case: Case, claim: Claim) -> None:
+def probe(fetcher: Fetcher, config: CorpusConfig, case: Case, claim: Claim | None) -> None:
     """Live: resolve the registered works and fetch each frame's first page, so a dry run can project exactly."""
     resolved = resolve_refs(fetcher, config, bearing_set(case, claim))
     seed_ids = _seed_ids(case, resolved)
@@ -207,11 +207,11 @@ def probe(fetcher: Fetcher, config: CorpusConfig, case: Case, claim: Claim) -> N
             fetcher.get(openalex.list_request(flt, "*", int(config.openalex["per_page"])))
 
 
-def fetch_case(root: Path, case_id: str, fold: str, *, transport: httpx.BaseTransport | None = None,
-               out: Out = print) -> str:
-    case, claim = load_case(root, case_id)
+def fetch_case(root: Path, case_id: str, fold: str, *, field: bool = False,
+               transport: httpx.BaseTransport | None = None, out: Out = print) -> str:
+    case, claim = load_subject(root, case_id, field)
     config = load_corpus_config(root)
-    with RunContext(root, "S1", case_id, fold, [f"cases/{case_id}"],
+    with RunContext(root, "S1", case_id, fold, [case.component],
                     params={"window": [case.start, case.end]}) as ctx:
         with make_fetcher(root, config, need=("openalex",), transport=transport, run_id=ctx.run_id) as fetcher:
             try:
@@ -233,12 +233,15 @@ def fetch_case(root: Path, case_id: str, fold: str, *, transport: httpx.BaseTran
 # ---------------------------------------------------------------- S1: contexts
 
 
-def fetch_contexts(root: Path, case_id: str, fold: str, *, transport: httpx.BaseTransport | None = None,
-                   out: Out = print) -> str:
-    case, claim = load_case(root, case_id)
+def fetch_contexts(root: Path, case_id: str, fold: str, *, field: bool = False,
+                   transport: httpx.BaseTransport | None = None, out: Out = print) -> str:
+    if field:
+        raise CaseError(f"field {case_id} has no bearing set: contexts are fetched per commitment, once the field's "
+                        "commitments are registered")
+    case, claim = load_subject(root, case_id, False)
     config = load_corpus_config(root)
     s2 = config.semanticscholar
-    with RunContext(root, "S1-contexts", case_id, fold, [f"cases/{case_id}"]) as ctx:
+    with RunContext(root, "S1-contexts", case_id, fold, [case.component]) as ctx:
         with make_fetcher(root, config, need=("openalex", "semanticscholar"), transport=transport,
                           run_id=ctx.run_id) as fetcher:
             try:
@@ -307,11 +310,11 @@ def draw_sample(case: Case, frames_rows: list[dict], works_rows: list[dict], per
     return Draw(dict(by_frame), samples, dict(excluded), {f.frame_id: f.kind for f in case.frames}, undated)
 
 
-def _fetch_inputs(root: Path, case_id: str, fold: str) -> tuple[dict, list[dict], list[dict]]:
-    components = require_frozen(root, [f"cases/{case_id}"], fold)
-    fetch = latest_run(root, "S1", case_id, fold, components)
+def _fetch_inputs(root: Path, case: Case, fold: str) -> tuple[dict, list[dict], list[dict]]:
+    components = require_frozen(root, [case.component], fold)
+    fetch = latest_run(root, "S1", case.case_id, fold, components)
     if fetch is None:
-        raise CaseError(f"no successful S1 run for {case_id} in fold {fold} with the current registry; "
+        raise CaseError(f"no successful S1 run for {case.case_id} in fold {fold} with the current registry; "
                         "run `viveka corpus fetch` first")
     return (fetch, tables.read(root / fetch["params"]["tables"]["frames"]),
             tables.read(root / fetch["params"]["tables"]["works"]))
@@ -358,16 +361,16 @@ def match_references(fetcher: Fetcher, case_id: str, work_id: str, references: R
     return found, rescued
 
 
-def census_case(root: Path, case_id: str, fold: str, *, manual: Path | None = None,
+def census_case(root: Path, case_id: str, fold: str, *, field: bool = False, manual: Path | None = None,
                 transport: httpx.BaseTransport | None = None, out: Out = print) -> str:
-    case, _ = load_case(root, case_id)
+    case, _ = load_subject(root, case_id, field)
     config = load_corpus_config(root)
     settings = config.census
-    fetch, frames_rows, works_rows = _fetch_inputs(root, case_id, fold)
+    fetch, frames_rows, works_rows = _fetch_inputs(root, case, fold)
     draw = draw_sample(case, frames_rows, works_rows, settings.works_per_year, settings.seed, settings.paper_types)
     samples = draw.samples
     manual_refs = _manual_refs(root, manual)
-    with RunContext(root, "S2", case_id, fold, [f"cases/{case_id}"], seed=settings.seed,
+    with RunContext(root, "S2", case_id, fold, [case.component], seed=settings.seed,
                     params={"fetch_run": fetch["run_id"], "works_per_year": settings.works_per_year,
                             "max_unmeasured_share": settings.max_unmeasured_share,
                             "resolution": settings.resolution,
@@ -516,8 +519,13 @@ def census_report(case: Case, run_id: str, fetch_run: str, config: CorpusConfig,
                      f"{s.doiless_matched}/{s.doiless_sampled} ({s.doiless_rescued}) | "
                      f"{s.doiless_unparseable}/{s.doiless_sampled} | "
                      f"{_pct(s.coverage)} | {'yes' if s.measurable else 'no'} |")
+    if not case.frames:
+        lines += ["", "No frames: none of this field's venues is in the corpus source, so nothing was sampled."]
     if undated:
         lines += ["", f"{undated} frame work(s) without a publication year were not sampled."]
+    if case.absent_venues:
+        lines += ["", "Core venues not in the corpus source, so outside every frame until ingested (decision D-8):", ""]
+        lines += [f"- {venue}" for venue in case.absent_venues]
     for frame in case.frames:
         rows = [r for r in coverage if r["frame_id"] == frame.frame_id]
         if not rows:
@@ -595,7 +603,7 @@ def add_parsers(sub: argparse._SubParsersAction, common: argparse.ArgumentParser
     for action, text in (("fetch", "S1: collect the case's works, authorships and citations"),
                          ("contexts", "S1: Semantic Scholar citation contexts for the bearing set")):
         p = csub.add_parser(action, parents=[common], help=text)
-        p.add_argument("--case", required=True)
+        _subject_arguments(p)
         p.add_argument("--fold", required=True, choices=FOLDS)
         p.add_argument("--dry-run", action="store_true", help="Project live calls from the archive; no network")
         if action == "fetch":
@@ -607,28 +615,44 @@ def add_parsers(sub: argparse._SubParsersAction, common: argparse.ArgumentParser
     p = casesub.add_parser("validate", parents=[common], help="Validate a case, its claim and the corpus settings")
     p.add_argument("case")
 
-    p = sub.add_parser("census", parents=[common], help="S2: coverage census for a case")
-    p.add_argument("--case", required=True)
+    field = sub.add_parser("field", help="Calibration field definitions")
+    fieldsub = field.add_subparsers(dest="action", required=True)
+    p = fieldsub.add_parser("validate", parents=[common], help="Validate a calibration field and the corpus settings")
+    p.add_argument("field")
+
+    p = sub.add_parser("census", parents=[common], help="S2: coverage census for a case or calibration field")
+    _subject_arguments(p)
     p.add_argument("--fold", required=True, choices=FOLDS)
     p.add_argument("--dry-run", action="store_true", help="Project live calls from the archive; no network")
     p.add_argument("--manual", type=Path, help=f"CSV of hand-entered reference lists under {MANUAL_DIR}/")
 
 
+def _subject_arguments(parser: argparse.ArgumentParser) -> None:
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--case", help="A pilot or reserve case (registry/cases/<case>.yaml)")
+    group.add_argument("--field", help="A calibration field (registry/fields/<field>.yaml)")
+
+
+def _subject(args: argparse.Namespace) -> tuple[str, bool]:
+    return (args.field, True) if getattr(args, "field", None) else (args.case, False)
+
+
 def _dry_run(root: Path, args: argparse.Namespace, out: Out) -> int:
-    case, claim = load_case(root, args.case)
+    subject_id, is_field = _subject(args)
+    case, claim = load_subject(root, subject_id, is_field)
     config = load_corpus_config(root)
     with make_fetcher(root, config, offline=True) as fetcher:
         if args.command == "census":
-            _, frames_rows, works_rows = _fetch_inputs(root, args.case, args.fold)
+            _, frames_rows, works_rows = _fetch_inputs(root, case, args.fold)
             samples = draw_sample(case, frames_rows, works_rows, config.census.works_per_year, config.census.seed,
                                   config.census.paper_types).samples
             projection = project_census(fetcher, config, samples, _manual_refs(root, args.manual))
-            out(f"census dry run for {args.case}: {sum(len(s) for s in samples.values())} sampled works")
+            out(f"census dry run for {subject_id}: {sum(len(s) for s in samples.values())} sampled works")
         else:
             projection = project_fetch(fetcher, config, case, claim)
             if args.action == "contexts":
                 projection.unknown.append("Semantic Scholar pages: one per 1000 citations of each bearing work")
-            out(f"{args.action} dry run for {args.case}:")
+            out(f"{args.action} dry run for {subject_id}:")
     out("\n".join(projection.lines(config)))
     return 0
 
@@ -637,16 +661,23 @@ def run(args: argparse.Namespace, root: Path, *, transport: httpx.BaseTransport 
         out: Out = print) -> int:
     try:
         if args.command == "case":
-            case, claim = load_case(root, args.case)
+            case, claim = load_subject(root, args.case, False)
             out(f"case {case.case_id} valid: claim {claim.claim_id} ({len(claim.events)} events), "
                 f"{len(case.seeds)} seeds, frames {', '.join(f'{f.frame_id} ({f.kind})' for f in case.frames)}, "
                 f"window {case.start}–{case.end}")
             return 0
+        if args.command == "field":
+            case, _ = load_subject(root, args.field, True)
+            sources = sum(len(f.sources) for f in case.frames)
+            out(f"field {case.case_id} valid: {case.pair}, {len(case.frames)} frame(s) over {sources} source(s), "
+                f"window {case.start}–{case.end}, {len(case.absent_venues)} absent venue(s)")
+            return 0
         if args.command == "corpus" and args.action == "resolve":
             return resolve_lookup(root, doi=args.doi, openalex_id=args.openalex_id, title=args.title,
                                   source_name=args.source_name, transport=transport, out=out)
+        subject_id, is_field = _subject(args)
         if getattr(args, "probe", False):
-            case, claim = load_case(root, args.case)
+            case, claim = load_subject(root, subject_id, is_field)
             config = load_corpus_config(root)
             with make_fetcher(root, config, need=("openalex",), transport=transport) as fetcher:
                 probe(fetcher, config, case, claim)
@@ -655,11 +686,11 @@ def run(args: argparse.Namespace, root: Path, *, transport: httpx.BaseTransport 
         if args.dry_run:
             return _dry_run(root, args, out)
         if args.command == "census":
-            census_case(root, args.case, args.fold, manual=args.manual, transport=transport, out=out)
+            census_case(root, subject_id, args.fold, field=is_field, manual=args.manual, transport=transport, out=out)
         elif args.action == "fetch":
-            fetch_case(root, args.case, args.fold, transport=transport, out=out)
+            fetch_case(root, subject_id, args.fold, field=is_field, transport=transport, out=out)
         else:
-            fetch_contexts(root, args.case, args.fold, transport=transport, out=out)
+            fetch_contexts(root, subject_id, args.fold, field=is_field, transport=transport, out=out)
         return 0
     except (CaseError, FetchError, env.MissingCredential, ManualImportError) as exc:
         out(f"viveka: {exc}")
