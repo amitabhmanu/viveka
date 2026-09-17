@@ -140,11 +140,13 @@ ingestion:
     jom:
       name: Journal of Orthomolecular Medicine
       issn_l: "0834-4825"
-      adapter: orthomolecular_toc_v1
+      adapter: orthomolecular_toc_v2
       url: "https://orthomolecular.org/library/jom"
       aliases: [Journal of Orthomolecular Medicine, J Orthomol Med, J. Orthomol. Med, J. Orthomolecular Med, J Orthomolecular Med]
-      types: {Articles: article, Case Reports: article, A Case From The Center: article, Correspondence: letter, Letters: letter, Editorials: editorial, Editorial: editorial, In Memoriam: other, Book Reviews: other}
+      # Contents-page anchors -> work types. "classic" sections reprint older papers, so they are not counted.
+      types: {articles: article, case: article, center: article, correspondence: letter, letters: letter, editorial: editorial, memoriam: other, mem: other, books: other, book: other, news: other, isom: other, classic: other}
       default_type: other
+      note: "The online archive runs from 1986 to 2009 (year pages from 2010 return not found, checked 17 Sep 2026), so the frame ends in 2009; a few issues' contents pages are missing or empty (1991 no. 3 and 4, 2003 no. 4, 2009 no. 4)."
     arj:
       name: Answers Research Journal
       issn_l: "1937-9056"

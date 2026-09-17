@@ -15,8 +15,8 @@ from viveka.corpus.ingest.text import (
 
 CRSQ = Venue("crsq", "Society Quarterly", None, "eprints_json_v1", "https://repo.example", ("SQ", "Society Quarterly"),
              {"article": "article"}, "other")
-JOM = Venue("jom", "Journal of Nutrient Medicine", None, "orthomolecular_toc_v1", "https://nm.example/library/jnm",
-            ("J Nutr Med",), {"Articles": "article", "Correspondence": "letter", "Editorials": "editorial"}, "other")
+JOM = Venue("jom", "Journal of Nutrient Medicine", None, "orthomolecular_toc_v2", "https://nm.example/library/jnm",
+            ("J Nutr Med",), {"articles": "article", "correspondence": "letter", "editorial": "editorial"}, "other")
 ARJ = Venue("arj", "Open Research Journal", None, "arj_volumes_v1", "https://orj.example", ("ORJ",), {}, "article",
             2008)
 
@@ -113,17 +113,30 @@ Page 4<!--<a href="articles/1986-v01n01-p004.shtml">(Read Full Text Article)</a>
 <br>Mike Marl, Ph.D., Charles Moo, M.A. and J.A.M. Hoes M.D. et al.<br>
 Page 43 <!--<a href="abstracts/1986-v01n01-p043.shtml">(Read Abstract)</a> | -->
 <a href="pdf/1986-v01n01-p043.pdf" target=new>(Download Full Text PDF)</a>
-</p></body></html>"""
+</p>
+<!--
+<p><a name="memoriam"><font size=3><b>In Memoriam:</a></font></b>
+<p><i>Hidden</i><br>Nobody Here<br>Page 50 <a href="pdf/1986-v01n01-p050.pdf">(Download Full Text PDF)</a>
+-->
+<a name="correspondence"><font size=3><b>Letters</a></font></b> <p>
+The Politics of Research; A Second State<br>
+A. HOFFR, M.D., Ph.D. and E Chersk DMD, MD<br>
+Page 61 <!--<a href="abstracts/1986-v01n01-p061.shtml">(Read Abstract)</a> | -->
+<a href="pdf/1986-v01n01-p061.pdf" target=blank>(Download Full Text PDF)</a>
+</body></html>"""
 
 
 def test_contents_pages_give_sections_titles_authors_and_pages():
     works = orthomolecular.parse_toc(JOM, "https://nm.example/library/jnm/1986/toc1.shtml", TOC)
     assert [(w.key, w.work_type, w.first_page, w.volume, w.issue, w.year) for w in works] == [
-        ("1986-v01n01-p004", "editorial", "4", "1", "1", 1986), ("1986-v01n01-p043", "article", "43", "1", "1", 1986)]
+        ("1986-v01n01-p004", "editorial", "4", "1", "1", 1986), ("1986-v01n01-p043", "article", "43", "1", "1", 1986),
+        ("1986-v01n01-p061", "letter", "61", "1", "1", 1986)]  # the commented-out section is not a paper
     assert works[0].title == "A New Name For the Journal"
     assert [(a.given, a.family) for a in works[1].authors] == [("Mike", "Marl"), ("Charles", "Moo"),
                                                               ("J.A.M.", "Hoes")]
     assert works[1].document_url == "https://nm.example/library/jnm/1986/pdf/1986-v01n01-p043.pdf"
+    assert works[2].title == "The Politics of Research; A Second State"  # a later layout: no italics, no colon
+    assert [(a.given, a.family) for a in works[2].authors] == [("A.", "HOFFR"), ("E", "Chersk")]
     index = b'<a href="toc1.shtml">1</a> <a href="toc2.shtml">2</a> <a href="toc1.shtml">again</a>'
     assert orthomolecular.toc_urls(JOM, 1986, index) == ["https://nm.example/library/jnm/1986/toc1.shtml",
                                                          "https://nm.example/library/jnm/1986/toc2.shtml"]

@@ -1,28 +1,35 @@
-"""Adapter ``orthomolecular_toc_v1``: the Journal of Orthomolecular Medicine archive at orthomolecular.org.
+"""Adapter ``orthomolecular_toc_v2``: the Journal of Orthomolecular Medicine archive at orthomolecular.org.
 
-Each year has an index page linking its issues' contents pages. A contents page groups papers under
-bold section headings ("Articles:", "Case Reports:", "Correspondence:", ...); each paper is an italic
-title, a line of authors, "Page N" and a link to its PDF named ``<year>-v<volume>n<issue>-p<page>.pdf``.
-The section decides the work type through the registry's mapping; authors are read from the author
-line with degrees removed.
+Each year has an index page linking its issues' contents pages; the online archive runs from 1986 to
+2009. A contents page groups papers under named anchors (``<a name="articles">``, ``"editorial"``,
+``"case"``, ``"center"``, ``"correspondence"``, ``"memoriam"``, ``"books"``, ``"news"``), whose headings'
+wording and markup vary over the years; the anchor decides the work type through the registry's
+mapping. Each paper is a title, a line of authors, "Page N" and a link to its PDF named
+``<year>-v<volume>n<issue>-p<page>.pdf``, from which volume, issue and first page are read. Commented-out
+markup is ignored. Authors are read from the author line with degrees removed.
 """
 
 from __future__ import annotations
 
-import html
 import re
 
 from viveka.corpus.config import Venue
 from viveka.corpus.http import Fetcher, Request
 from viveka.corpus.ingest import Author, IngestedWork, document_request
+from viveka.corpus.ingest.text import html_text
 
 _TOC = re.compile(r'href="((?:[^"]*/)?toc[\w-]*\.shtml)"', re.I)
-_SECTION = re.compile(r"<b>\s*(?P<section>[^<:]{2,60}?)\s*:\s*(?:</a>\s*)?(?:</font>\s*)?</b>", re.I)
-_ENTRY = re.compile(
-    r"<i>(?P<title>(?:(?!<i>).)*?)</i>\s*<br>(?P<authors>(?:(?!<i>).)*?)<br>\s*Page\s*(?P<page>\d+)"
-    r"(?:(?!<i>).)*?href=\"(?P<href>(?:[^\"]*/)?pdf/(?P<stem>(?P<year>\d{4})-v(?P<volume>\d+)n(?P<issue>\d+)"
-    r"-p\d+)\.pdf)\"", re.I | re.S)
+_COMMENT = re.compile(r"<!--.*?-->", re.S)
+_ANCHOR = re.compile(r'<a\s+name="(?P<name>[\w-]+)"[^>]*>', re.I)
+_PDF = re.compile(r'<a[^>]*href="(?P<href>(?:[^"]*/)?pdf/(?P<stem>(?P<year>\d{4})-v(?P<volume>\d+)n(?P<issue>\d+)'
+                  r'-p(?P<page>\d+))\.pdf)"[^>]*>.*?</a>', re.I | re.S)
+_PAGE_LINE = re.compile(r"^Page\s*\d+", re.I)
 _ET_AL = re.compile(r"\bet\.?\s*al\.?", re.I)
+_DEGREE = re.compile(
+    r"^(?:m\.?d|ph\.?d|d\.?m\.?d|d\.?d\.?s|d\.?sc|b\.?sc|m\.?sc|m\.?s|b\.?s|m\.?a|b\.?a|r\.?n|n\.?d|d\.?c|d\.?o|"
+    r"m\.?p\.?h|m\.?b|ch\.?b|b\.?ch|b\.?m|d\.?phil|r\.?d|c\.?c\.?n|f\.?a\.?c\.?n|facp|frcp\w*|mrcp\w*|"
+    r"f\.?r\.?c\.?p\.?(?:\(c\))?|dip\.?|c\.?h\.?|m\.?a\.?s\.?c\.?h|psy\.?d|ed\.?d|pharm\.?d|jr|sr|dr|prof|"
+    r"\(\w+\.?\))\.?$", re.I)
 
 
 def index_request(venue: Venue, year: int) -> Request:
@@ -34,46 +41,47 @@ def toc_urls(venue: Venue, year: int, page: bytes) -> list[str]:
     return [f"{venue.url}/{year}/{name}" for name in found]
 
 
-def _text(fragment: str) -> str:
-    return " ".join(html.unescape(re.sub(r"<[^>]+>", " ", fragment)).split())
-
-
-def _is_name(part: str) -> bool:
-    words = part.split()
-    if len(words) < 2:
-        return False
-    for w in words:
-        if re.fullmatch(r"(?:[A-Z]\.)+", w):
-            continue  # initials
-        if w.endswith(".") or "(" in w or not re.search(r"[a-z]{2,}", w) or not w[0].isupper():
-            return False
-    return True
-
-
 def authors_of(line: str) -> tuple[Author, ...]:
-    """Names from an author line such as "Mike Marlowe, Ph.D., Joan Goulding, M.A.S.C.H. and A. Hoffer"."""
-    line = re.sub(r"\d+", "", _ET_AL.sub("", line))
+    """Names from an author line such as "A. HOFFER, M.D., Ph. D. and E Cheraskin DMD, MD"."""
+    line = re.sub(r"\d+|\*", "", _ET_AL.sub("", line))
+    line = re.sub(r"\bPh\.\s+D\.", "Ph.D.", line)
     authors = []
-    for part in (" ".join(p.split()) for p in re.split(r",|;|\band\b|&", line)):
-        words = part.split()
-        while len(words) > 2 and re.fullmatch(r"(?:[A-Z][a-z]?\.)+", words[-1]):
-            words.pop()  # a degree written without a comma ("Hoes M.D.")
-        if _is_name(" ".join(words)) and not re.fullmatch(r"(?:[A-Z]\.)+", words[-1]):
-            *given, family = words
-            authors.append(Author(family, " ".join(given) or None))
+    for part in re.split(r",|;|\band\b|&", line):
+        words = [w for w in part.split() if not _DEGREE.match(w)]
+        if len(words) < 2 or not re.fullmatch(r"[A-Za-zÀ-ÿ'’\-]{2,}", words[-1]):
+            continue
+        *given, family = words
+        authors.append(Author(family, " ".join(given)))
     return tuple(authors)
 
 
 def parse_toc(venue: Venue, url: str, page: bytes) -> list[IngestedWork]:
-    source = page.decode("latin-1")
-    sections = [(m.start(), _text(m["section"])) for m in _SECTION.finditer(source)]
+    source = _COMMENT.sub(" ", page.decode("latin-1"))
+    anchors = [(m.start(), m.end(), m["name"].lower()) for m in _ANCHOR.finditer(source)]
+    if not anchors:
+        return []
     works: dict[str, IngestedWork] = {}
-    for m in _ENTRY.finditer(source):
-        section = next((name for at, name in reversed(sections) if at < m.start()), "")
+    previous = anchors[0][0]
+    for m in _PDF.finditer(source):
+        if m.start() < anchors[0][0]:
+            continue
+        before = [a for a in anchors if a[0] < m.start()]
+        at, _, section = before[-1]
+        segment = source[max(previous, at) : m.start()]
+        heading = at >= previous  # a section starts in this segment, so its heading is the first line
+        previous = m.end()
+        lines = [line.strip() for line in html_text(segment.encode("latin-1"), "latin-1").splitlines()
+                 if line.strip()]
+        if heading and lines:
+            lines = lines[1:]
+        page_at = next((i for i, line in enumerate(lines) if _PAGE_LINE.match(line)), len(lines))
+        head = lines[:page_at]
+        author_line = head[-1] if len(head) >= 2 else ""
+        title = " ".join(head[:-1] if len(head) >= 2 else head)
         works.setdefault(m["stem"], IngestedWork(
-            venue=venue.venue_id, key=m["stem"], title=_text(m["title"]), year=int(m["year"]),
+            venue=venue.venue_id, key=m["stem"], title=title, year=int(m["year"]),
             volume=str(int(m["volume"])), issue=str(int(m["issue"])), first_page=str(int(m["page"])),
-            authors=authors_of(_text(m["authors"])), work_type=venue.types.get(section, venue.default_type),
+            authors=authors_of(author_line), work_type=venue.types.get(section, venue.default_type),
             document_url=f"{url.rsplit('/', 1)[0]}/{m['href']}"))
     return list(works.values())
 
