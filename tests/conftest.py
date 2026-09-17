@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 REPO = Path(__file__).resolve().parents[1]
 HOOKS = REPO / ".claude" / "hooks"
@@ -57,10 +58,14 @@ def _copy_registry(root: Path) -> Path:
     (root / "ledger" / "changes.jsonl").write_bytes(b"")
     shutil.copy(REPO / "ledger" / "decisions.md", root / "ledger" / "decisions.md")
     (root / "runs").mkdir()
-    # Run manifests travel with the registry, so source_run references in the copy still resolve.
-    for manifest in (REPO / "runs").glob("*/manifest.json"):
-        (root / "runs" / manifest.parent.name).mkdir()
-        shutil.copy(manifest, root / "runs" / manifest.parent.name / "manifest.json")
+    # The run manifests the thresholds cite travel with the registry, so source_run references still resolve; no
+    # other real run is copied, so stages under test see only the runs they make.
+    thresholds = yaml.safe_load((REPO / "registry" / "thresholds.yaml").read_text(encoding="utf-8")) or {}
+    cited = {str(p["source_run"]) for p in (thresholds.get("parameters") or {}).values()
+             if isinstance(p, dict) and p.get("source_run")}
+    for run in sorted(cited):
+        (root / "runs" / run).mkdir()
+        shutil.copy(REPO / "runs" / run / "manifest.json", root / "runs" / run / "manifest.json")
     shutil.copy(REPO / ".gitattributes", root / ".gitattributes")
     return root
 
