@@ -304,10 +304,11 @@ def test_field_overlap_is_a_registered_run_over_the_latest_fetches(world):
     commands.fetch_case(root, "test-field", "dev", field=True, transport=fake.transport(), out=lambda s: None)
     commands.fetch_case(root, "cold-fusion", "dev", transport=fake.transport(), out=lambda s: None)
     code, text = run_cli(root, "field", "overlap", "--fold", "dev")
-    assert code == 0 and "| cold-fusion | test-field | 1 | 1 | 1 | 100.0% | yes: cold-fusion |" in text
+    assert code == 0 and "| cold-fusion | test-field | openalex_id | 1 | 1 | 1 | 100.0% | yes: cold-fusion |" in text
     run = next(m for m in (load_manifest(root, p.parent.name) for p in (root / "runs").glob("*/manifest.json"))
                if m["stage"] == "S1-overlap")
-    assert run["params"]["max_overlap"] == 0.2 and "17kev-neutrino" in run["params"]["without_fetch"]
+    assert run["params"]["max_overlap"] == 0.2 and "core_min_works" in run["params"]
+    assert "17kev-neutrino" in run["params"]["without_fetch"]
     (row,) = [r for r in table(root, run, "overlap") if {r["subject_a"], r["subject_b"]} == {"cold-fusion",
                                                                                              "test-field"}]
     assert (row["shared"], row["exceeds"]) == (1, True)  # the fake venue works share one author

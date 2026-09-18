@@ -66,7 +66,7 @@ class CorpusConfig:
     api: Mapping[str, Mapping[str, Any]]
     census: CensusSettings
     ingestion: IngestionSettings | None = None
-    calibration_selection: tuple[str, float] | None = None  # (overlap measure, largest overlap), decision D-10
+    calibration_selection: tuple[str, float, int] | None = None  # (measure, largest overlap, core works), D-10
 
     def venue(self, venue_id: str) -> Venue:
         if self.ingestion is None or venue_id not in self.ingestion.venues:
@@ -116,7 +116,8 @@ def from_mapping(data: Mapping[str, Any]) -> CorpusConfig:
                               float(census["bibliographic_rescue"]["title_word_share"])),
         ingestion=ingestion,
         calibration_selection=(str(data["calibration_selection"]["overlap_measure"]),
-                               float(data["calibration_selection"]["max_overlap"]))
+                               float(data["calibration_selection"]["max_overlap"]),
+                               int(data["calibration_selection"].get("core_min_works", 1)))
         if data.get("calibration_selection") else None,
     )
 

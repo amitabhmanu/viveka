@@ -610,8 +610,8 @@ def field_overlap(root: Path, fold: str, *, out: Out = print) -> str:
     config = load_corpus_config(root)
     if config.calibration_selection is None:
         raise CaseError("corpus.yaml registers no calibration_selection rule")
-    measure, limit = config.calibration_selection
-    authors: dict[str, set[str]] = {}
+    measure, limit, core_min_works = config.calibration_selection
+    authors = {}
     fields, missing, fetches, components = set(), [], {}, []
     for subject_id, is_field in _subjects(root):
         case, _ = load_subject(root, subject_id, is_field)
@@ -625,27 +625,31 @@ def field_overlap(root: Path, fold: str, *, out: Out = print) -> str:
         fetches[subject_id] = fetch
         read = {name: tables.read(root / fetch["params"]["tables"][name])
                 for name in ("frames", "authorships", "authors")}
-        authors[subject_id] = community_authors(read["frames"], read["authorships"], read["authors"])
+        authors[subject_id] = community_authors(read["frames"], read["authorships"], read["authors"],
+                                                core_min_works)
     pairs = overlaps(authors, fields)
     with RunContext(root, "S1-overlap", "calibration", fold, components,
-                    params={"measure": measure, "max_overlap": limit,
+                    params={"measure": measure, "max_overlap": limit, "core_min_works": core_min_works,
                             "fetch_runs": {s: f["run_id"] for s, f in sorted(fetches.items())},
                             "without_fetch": missing}) as ctx:
         for fetch in fetches.values():
             for name in ("frames", "authorships", "authors"):
                 ctx.record_input(root / fetch["params"]["tables"][name])
-        rows = [{"subject_a": p.a, "subject_b": p.b, "authors_a": p.authors_a, "authors_b": p.authors_b,
+        rows = [{"subject_a": p.a, "subject_b": p.b, "basis": p.basis, "authors_a": p.authors_a,
+                 "authors_b": p.authors_b,
                  "shared": p.shared, "coefficient": p.coefficient,
                  "exceeds": p.coefficient is not None and p.coefficient > limit} for p in pairs]
         table_path = ctx.store(tables.to_parquet("overlap", rows), "parquet", rows=len(rows))
         lines = [f"# Author overlap: calibration fields ({fold} fold)", "",
-                 f"Run `{ctx.run_id}`. Rule `{measure}` (decision D-10): shared author names over the smaller "
-                 f"subject's author names, from the works in each subject's community frames; above {limit:g} the "
-                 "smaller field is dropped. Pairs of two cases are not shown.", "",
-                 "| subject | subject | authors | authors | shared | overlap | above limit |",
-                 "|---|---|---:|---:|---:|---:|---|"]
+                 f"Run `{ctx.run_id}`. Rule `{measure}` (decision D-10): core authors (at least {core_min_works} "
+                 "works in a subject's community frames) shared, over the smaller subject's core authors; compared "
+                 "by OpenAlex author id when both subjects' works are all from OpenAlex, otherwise by family name and "
+                 f"all initials. Above {limit:g} the smaller field is dropped. Pairs of two cases are not shown.", "",
+                 "| subject | subject | basis | core authors | core authors | shared | overlap | above limit |",
+                 "|---|---|---|---:|---:|---:|---:|---|"]
         for p, row in zip(pairs, rows, strict=True):
-            lines.append(f"| {p.a} | {p.b} | {p.authors_a} | {p.authors_b} | {p.shared} | {_pct(p.coefficient)} | "
+            lines.append(f"| {p.a} | {p.b} | {p.basis} | {p.authors_a} | {p.authors_b} | {p.shared} | "
+                         f"{_pct(p.coefficient)} | "
                          f"{'yes: ' + p.smaller if row['exceeds'] else 'no'} |")
         if missing:
             lines += ["", f"Without a successful fetch in this fold, so not measured: {', '.join(missing)}."]
