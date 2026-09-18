@@ -108,7 +108,7 @@
         "requests_per_second": {"$ref": "#/$defs/rate"},
         "audit_references": {"type": "integer", "minimum": 1},
         "text_extraction": {"enum": ["pypdf_text_v1"]},
-        "reference_extraction": {"enum": ["reference_section_v1"]},
+        "reference_extraction": {"enum": ["reference_section_v2"]},
         "catalogue_match": {"enum": ["ingested_catalogue_v1"]},
         "venues": {
           "type": "object",

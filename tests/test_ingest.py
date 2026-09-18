@@ -304,3 +304,19 @@ def test_bepress_issue_pages():
     index = b'<a href="https://www.jr.example/journal/vol2/iss4/">4</a><a href="https://www.jr.example/journal/vol1/iss1/">1</a>'
     assert bepress.issue_urls(venue, index) == ["https://www.jr.example/journal/vol1/iss1/",
                                                 "https://www.jr.example/journal/vol2/iss4/"]
+
+
+def test_v2_reads_references_and_notes_headings_and_headingless_numbered_lists():
+    notes = text_pdf(["Body.", "REFERENCES AND NOTES", "1. A. Brazier, Neurophysiology (Physiological Society, 1959).",
+                      "2. R. Descartes, Passions de l'Ame (Amsterdam, 1649)."])
+    assert extract_references(pdf_text(notes), paragraphs=False).total == 2
+    footer = "doi:10.5048/BIO-C.2016.3"
+    lines = ["1. Introduction", "Body text of the paper.", footer, "2. Methods", "More text.", footer,
+             "We thank the reviewers.", "1. Hartl D (2000) A Primer of Population Genetics. Sinauer.",
+             "2. Haines JL (1998) Gene Mapping. Wiley.", footer,
+             "3. Green RE (2008) A Neandertal genome. Cell 134:416-426."]
+    refs = extract_references(pdf_text(text_pdf(lines)), paragraphs=False)
+    assert [e.year for e in refs.entries] == [2000, 1998, 2008]
+    assert all(e.doi is None for e in refs.entries)  # the footer DOI recurs on every page and is dropped
+    numbered_headings = ["1. Introduction", "Text.", "2. Methods", "Text.", "3. Results", "Text."]
+    assert extract_references(pdf_text(text_pdf(numbered_headings)), paragraphs=False) is None

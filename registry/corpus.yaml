@@ -133,6 +133,12 @@ calibration_selection:
 #     one reference per paragraph in a web page, and in PDF text a new reference at a line opening with a
 #     number, an author or a lost ditto rule after a finished sentence. A DOI, year, journal, volume and first
 #     page are read from each reference's text; classification and matching then follow the census rules.
+#   reference_section_v2 (19 Sep 2026): as v1, and also accepts "References and notes" and "Notes and
+#     references" as headings; for PDF text with no heading, the list is the last numbered run starting at "1."
+#     that continues "2.", "3." within 30 lines with a year in each of its first three entries, and lines that
+#     recur three or more times in the document (running titles, footer DOIs) are dropped from it. Adopted after
+#     the first BIO-Complexity and Subtle Energies censuses found their lists unread (no heading in the text
+#     layer; a "References and notes" heading). Documents with a v1 heading extract as before.
 #   ingested_catalogue_v1: before OpenAlex, a sampled DOI-less paper reference is matched against the listed
 #     papers of the subject's ingested venues: its journal must be one of the venue's aliases, its volume
 #     equal, its year within the census year tolerance, and either its first page equal or, when the listing
@@ -145,7 +151,7 @@ calibration_selection:
 ingestion:
   requests_per_second: 0.5
   text_extraction: pypdf_text_v1
-  reference_extraction: reference_section_v1
+  reference_extraction: reference_section_v2
   catalogue_match: ingested_catalogue_v1
   audit_references: 60
   venues:

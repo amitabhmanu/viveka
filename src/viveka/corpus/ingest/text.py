@@ -13,6 +13,12 @@ Registered rules (``registry/corpus.yaml``, ``ingestion``):
   initial); a reference whose ditto rule was lost (". 1984b. ...") takes the author part of the one before.
   Other lines continue the current reference, and words hyphenated across a line break are joined. A
   document with no such heading, or none after it, has no reference list.
+* ``reference_section_v2`` (19 Sep 2026) also accepts "References and notes" and "Notes and references" as
+  headings (Subtle Energies uses the first), and adds one fallback, for PDF text only: with no heading, the list is the
+  last numbered run starting at "1." that continues "2.", "3." within 30 lines, whose first three entries each
+  carry a year; lines recurring three or more times in the document (running titles, footer DOIs) are dropped
+  from it. Documents with a heading are extracted exactly as under v1. BIO-Complexity's PDFs, for one, print
+  their numbered lists without a heading in the text layer.
 * Each reference keeps its text; a DOI written in it, its year, and a journal, volume and first page in
   "Journal 31:117-124", "Journal 16(2):26-30" or "Journal 32, 413-425, 1981" form are read into fields, so
   the census classifies and matches it with the same rules as any other reference.
@@ -30,7 +36,8 @@ import re
 from viveka.census import Reference, References
 from viveka.corpus.ids import normalize_doi
 
-_HEADING = re.compile(r"^\s*(?:references(?: cited)?|literature cited|bibliography|works cited)\s*:?\s*$", re.I)
+_HEADING = re.compile(r"^\s*(?:references(?: cited| and notes)?|notes and references|literature cited|bibliography|"
+                      r"works cited)\s*:?\s*$", re.I)
 _STOP = re.compile(r"^\s*(?:appendix\b|about the authors?\b)", re.I)
 _FURNITURE = re.compile(r"^\s*(?:\d{1,4}|volume \d+,? \w+ \d{4}|.{0,60}\bvol\.\s*\d+\s*,?\s*no\.\s*\d+\s*)$", re.I)
 _START = re.compile(
@@ -188,9 +195,56 @@ def parse_reference(text: str) -> Reference:
     return Reference(doi, year, text=text)
 
 
+_NUMBERED = re.compile(r"^\s*(?:\[(?P<b>\d{1,3})\]|(?P<n>\d{1,3})\.)\s+\S")
+_HAS_YEAR = re.compile(r"\b(?:18|19|20)\d{2}\b")
+
+
+def numbered_list_lines(text: str) -> list[str] | None:
+    """A PDF reference list with no heading (rule reference_section_v2): the last numbered run that starts at 1.
+
+    The run must continue with 2 and 3 within the next 30 lines, and each of its first three entries must carry a
+    year, so numbered section headings ("1. Introduction") are not taken for references. Lines that recur three or
+    more times in the document (running titles, the article's own DOI in a footer) are page furniture and dropped.
+    """
+    lines = text.splitlines()
+    counts: dict[str, int] = {}
+    for line in lines:
+        key = line.strip()
+        if len(key) >= 5:
+            counts[key] = counts.get(key, 0) + 1
+
+    def number(line: str) -> int | None:
+        m = _NUMBERED.match(line)
+        return int(m["b"] or m["n"]) if m else None
+
+    for start in range(len(lines) - 1, -1, -1):
+        if number(lines[start]) != 1:
+            continue
+        entry_text, expected = [lines[start]], 2
+        for line in lines[start + 1 : start + 31]:
+            if number(line) == expected:
+                entry_text.append(line)
+                expected += 1
+                if expected > 3:
+                    break
+            elif expected <= 3:
+                entry_text[-1] += " " + line
+        if expected > 3 and all(_HAS_YEAR.search(t) for t in entry_text[:3]):
+            body = []
+            for line in lines[start:]:
+                if _STOP.match(line):
+                    break
+                if counts.get(line.strip(), 0) < 3:
+                    body.append(line)
+            return body
+    return None
+
+
 def extract_references(text: str, paragraphs: bool) -> References | None:
     """The document's reference list, or None when it has none (its work is then unmeasured)."""
     lines = reference_lines(text)
+    if lines is None and not paragraphs:
+        lines = numbered_list_lines(text)
     if lines is None:
         return None
     entries = split_paragraphs(lines) if paragraphs else split_lines(lines)
