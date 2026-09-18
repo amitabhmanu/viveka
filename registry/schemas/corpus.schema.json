@@ -91,11 +91,12 @@
     },
     "calibration_selection": {
       "type": "object",
-      "required": ["overlap_measure", "max_overlap"],
+      "required": ["overlap_measure", "max_overlap", "core_min_works"],
       "additionalProperties": false,
       "properties": {
-        "overlap_measure": {"enum": ["overlap_coefficient_names_v1"]},
-        "max_overlap": {"type": "number", "exclusiveMinimum": 0, "maximum": 1}
+        "overlap_measure": {"enum": ["overlap_coefficient_core_v2"]},
+        "max_overlap": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
+        "core_min_works": {"type": "integer", "minimum": 1}
       }
     },
     "ingestion": {

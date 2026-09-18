@@ -1,0 +1,10 @@
+# Drafted 18 Sep 2026 (M4b) from OpenAlex venue lookups (17 Sep 2026); awaiting owner review.
+format: 1
+field: organic-chemistry
+role: calibration
+side: science
+window: {start: 1986, end: 2025}
+notes: "Replaces seismology (owner decision, 18 Sep 2026): under the D-10 overlap rule v2, seismology shared 25.0% of its core authors with plate tectonics in the dev-fold preview, above the 0.2 limit, and as the smaller field it is dropped. Organic chemistry was the remaining science candidate with journals of its own; its overlap with the other fields is checked before it is accepted. Tetrahedron Letters (S133942674, about 107k works) left out as a letters journal duplicating the community of the three flagships."
+frames:
+  - {id: venues, kind: community, sources: [S205050996, S201989124, S205754296], note: "The Journal of Organic Chemistry (ISSN-L 0022-3263), Organic Letters (1523-7052, from 1999) and Tetrahedron (0040-4020)."}
+absent_venues: []

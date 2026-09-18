@@ -93,12 +93,16 @@ census:
 # authors of the works in their community frames (a case's mainstream citing frame is not a community under
 # calibration), from their latest fetches in the same fold: the number of authors two subjects share divided by
 # the smaller one's number of authors (the
-# overlap coefficient, which Jaccard would understate for a small field inside a large one). Authors are
-# compared by name (folded family name and first initial), for indexed and ingested works alike, so
-# namesakes can only raise the overlap. Above max_overlap, the smaller field is dropped and recorded.
+# overlap coefficient, which Jaccard would understate for a small field inside a large one). Only core
+# authors count: those with at least core_min_works works in the subject's community frames. Two subjects
+# whose community works all come from OpenAlex are compared by OpenAlex author id; otherwise both are
+# compared by folded family name and every initial. Above max_overlap, the smaller field is dropped and
+# recorded. Rule v2 (owner, 18 Sep 2026) replaced v1, which compared every author by family name and first
+# initial: in the dev fold a third of any small field's names matched namesakes in immunology's 156,000.
 calibration_selection:
-  overlap_measure: overlap_coefficient_names_v1
+  overlap_measure: overlap_coefficient_core_v2
   max_overlap: 0.2
+  core_min_works: 2
 
 # Community venues that OpenAlex does not index, ingested from their own archives (framework corpus row:
 # "each community's own venues ingested directly"; owner decision D-1, 17 Sep 2026: no GROBID, text layers
