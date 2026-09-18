@@ -8,4 +8,4 @@ notes: "Added with the owner's approval of the enlarged pseudoscience set (17 Se
 frames:
   - {id: venues, kind: community, sources: [S4210180729], note: "BIO-Complexity (ISSN-L 2151-7444), Biologic Institute; about 60 works, DOIs from 2010 with no deposited reference lists."}
 absent_venues:
-  - {name: "Progress in Complexity, Information, and Design (ISCID, 2002-2005)", issn_l: "1555-5089", note: "Not found in OpenAlex or Crossref. The iscid.org site is gone; copies may survive only in the Wayback Machine (not yet checked)."}
+  - {name: "Progress in Complexity, Information, and Design (ISCID, 2002-2005)", issn_l: "1555-5089", note: "Not found in OpenAlex or Crossref. The iscid.org site is gone; the Wayback Machine keeps its index of ten issues, 2002-2005 (checked 18 Sep 2026). Not ingested for now: a small online-only run reachable only through archived snapshots."}
