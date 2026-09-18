@@ -48,6 +48,20 @@ class Venue:
     types: Mapping[str, str]  # the archive's item type or section -> work type
     default_type: str
     first_volume_year: int | None = None
+    type_patterns: tuple[tuple[str, str], ...] = ()  # (regex over a section title, work type), tried in order
+
+    def work_type(self, section: str | None) -> str:
+        """A section's work type: its exact name in ``types``, else the first matching pattern, else the default."""
+        import re
+
+        name = " ".join((section or "").split())
+        for key, value in self.types.items():
+            if key.lower() == name.lower():
+                return value
+        for pattern, value in self.type_patterns:
+            if re.search(pattern, name, re.I):
+                return value
+        return self.default_type
 
 
 @dataclass(frozen=True)
@@ -100,7 +114,8 @@ def from_mapping(data: Mapping[str, Any]) -> CorpusConfig:
         block = data["ingestion"]
         venues = {vid: Venue(vid, v["name"], v.get("issn_l"), v["adapter"], v["url"].rstrip("/"),
                              tuple(v["aliases"]), dict(v.get("types") or {}), v["default_type"],
-                             v.get("first_volume_year"))
+                             v.get("first_volume_year"),
+                             tuple((str(k), str(t)) for k, t in (v.get("type_patterns") or {}).items()))
                   for vid, v in (block.get("venues") or {}).items()}
         ingestion = IngestionSettings(float(block["requests_per_second"]), str(block["text_extraction"]),
                                       str(block["reference_extraction"]), str(block["catalogue_match"]), venues,

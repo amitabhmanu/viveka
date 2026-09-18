@@ -4,7 +4,7 @@ from pdf_fixture import text_pdf
 
 from viveka.census import CatalogueEntry, Reference, catalogue_match, fold, reference_kind
 from viveka.corpus.config import Venue
-from viveka.corpus.ingest import Author, IngestedWork, arj, eprints, orthomolecular, rows
+from viveka.corpus.ingest import Author, IngestedWork, arj, bepress, eprints, ojs, orthomolecular, rows
 from viveka.corpus.ingest.text import (
     extract_references,
     html_reference_text,
@@ -210,3 +210,97 @@ def test_eprints_listing_reads_the_json_export(tmp_path):
     with fake_fetcher(tmp_path, fake) as fetcher:
         works = eprints.list_works(fetcher, CRSQ, 1994, 1995)
     assert [w.key for w in works] == ["1"] and len(fake.calls) == 2
+
+
+# ---------------------------------------------------------------- OJS and bepress
+
+PATTERNS = (("meeting|abstract", "other"), ("editorial", "editorial"), ("cover|contents", "other"))
+OJS = Venue("seemj", "Subtle Journal", None, "ojs_v1", "https://oj.example/index.php/sj", ("Subtle Journal",), {},
+            "article", None, PATTERNS)
+
+OJS3_ISSUE = b"""<html><head><title>Vol. 21 No. 3 (2010) | Subtle Journal</title></head><body>
+<h1>Vol. 21 No. 3 (2010)</h1>
+<div class="section"><h2>Cover</h2><div class="obj_article_summary"><h3 class="title">
+<a id="article-9" href="https://oj.example/index.php/sj/article/view/9">Cover</a></h3>
+<ul class="galleys_links"><li><a class="obj_galley_link pdf" href="https://oj.example/index.php/sj/article/view/9/5">PDF</a>
+</li></ul></div></div>
+<div class="section"><h2>Experimental</h2>
+<div class="obj_article_summary"><h3 class="title"><a id="article-13" href="https://oj.example/index.php/sj/article/view/13">
+Touch and Healing</a></h3><div class="meta"><div class="authors">Daniel P. Wirth, M.S., J.D.</div>
+<div class="pages">125-130</div></div>
+<ul class="galleys_links"><li><a class="obj_galley_link pdf" href="https://oj.example/index.php/sj/article/view/13/10">
+PDF</a></li></ul></div>
+<div class="obj_article_summary"><h3 class="title"><a id="article-98" href="https://oj.example/index.php/sj/article/view/98">
+No Galley Here</a></h3><div class="meta"><div class="authors">Elizabeth A. Raucher, PhD</div></div>
+<ul class="galleys_links"></ul></div>
+</div><h2>Information</h2></body></html>"""
+
+OJS2_ISSUE = b"""<html><head><title>Vol 2010</title></head><body><h4 class="tocSectionTitle">Research Articles</h4>
+<table class="tocArticle" width="100%"><tr valign="top"><td class="tocTitle">
+<a href="https://bc.example/ojs/index.php/main/article/view/BIO-C.2010.3">A Vivisection</a></td>
+<td class="tocGalleys">
+<a href="https://bc.example/ojs/index.php/main/article/view/BIO-C.2010.3/BIO-C.2010.3" class="file">PDF</a>
+</td></tr><tr><td class="tocAuthors">George Monta\xc3\xb1ez, Robert J. Marks II</td>
+<td class="tocPages"></td></tr></table>
+<div class="separator"></div><h4 class="tocSectionTitle">Editorial</h4>
+<table class="tocArticle" width="100%"><tr valign="top"><td class="tocTitle">
+<a href="https://bc.example/ojs/index.php/main/article/view/BIO-C.2010.0">Welcome</a></td>
+<td class="tocGalleys"></td></tr>
+<tr><td class="tocAuthors">Douglas Axe</td><td class="tocPages"></td></tr></table></body></html>"""
+
+
+def test_ojs3_issue_pages_give_sections_galleys_and_pages():
+    works = ojs.parse_issue(OJS, OJS3_ISSUE)
+    assert [(w.key, w.year, w.volume, w.issue, w.work_type, w.first_page) for w in works] == [
+        ("9", 2010, "21", "3", "other", None), ("13", 2010, "21", "3", "article", "125"),
+        ("98", 2010, "21", "3", "article", None)]
+    assert works[1].document_url == "https://oj.example/index.php/sj/article/download/13/10"
+    assert [(a.given, a.family) for a in works[1].authors] == [("Daniel P.", "Wirth")]
+    assert works[2].document_url is None and works[2].title == "No Galley Here"
+
+
+def test_ojs2_contents_pages_and_generational_suffixes():
+    venue = Venue("bioc", "BC", None, "ojs_v1", "https://bc.example/ojs/index.php/main", ("BC",), {}, "article",
+                  None, PATTERNS)
+    works = ojs.parse_issue(venue, OJS2_ISSUE)
+    assert [(w.key, w.year, w.volume, w.work_type) for w in works] == [("BIO-C.2010.3", 2010, "2010", "article"),
+                                                                      ("BIO-C.2010.0", 2010, "2010", "editorial")]
+    assert [a.family for a in works[0].authors] == ["Montañez", "Marks"]
+    assert works[0].document_url.endswith("/article/download/BIO-C.2010.3/BIO-C.2010.3")
+    assert works[1].document_url is None
+    archive = (b'<a href="https://bc.example/ojs/index.php/main/issue/view/24">Vol 2010</a>'
+               b'<a href="https://bc.example/ojs/index.php/main/issue/view/24/showToc">again</a>'
+               b'<a href="https://bc.example/ojs/index.php/main/issue/view/25">Vol 2011</a>')
+    assert ojs.issue_urls(archive) == ["https://bc.example/ojs/index.php/main/issue/view/24",
+                                       "https://bc.example/ojs/index.php/main/issue/view/25"]
+
+
+def test_section_names_before_patterns_before_default():
+    venue = Venue("v", "V", None, "ojs_v1", "https://x.example", ("V",), {"Special Editorial Review": "article"},
+                  "article", None, PATTERNS)
+    assert venue.work_type("Special  Editorial Review") == "article"
+    assert venue.work_type("XXXIX GIRI Meeting - Poland") == "other"
+    assert venue.work_type("Editorial") == "editorial" and venue.work_type(None) == "article"
+
+
+BEPRESS_ISSUE = b"""<html><body><h1>Indian Journal</h1><div id="series-header"><h2>Volume 2, Issue 4 (2008)</h2></div>
+<h2>Editorial</h2>
+<div class="doc"><p class="pdf"><a href="https://www.jr.example/cgi/viewcontent.cgi?article=1798&amp;context=journal">PDF</a>
+</p><p><a href="https://www.jr.example/journal/vol2/iss4/1">Editorial</a><br><span class="auth">C Nayak</span></p></div>
+<h2>Original Articles</h2>
+<div class="doc"><p class="pdf"><a href="https://www.jr.example/cgi/viewcontent.cgi?article=1799&amp;context=journal">PDF</a>
+</p><p><a href="https://www.jr.example/journal/vol2/iss4/2">Modeling High Dilutions</a><br>
+<span class="auth">Rajesh Shah, Ph.D. and A K Gupta</span></p></div></body></html>"""
+
+
+def test_bepress_issue_pages():
+    venue = Venue("ijrh", "IJRH", None, "bepress_v1", "https://www.jr.example/journal", ("IJRH",), {}, "article",
+                  None, PATTERNS)
+    works = bepress.parse_issue(venue, BEPRESS_ISSUE)
+    assert [(w.key, w.year, w.volume, w.issue, w.work_type) for w in works] == [
+        ("v2-i4-1", 2008, "2", "4", "editorial"), ("v2-i4-2", 2008, "2", "4", "article")]
+    assert works[1].document_url == "https://www.jr.example/cgi/viewcontent.cgi?article=1799&context=journal"
+    assert [a.family for a in works[1].authors] == ["Shah", "Gupta"]
+    index = b'<a href="https://www.jr.example/journal/vol2/iss4/">4</a><a href="https://www.jr.example/journal/vol1/iss1/">1</a>'
+    assert bepress.issue_urls(venue, index) == ["https://www.jr.example/journal/vol1/iss1/",
+                                                "https://www.jr.example/journal/vol2/iss4/"]

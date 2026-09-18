@@ -127,7 +127,8 @@
       "properties": {
         "name": {"type": "string", "minLength": 1},
         "issn_l": {"type": ["string", "null"], "pattern": "^\\d{4}-\\d{3}[\\dX]$"},
-        "adapter": {"enum": ["eprints_json_v1", "orthomolecular_toc_v2", "arj_volumes_v1"]},
+        "adapter": {"enum": ["eprints_json_v1", "orthomolecular_toc_v2", "arj_volumes_v1", "ojs_v1", "bepress_v1"]},
+        "type_patterns": {"type": "object", "additionalProperties": {"type": "string"}},
         "url": {"type": "string", "pattern": "^https://"},
         "aliases": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
         "types": {"type": "object", "additionalProperties": {"type": "string"}},

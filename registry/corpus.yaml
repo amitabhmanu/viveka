@@ -40,6 +40,23 @@ sources:
     kind: community_venue
     url: "https://answersresearchjournal.org"
     terms_reference: "https://answersresearchjournal.org/about/ (Answers in Genesis; open access online; checked 17 Sep 2026)"
+  # Open archives of venues whose publishers deposit no reference lists in Crossref (deposit check, 19 Sep 2026).
+  - name: seemj
+    kind: community_venue
+    url: "https://journals.holosuniversity.org/index.php/seemj"
+    terms_reference: "https://journals.holosuniversity.org/index.php/seemj/about (Subtle Energies & Energy Medicine Journal Archives: static open archive of volumes 1-21, 1990-2011, PDFs free; checked 19 Sep 2026)"
+  - name: bioc
+    kind: community_venue
+    url: "https://bio-complexity.org/ojs/index.php/main"
+    terms_reference: "https://bio-complexity.org (BIO-Complexity, Biologic Institute; open access, PDFs free; checked 19 Sep 2026)"
+  - name: ijhdr
+    kind: community_venue
+    url: "https://highdilution.org/index.php/ijhdr"
+    terms_reference: "https://highdilution.org/index.php/ijhdr (International Journal of High Dilution Research, GIRI; open access on OJS, PDFs free; checked 19 Sep 2026)"
+  - name: ijrh
+    kind: community_venue
+    url: "https://www.ijrh.org/journal"
+    terms_reference: "https://www.ijrh.org (Indian Journal of Research in Homoeopathy, CCRH; CC BY-NC-SA 4.0, PDFs free; checked 19 Sep 2026)"
 
 api:
   openalex:
@@ -160,3 +177,38 @@ ingestion:
       default_type: article
       first_volume_year: 2008
       note: "Every item in a volume is a peer-reviewed paper or a comment and reply on one."
+    # Section titles decide work types: exact names in types, else the first matching pattern, else default_type.
+    seemj:
+      name: Subtle Energies & Energy Medicine
+      issn_l: "1099-6591"
+      adapter: ojs_v1
+      url: "https://journals.holosuniversity.org/index.php/seemj"
+      aliases: [Subtle Energies & Energy Medicine, Subtle Energies and Energy Medicine, Subtle Energies, Subtle Energ Energy Med]
+      type_patterns: {"cover|contents|index|announcement|news|obituar|memoriam|book review|errat": other, "editorial": editorial, "letter|correspondence|comment|reply": letter}
+      default_type: article
+      note: "No DOIs; OpenAlex source S2764506119 lists part of the run without reference lists. Articles without a PDF galley have no document."
+    bioc:
+      name: BIO-Complexity
+      issn_l: "2151-7444"
+      adapter: ojs_v1
+      url: "https://bio-complexity.org/ojs/index.php/main"
+      aliases: [BIO-Complexity, Bio-Complexity, BIO-C]
+      type_patterns: {"editorial": editorial, "book review|errat|announcement": other}
+      default_type: article
+    ijhdr:
+      name: International Journal of High Dilution Research
+      issn_l: "1982-6206"
+      adapter: ojs_v1
+      url: "https://highdilution.org/index.php/ijhdr"
+      aliases: [International Journal of High Dilution Research, Int J High Dilution Res, Int. J. High Dilution Res, IJHDR]
+      type_patterns: {"meeting|abstract|proceedings|congress|symposium|workshop": other, "editorial": editorial, "cover|contents|index|announcement|news|obituar|memoriam|book review|errat": other, "letter|correspondence|comment|reply": letter}
+      default_type: article
+      note: "Meeting-abstract issues (GIRI proceedings) are typed other: short abstracts without reference lists."
+    ijrh:
+      name: Indian Journal of Research in Homoeopathy
+      issn_l: "0974-7168"
+      adapter: bepress_v1
+      url: "https://www.ijrh.org/journal"
+      aliases: [Indian Journal of Research in Homoeopathy, Indian J Res Homoeopathy, Indian J. Res. Homoeopathy, IJRH]
+      type_patterns: {"editorial": editorial, "book review|errat|announcement|news|obituar": other, "letter|correspondence|comment|reply": letter}
+      default_type: article

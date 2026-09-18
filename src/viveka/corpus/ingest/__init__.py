@@ -98,10 +98,10 @@ def references(fetcher: Fetcher, venue_id: str, document_url: str | None) -> Ref
 
 
 def _adapters() -> dict[str, Callable[[Fetcher, Venue, int, int], list[IngestedWork]]]:
-    from viveka.corpus.ingest import arj, eprints, orthomolecular
+    from viveka.corpus.ingest import arj, bepress, eprints, ojs, orthomolecular
 
     return {"eprints_json_v1": eprints.list_works, "orthomolecular_toc_v2": orthomolecular.list_works,
-            "arj_volumes_v1": arj.list_works}
+            "arj_volumes_v1": arj.list_works, "ojs_v1": ojs.list_works, "bepress_v1": bepress.list_works}
 
 
 def list_works(fetcher: Fetcher, venue: Venue, start: int, end: int) -> list[IngestedWork]:
