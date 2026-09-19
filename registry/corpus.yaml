@@ -57,6 +57,11 @@ sources:
     kind: community_venue
     url: "https://www.ijrh.org/journal"
     terms_reference: "https://www.ijrh.org (Indian Journal of Research in Homoeopathy, CCRH; CC BY-NC-SA 4.0, PDFs free; checked 19 Sep 2026)"
+  # The ICCF proceedings, cold fusion's second community frame (decision D-8, before M5 eligibility).
+  - name: iccf
+    kind: community_venue
+    url: "https://lenr-canr.org"
+    terms_reference: "https://lenr-canr.org (LENR-CANR.org library: papers 'reprinted with permission from the authors and publishers', free PDFs; a full EndNote export of the library at /EndNoteExport.txt; robots.txt disallows only admin, plugin, feed and index paths; checked 19 Sep 2026)"
 
 api:
   openalex:
@@ -120,6 +125,27 @@ calibration_selection:
   overlap_measure: overlap_coefficient_core_v2
   max_overlap: 0.2
   core_min_works: 2
+
+# Social layer (stage S3; M5 plan, owner 19 Sep 2026), fixed before any clusters are seen. The framework
+# locates communities in the network of researchers (R1) from co-authorship and citation ties.
+#   coauthor_citation_v1: nodes are the authors of the case's works published in a sub-window (OpenAlex author
+#     ids; ingested venues' authors by folded family name and first initial). Each work with k >= 2 authors adds
+#     1/(k-1) to every pair of its authors; each citation from a work in the sub-window to another corpus work
+#     adds 1/(a*b) to every pair of a citing and a cited author (a and b authors) who are both active in the
+#     sub-window. Ties are undirected; self-ties are dropped. Shared venues and institutions are not used: the
+#     corpus holds each case's frames, not every venue its authors publish in.
+#   Sub-windows are w years stepped yearly (thresholds: w and its variants). Leiden (modularity with a
+#   resolution, leidenalg's RBConfigurationVertexPartition) runs at every sweep resolution to convergence
+#   from leiden_seed. The hierarchical block model (the sweep's second method) needs graph-tool, which has no
+#   Windows build: until a runtime exists every S3 and S4 output is provisional (decision D-1, 19 Sep 2026).
+#   Lineages link clusters of at least lineage_min_members authors across consecutive sub-windows by Jaccard
+#   overlap of at least o (thresholds), each successor keeping its best-linked predecessor; a cluster with two
+#   successors branches. S4 takes its go/replace at primary_resolution and reports every other resolution.
+social:
+  graph: coauthor_citation_v1
+  leiden_seed: 20260919
+  lineage_min_members: 2
+  primary_resolution: 1.0
 
 # Community venues that OpenAlex does not index, ingested from their own archives (framework corpus row:
 # "each community's own venues ingested directly"; owner decision D-1, 17 Sep 2026: no GROBID, text layers
@@ -218,3 +244,21 @@ ingestion:
       aliases: [Indian Journal of Research in Homoeopathy, Indian J Res Homoeopathy, Indian J. Res. Homoeopathy, IJRH]
       type_patterns: {"editorial": editorial, "book review|errat|announcement|news|obituar": other, "letter|correspondence|comment|reply": letter}
       default_type: article
+    # endnote_v1 (decision D-8, 19 Sep 2026): the records of LENR-CANR's EndNote export whose proceedings title
+    # (%B) matches record_pattern, up to last_year. ICCF-16 onward (2011-) were published as volumes of the
+    # Journal of Condensed Matter Nuclear Science, already cold fusion's first community frame, so they are
+    # left to it rather than counted twice. A PDF of one paper is used whole (a #page= fragment only skips a
+    # cover page); in a whole-volume PDF linked from several records, a paper reads from its start page to the
+    # page before the next paper's, and a record there without a start page has no document (unmeasured).
+    iccf:
+      name: Proceedings of the International Conference on Cold Fusion (ICCF)
+      issn_l: null
+      adapter: endnote_v1
+      url: "https://lenr-canr.org/EndNoteExport.txt"
+      record_pattern: "conference on cold fusion|conference on condensed matter nuclear science|\\bICCF"
+      last_year: 2009
+      aliases: [ICCF, Proceedings of ICCF, International Conference on Cold Fusion, Conference on Cold Fusion,
+                International Conference on Condensed Matter Nuclear Science, "Proc. ICCF", "The Science of Cold Fusion",
+                "Frontiers of Cold Fusion", Progress in New Hydrogen Energy, Condensed Matter Nuclear Science]
+      types: {"Conference Proceedings": conference-paper, "Conference Paper": conference-paper}
+      default_type: other

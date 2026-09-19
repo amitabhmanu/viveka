@@ -99,6 +99,17 @@
         "core_min_works": {"type": "integer", "minimum": 1}
       }
     },
+    "social": {
+      "type": "object",
+      "required": ["graph", "leiden_seed", "lineage_min_members", "primary_resolution"],
+      "additionalProperties": false,
+      "properties": {
+        "graph": {"enum": ["coauthor_citation_v1"]},
+        "leiden_seed": {"type": "integer", "minimum": 0},
+        "lineage_min_members": {"type": "integer", "minimum": 2},
+        "primary_resolution": {"type": "number", "exclusiveMinimum": 0}
+      }
+    },
     "ingestion": {
       "type": "object",
       "required": ["requests_per_second", "text_extraction", "reference_extraction", "catalogue_match",
@@ -127,7 +138,10 @@
       "properties": {
         "name": {"type": "string", "minLength": 1},
         "issn_l": {"type": ["string", "null"], "pattern": "^\\d{4}-\\d{3}[\\dX]$"},
-        "adapter": {"enum": ["eprints_json_v1", "orthomolecular_toc_v2", "arj_volumes_v1", "ojs_v1", "bepress_v1"]},
+        "adapter": {"enum": ["eprints_json_v1", "orthomolecular_toc_v2", "arj_volumes_v1", "ojs_v1", "bepress_v1",
+                             "endnote_v1"]},
+        "record_pattern": {"type": "string", "minLength": 1},
+        "last_year": {"type": "integer", "minimum": 1800, "maximum": 2100},
         "type_patterns": {"type": "object", "additionalProperties": {"type": "string"}},
         "url": {"type": "string", "pattern": "^https://"},
         "aliases": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},

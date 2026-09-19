@@ -140,7 +140,7 @@ parameters:
     used_in: gate 4
     meaning: Resolution range, clustering methods, and the range over which o is varied
     value:
-      resolutions: null
+      resolutions: [0.5, 0.75, 1.0, 1.5, 2.0]  # Leiden modularity resolutions (M5 plan, owner 19 Sep 2026)
       methods: [leiden, hsbm]
       o_range: [0.2, 0.5]
     status: convention

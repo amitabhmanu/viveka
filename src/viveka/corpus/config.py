@@ -77,12 +77,23 @@ class IngestionSettings:
 
 
 @dataclass(frozen=True)
+class SocialSettings:
+    """Stage S3 settings (corpus.yaml ``social``): graph rule, Leiden seed, lineage floor, S4's resolution."""
+
+    graph: str
+    leiden_seed: int
+    lineage_min_members: int
+    primary_resolution: float
+
+
+@dataclass(frozen=True)
 class CorpusConfig:
     sources: Mapping[str, Source]
     api: Mapping[str, Mapping[str, Any]]
     census: CensusSettings
     ingestion: IngestionSettings | None = None
     calibration_selection: tuple[str, float, int] | None = None  # (measure, largest overlap, core works), D-10
+    social: SocialSettings | None = None
 
     def venue(self, venue_id: str) -> Venue:
         if self.ingestion is None or venue_id not in self.ingestion.venues:
@@ -137,6 +148,9 @@ def from_mapping(data: Mapping[str, Any]) -> CorpusConfig:
                                float(data["calibration_selection"]["max_overlap"]),
                                int(data["calibration_selection"].get("core_min_works", 1)))
         if data.get("calibration_selection") else None,
+        social=SocialSettings(str(data["social"]["graph"]), int(data["social"]["leiden_seed"]),
+                              int(data["social"]["lineage_min_members"]), float(data["social"]["primary_resolution"]))
+        if data.get("social") else None,
     )
 
 
