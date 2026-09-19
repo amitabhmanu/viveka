@@ -44,8 +44,15 @@ class WindowCheck:
 
 
 def decimal_year(iso: str) -> float:
-    d = date.fromisoformat(iso)
-    return d.year + (d.timetuple().tm_yday - 1) / 365.25
+    """A registered event date as a decimal year. A partial date ("1990" or "1990-03") is read at the end of its
+    period, so an event never counts as old enough before it certainly is."""
+    import calendar
+
+    parts = [int(p) for p in iso.split("-")]
+    year = parts[0]
+    month = parts[1] if len(parts) > 1 else 12
+    day = parts[2] if len(parts) > 2 else calendar.monthrange(year, month)[1]
+    return year + (date(year, month, day).timetuple().tm_yday - 1) / 365.25
 
 
 def check(steps: Sequence[LineageStep], years: Mapping[str, int | None], authors: Mapping[str, tuple[str, ...]],

@@ -11,7 +11,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from pathlib import Path
 
-from viveka.cases import CaseError, load_subject
+from viveka.cases import CaseError, bearing_set, load_subject
 from viveka.corpus import ingest, tables
 from viveka.corpus.commands import latest_run
 from viveka.corpus.config import load_corpus_config
@@ -19,7 +19,7 @@ from viveka.paths import rel_posix
 from viveka.provenance import RunContext
 from viveka.registry.thresholds import load_thresholds
 from viveka.registry.verify import require_frozen
-from viveka.social.graph import authors_by_work, build_graph, node_keys, windows
+from viveka.social.graph import Window, authors_by_work, build_graph, node_keys, windows
 from viveka.social.leiden import METHOD, leiden
 from viveka.social.lineage import link
 
@@ -85,6 +85,111 @@ def social_build(root: Path, case_id: str, fold: str, *, out: Out = print) -> st
     return ctx.run_id
 
 
+def eligibility_run(root: Path, case_id: str, fold: str, *, out: Out = print) -> str:
+    """Stage S4: gate 1 before coding, per lineage and sub-window, from the case's latest S3 run.
+
+    Coverage per lineage is measured only for lineage-windows that pass m and v, since no other can be eligible;
+    a census with cluster frames is not built yet, so such a window's coverage is reported as not measured and
+    it cannot be declared eligible. The pilot power check needs at least one eligible lineage and is not run
+    otherwise. n is pending until M8 (decision D-11). Predictions are never read: whether a case's predicted
+    field summary needs one lineage or two is checked when predictions are frozen.
+    """
+    from viveka.social.eligibility import check
+    from viveka.social.lineage import LineageStep
+
+    case, claim = load_subject(root, case_id, False)
+    if claim is None:
+        raise CaseError(f"{case_id} has no claim; eligibility needs one")
+    thresholds = load_thresholds(root)
+    m, v = int(thresholds["m_min_members"]), int(thresholds["v_min_citations"])
+    r, lag = float(thresholds["r_min_coverage"]), float(thresholds["l_lag_years"])
+    s3 = latest_run(root, "S3", case_id, fold, require_frozen(root, [case.component, "thresholds"], fold))
+    if s3 is None:
+        raise CaseError(f"no successful S3 run for {case_id} in fold {fold} with the current registry; "
+                        "run `viveka social build` first")
+    fetch = latest_run(root, "S1", case_id, fold, require_frozen(root, [case.component], fold))
+    if fetch is None or fetch["run_id"] != s3["params"]["fetch_run"]:
+        raise CaseError(f"the latest S1 run for {case_id} is not the one S3 used; rerun `viveka social build`")
+    read = {name: tables.read(root / fetch["params"]["tables"][name])
+            for name in ("works", "authors", "authorships", "citations")}
+    keys = node_keys(read["authors"], s3["params"]["nodes"] == "name")
+    years = {row["work_id"]: row["year"] for row in read["works"]}
+    authors = authors_by_work((row["work_id"], keys[row["author_id"]]) for row in read["authorships"]
+                              if row["author_id"] in keys)
+    citations = [(row["citing_work"], row["cited_work"]) for row in read["citations"]]
+    bearing = {ref.openalex for ref in bearing_set(case, claim) if ref.openalex}
+    dates = [e.date for e in claim.events if e.kind == "disconfirmation"]
+    members: dict[tuple[float, int, int], set[str]] = {}
+    for row in tables.read(root / s3["params"]["tables"]["clusters"]):
+        members.setdefault((row["resolution"], row["window_start"], row["cluster"]), set()).add(row["author"])
+    lineage_rows = tables.read(root / s3["params"]["tables"]["lineages"])
+    primary = float(load_corpus_config(root).social.primary_resolution)
+
+    params = {"s3_run": s3["run_id"], "fetch_run": fetch["run_id"], "m": m, "v": v, "r": r, "lag": lag,
+              "n": "pending (fitted at M8, decision D-11)", "primary_resolution": primary,
+              "provisional": bool(s3["params"].get("provisional")), "bearing_works": len(bearing),
+              "disconfirmation_events": len(dates)}
+    with RunContext(root, "S4", case_id, fold, [case.component, "thresholds"], params=params) as ctx:
+        for name in ("works", "authors", "authorships", "citations"):
+            ctx.record_input(root / fetch["params"]["tables"][name])
+        for name in ("clusters", "lineages"):
+            ctx.record_input(root / s3["params"]["tables"][name])
+        rows, by_resolution = [], {}
+        for resolution in sorted({row["resolution"] for row in lineage_rows}):
+            steps = [LineageStep(row["lineage_id"], Window(row["window_start"], row["window_end"]), row["cluster"],
+                                 frozenset(members[(resolution, row["window_start"], row["cluster"])]),
+                                 row["parent"], row["overlap"])
+                     for row in lineage_rows if row["resolution"] == resolution]
+            checks = check(steps, years, authors, citations, bearing, dates, m, v, r, lag)
+            by_resolution[resolution] = checks
+            rows += [{"resolution": resolution, "lineage_id": c.lineage_id, "window_start": c.window_start,
+                      "window_end": c.window_end, "members": c.members, "citations_on_claim": c.citations_on_claim,
+                      "disconfirmations": c.disconfirmations, "coverage": c.coverage, "closed": c.closed,
+                      "meets_m": c.meets_m, "meets_v": c.meets_v, "meets_r": c.meets_r} for c in checks]
+        chosen = by_resolution.get(primary, [])
+        need_coverage = [c for c in chosen if c.meets_m and c.meets_v and not c.closed]
+        eligible = sorted({c.lineage_id for c in chosen if c.eligible_pending_n})
+        decision = "go (pending n)" if eligible else "replace"
+        ctx.params.update(decision=decision, eligible_lineages=eligible,
+                          windows_needing_coverage=len(need_coverage), power_check="not run: no eligible lineage"
+                          if not eligible else "pending")
+        path = ctx.store(tables.to_parquet("eligibility", rows), "parquet", rows=len(rows))
+        report = _eligibility_report(case_id, ctx.run_id, s3["run_id"], fold, params, by_resolution, primary,
+                                     decision, len(need_coverage))
+        ctx.params["tables"] = {"eligibility": rel_posix(path, root),
+                                "report": rel_posix(ctx.store(report.encode("utf-8"), "md"), root)}
+    out(report)
+    return ctx.run_id
+
+
+def _eligibility_report(case_id, run_id, s3_run, fold, params, by_resolution, primary, decision, need) -> str:
+    lines = [
+        f"# Eligibility (gate 1 before coding): {case_id} ({fold} fold)", "",
+        f"Run `{run_id}` from social-layer run `{s3_run}`. A lineage's sub-window is eligible when its cluster has "
+        f"at least m = {params['m']} members, makes at least v = {params['v']} citations bearing on the claim "
+        f"({params['bearing_works']} seed and event works), and its literature's coverage is at least "
+        f"r = {params['r']:g}. n is pending until it is fitted at M8 (decision D-11); the report counts the "
+        f"{params['disconfirmation_events']} registered disconfirmations at least {params['lag']:g} years old by each "
+        "sub-window's end. A lineage below v after its last sub-window at or above v is closed.", "",
+        "**Provisional:** clusters come from Leiden alone (decision D-1)." if params["provisional"] else "", "",
+        "| resolution | lineage-windows | largest cluster | most citations on the claim | meet m | meet v | "
+        "meet m and v | eligible (pending n) |",
+        "|---:|---:|---:|---:|---:|---:|---:|---:|",
+    ]
+    for resolution, checks in sorted(by_resolution.items()):
+        lines.append(
+            f"| {resolution:g}{' (decides)' if resolution == primary else ''} | {len(checks)} | "
+            f"{max((c.members for c in checks), default=0)} | "
+            f"{max((c.citations_on_claim for c in checks), default=0)} | {sum(c.meets_m for c in checks)} | "
+            f"{sum(c.meets_v for c in checks)} | {sum(c.meets_m and c.meets_v for c in checks)} | "
+            f"{sum(c.eligible_pending_n for c in checks)} |")
+    lines += ["", f"**Decision at resolution {primary:g}: {decision}.**" + (
+        f" {need} lineage-window(s) pass m and v but their coverage is not measured yet (census with cluster "
+        "frames), so none can be declared eligible." if need and decision == "replace" else
+        " No lineage passes m and v, so coverage and the pilot power check are not needed." if not need else ""), ""]
+    return "\n".join(lines)
+
+
 def social_dry_run(root: Path, case_id: str, fold: str, *, out: Out = print) -> int:
     """What S3 would read and run, without writing anything."""
     case, _ = load_subject(root, case_id, False)
@@ -104,12 +209,22 @@ def add_parser(sub, common) -> None:
     p.add_argument("--case", required=True)
     p.add_argument("--fold", required=True)
     p.add_argument("--dry-run", action="store_true")
+    p = sub.add_parser("eligibility", parents=[common], help="S4: gate 1 before coding, per lineage and sub-window")
+    p.add_argument("--case", required=True)
+    p.add_argument("--fold", required=True)
+    p.add_argument("--dry-run", action="store_true")
 
 
 def run(args, root: Path, *, out: Out = print) -> int:
     from viveka.registry.errors import RegistryError
 
     try:
+        if args.command == "eligibility":
+            if args.dry_run:
+                out(f"S4 dry run for {args.case} ({args.fold}): reads the latest S3 and S1 runs; local, no spend")
+                return 0
+            eligibility_run(root, args.case, args.fold, out=out)
+            return 0
         if args.dry_run:
             return social_dry_run(root, args.case, args.fold, out=out)
         social_build(root, args.case, args.fold, out=out)

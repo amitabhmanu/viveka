@@ -109,3 +109,11 @@ def test_eligibility_counts_members_bearing_citations_old_disconfirmations_and_c
     assert (second.citations_on_claim, second.disconfirmations, second.closed, second.meets_r) == (2, 2, False, None)
     # 1992-96: P4 only, below v after the lineage's last engaged sub-window: closed
     assert third.citations_on_claim == 1 and third.closed and not third.eligible_pending_n
+
+
+def test_partial_event_dates_are_read_at_the_end_of_their_period():
+    from viveka.social.eligibility import decimal_year
+
+    assert decimal_year("1990") > decimal_year("1990-12-01") > decimal_year("1990-03")
+    assert decimal_year("1990-03") == pytest.approx(decimal_year("1990-03-31"))
+    assert int(decimal_year("1989-08-01")) == 1989

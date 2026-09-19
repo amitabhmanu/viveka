@@ -132,7 +132,7 @@ def main(argv: list[str] | None = None) -> int:
             from viveka.sim.commands import run as run_sim
 
             return run_sim(args, root)
-        if args.command == "social":
+        if args.command in ("social", "eligibility"):
             from viveka.social.commands import run as run_social
 
             return run_social(args, root)

@@ -45,6 +45,10 @@ SCHEMAS: dict[str, pa.Schema] = {
     "lineages": pa.schema([("method", _S), ("resolution", pa.float64()), ("lineage_id", _S), ("window_start", _I32),
                            ("window_end", _I32), ("cluster", _I32), ("members", _I32), ("parent", _S),
                            ("overlap", pa.float64())]),
+    "eligibility": pa.schema([("resolution", pa.float64()), ("lineage_id", _S), ("window_start", _I32),
+                              ("window_end", _I32), ("members", _I32), ("citations_on_claim", _I32),
+                              ("disconfirmations", _I32), ("coverage", pa.float64()), ("closed", pa.bool_()),
+                              ("meets_m", pa.bool_()), ("meets_v", pa.bool_()), ("meets_r", pa.bool_())]),
 }
 
 KEYS: dict[str, tuple[str, ...]] = {
@@ -60,6 +64,7 @@ KEYS: dict[str, tuple[str, ...]] = {
     "coverage": ("case_id", "frame_id", "year"),
     "clusters": ("method", "resolution", "window_start", "window_end", "author"),
     "lineages": ("method", "resolution", "window_start", "window_end", "cluster"),
+    "eligibility": ("resolution", "window_start", "lineage_id"),
 }
 
 

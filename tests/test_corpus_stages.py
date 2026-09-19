@@ -374,3 +374,22 @@ def test_social_build_clusters_a_fetched_case_and_marks_the_run_provisional(worl
     assert all(r["members"] >= run["params"]["lineage_min_members"] for r in lineages)
     again = load_manifest(root, social_build(root, "cold-fusion", "dev", out=lambda s: None))
     assert again["params"]["tables"]["clusters"] == run["params"]["tables"]["clusters"]  # deterministic
+
+
+def test_eligibility_reads_the_latest_social_layer_and_records_the_decision(world):
+    from viveka.social.commands import eligibility_run, social_build
+
+    root, fake = world
+    commands.fetch_case(root, "cold-fusion", "dev", transport=fake.transport(), out=lambda s: None)
+    with pytest.raises(CaseError, match="social build"):
+        eligibility_run(root, "cold-fusion", "dev", out=lambda s: None)
+    social_build(root, "cold-fusion", "dev", out=lambda s: None)
+    lines = []
+    run = load_manifest(root, eligibility_run(root, "cold-fusion", "dev", out=lines.append))
+    assert run["stage"] == "S4" and verify_run(root, run["run_id"]) == []
+    assert run["params"]["decision"] == "replace" and run["params"]["eligible_lineages"] == []  # m = 320
+    assert run["params"]["n"].startswith("pending") and run["params"]["provisional"] is True
+    rows = table(root, run, "eligibility")
+    assert rows and not any(r["meets_m"] for r in rows)
+    assert any(r["citations_on_claim"] > 0 for r in rows)  # the fake citing works cite the seeds
+    assert "Decision at resolution 1: replace" in "\n".join(lines)
