@@ -4,7 +4,7 @@ from pdf_fixture import text_pdf
 
 from viveka.census import CatalogueEntry, Reference, catalogue_match, fold, reference_kind
 from viveka.corpus.config import Venue
-from viveka.corpus.ingest import Author, IngestedWork, arj, bepress, eprints, ojs, orthomolecular, rows
+from viveka.corpus.ingest import Author, IngestedWork, arj, bepress, endnote, eprints, ojs, orthomolecular, rows
 from viveka.corpus.ingest.text import (
     extract_references,
     html_reference_text,
@@ -320,3 +320,56 @@ def test_v2_reads_references_and_notes_headings_and_headingless_numbered_lists()
     assert all(e.doi is None for e in refs.entries)  # the footer DOI recurs on every page and is dropped
     numbered_headings = ["1. Introduction", "Text.", "2. Methods", "Text.", "3. Results", "Text."]
     assert extract_references(pdf_text(text_pdf(numbered_headings)), paragraphs=False) is None
+
+
+ENDNOTE = "\r\n".join([
+    "%0 Conference Proceedings", "%A Adzic, R. R.", "%A Yeager, E.", "%D 1990",
+    "%T Tritium  Measurements", "%B The First Annual Conference on Cold Fusion", "%P 261-269",
+    "%U http://lib.example/acrobat/AdzicRRtritiummea.pdf#page=3", "",
+    "%0 Conference Proceedings", "%A Bockris, J.", "%D 1992", "%T Volume paper one",
+    "%B Third International Conference on Cold Fusion", "%U http://lib.example/acrobat/Volume3.pdf#page=10", "",
+    "%0 Conference Proceedings", "%A Celani, F.", "%D 1992", "%T Volume paper two",
+    "%B Third International Conference on Cold Fusion", "%U http://lib.example/acrobat/Volume3.pdf#page=40", "",
+    "%0 Journal Article", "%A Doe, J.", "%D 1991", "%T Not proceedings", "%B Fusion Technology", "",
+    "%0 Conference Proceedings", "%A Late, A.", "%D 2012", "%T After the cut",
+    "%B 17th International Conference on Cold Fusion", "%U http://lib.example/acrobat/LateA.pdf", "",
+    "%0 Conference Proceedings", "%A Adzic, R. R.", "%D 1990", "%T Tritium Measurements",
+    "%B The First Annual Conference on Cold Fusion", "",
+]).encode("cp1252")
+
+
+def test_endnote_export_selects_proceedings_by_pattern_and_year_and_drops_shared_volume_pdfs():
+    venue = Venue("iccf", "ICCF", None, "endnote_v1", "https://lib.example/EndNoteExport.txt", ("ICCF",),
+                  {"Conference Proceedings": "conference-paper"}, "other",
+                  record_pattern=r"conference on cold fusion", last_year=2009)
+    works = endnote.works_of(venue, ENDNOTE)
+    assert [w.title for w in works] == ["Tritium Measurements", "Volume paper one", "Volume paper two"]
+    first = works[0]
+    assert (first.year, first.first_page, first.work_type) == (1990, "261", "conference-paper")
+    assert first.authors == (Author("Adzic", "R. R."), Author("Yeager", "E."))
+    assert first.document_url == "http://lib.example/acrobat/AdzicRRtritiummea.pdf"  # cover-page fragment dropped
+    # One volume PDF for two papers: each reads from its start page to the page before the next paper's
+    assert works[1].document_url == "http://lib.example/acrobat/Volume3.pdf#pages=10-39"
+    assert works[2].document_url == "http://lib.example/acrobat/Volume3.pdf#pages=40-"
+    assert first.work_id.startswith("X:iccf:") and len({w.key for w in works}) == 3  # the duplicate record is dropped
+
+
+def test_a_page_range_reads_one_paper_out_of_a_volume():
+    import io
+
+    from pypdf import PdfReader, PdfWriter
+
+    from viveka.corpus.ingest import split_pages
+    from viveka.corpus.ingest.text import pdf_text
+
+    writer = PdfWriter()
+    for n in (1, 2, 3):
+        writer.add_page(PdfReader(io.BytesIO(text_pdf([f"Page {n} text"]))).pages[0])
+    buffer = io.BytesIO()
+    writer.write(buffer)
+    volume = buffer.getvalue()
+    assert "Page 1" not in pdf_text(volume, (2, 2)) and "Page 2" in pdf_text(volume, (2, 2))
+    assert "Page 3" in pdf_text(volume, (2, None)) and "Page 1" in pdf_text(volume)
+    assert split_pages("https://x.example/v.pdf#pages=10-39") == ("https://x.example/v.pdf", (10, 39))
+    assert split_pages("https://x.example/v.pdf#pages=40-") == ("https://x.example/v.pdf", (40, None))
+    assert split_pages("https://x.example/a.pdf") == ("https://x.example/a.pdf", None)

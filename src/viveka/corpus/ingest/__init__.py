@@ -85,6 +85,17 @@ def rows(works: list[IngestedWork], venue: Venue) -> dict[str, list[dict]]:
     return out
 
 
+_PAGES = re.compile(r"#pages=(\d+)-(\d*)$")
+
+
+def split_pages(document_url: str) -> tuple[str, tuple[int, int | None] | None]:
+    """A document URL and, for one paper inside a whole volume, its page range (``<url>#pages=<a>-<b>``)."""
+    m = _PAGES.search(document_url)
+    if not m:
+        return document_url, None
+    return document_url[: m.start()], (int(m.group(1)), int(m.group(2)) if m.group(2) else None)
+
+
 def references(fetcher: Fetcher, venue_id: str, document_url: str | None) -> References | None:
     """A sampled work's reference list from its archived document, or None (the work is then unmeasured)."""
     return document_references(fetcher, venue_id, document_url)[0]
@@ -95,19 +106,21 @@ def document_references(fetcher: Fetcher, venue_id: str,
     """The reference list (or None) and the document's HTTP status (None when the work lists no document)."""
     if not document_url:
         return None, None
-    document = fetcher.get_document(document_request(venue_id, document_url))
+    url, pages = split_pages(document_url)
+    document = fetcher.get_document(document_request(venue_id, url))
     if document.status != 200 or document.content is None:
         return None, document.status
     is_pdf = (document.content_type or "").endswith("pdf") or document.content[:5] == b"%PDF-"
-    text = extract.pdf_text(document.content) if is_pdf else extract.html_reference_text(document.content)
+    text = extract.pdf_text(document.content, pages) if is_pdf else extract.html_reference_text(document.content)
     return extract.extract_references(text, paragraphs=not is_pdf), document.status
 
 
 def _adapters() -> dict[str, Callable[[Fetcher, Venue, int, int], list[IngestedWork]]]:
-    from viveka.corpus.ingest import arj, bepress, eprints, ojs, orthomolecular
+    from viveka.corpus.ingest import arj, bepress, endnote, eprints, ojs, orthomolecular
 
     return {"eprints_json_v1": eprints.list_works, "orthomolecular_toc_v2": orthomolecular.list_works,
-            "arj_volumes_v1": arj.list_works, "ojs_v1": ojs.list_works, "bepress_v1": bepress.list_works}
+            "arj_volumes_v1": arj.list_works, "ojs_v1": ojs.list_works, "bepress_v1": bepress.list_works,
+            "endnote_v1": endnote.list_works}
 
 
 def list_works(fetcher: Fetcher, venue: Venue, start: int, end: int) -> list[IngestedWork]:

@@ -49,6 +49,8 @@ class Venue:
     default_type: str
     first_volume_year: int | None = None
     type_patterns: tuple[tuple[str, str], ...] = ()  # (regex over a section title, work type), tried in order
+    record_pattern: str | None = None  # endnote_v1: regex over a record's proceedings or journal title
+    last_year: int | None = None  # the venue's last year in this archive (later issues are indexed elsewhere)
 
     def work_type(self, section: str | None) -> str:
         """A section's work type: its exact name in ``types``, else the first matching pattern, else the default."""
@@ -115,7 +117,8 @@ def from_mapping(data: Mapping[str, Any]) -> CorpusConfig:
         venues = {vid: Venue(vid, v["name"], v.get("issn_l"), v["adapter"], v["url"].rstrip("/"),
                              tuple(v["aliases"]), dict(v.get("types") or {}), v["default_type"],
                              v.get("first_volume_year"),
-                             tuple((str(k), str(t)) for k, t in (v.get("type_patterns") or {}).items()))
+                             tuple((str(k), str(t)) for k, t in (v.get("type_patterns") or {}).items()),
+                             v.get("record_pattern"), v.get("last_year"))
                   for vid, v in (block.get("venues") or {}).items()}
         ingestion = IngestionSettings(float(block["requests_per_second"]), str(block["text_extraction"]),
                                       str(block["reference_extraction"]), str(block["catalogue_match"]), venues,

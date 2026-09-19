@@ -59,8 +59,9 @@ _COMMA_STYLE = re.compile(r"(?P<volume>\d{1,4})\s*,\s*(?P<page>\d{1,5})\s*[-–]
 _ABBREVIATION = re.compile(r"^(?:[A-Z][a-z]{0,6}\.|[A-Z]{2,8}|&|of|and|the)$")
 
 
-def pdf_text(content: bytes) -> str:
-    """The PDF's text layer, page by page; empty when it has none or cannot be read."""
+def pdf_text(content: bytes, pages: tuple[int, int | None] | None = None) -> str:
+    """The PDF's text layer, page by page; empty when it has none or cannot be read. `pages` limits it to a
+    1-based inclusive range (an open end means the last page), for one paper inside a whole volume."""
     import logging
 
     from pypdf import PdfReader
@@ -72,7 +73,11 @@ def pdf_text(content: bytes) -> str:
     logging.getLogger("pypdf").setLevel(logging.ERROR)
     try:
         reader = PdfReader(io.BytesIO(content))
-        return "\n".join(page.extract_text() or "" for page in reader.pages)
+        chosen = list(reader.pages)
+        if pages is not None:
+            first, last = pages
+            chosen = chosen[first - 1 : last]
+        return "\n".join(page.extract_text() or "" for page in chosen)
     except (PdfReadError, ValueError, KeyError, TypeError, OSError):
         return ""
 
