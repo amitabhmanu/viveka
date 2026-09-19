@@ -27,6 +27,10 @@ from viveka.hashing import sha256_bytes
 RAW = "data/raw"
 USAGE = "data/usage"
 RETRY_STATUSES = frozenset({429, 500, 502, 503, 504})
+# A document the publisher refuses (401, 403) or that is gone (404, 410) is archived with its status, so a
+# run replays it; its paper is unmeasured, and the census counts refusals per venue.
+REFUSED_STATUSES = frozenset({401, 403})
+GONE_STATUSES = frozenset({404, 410})
 MAX_ATTEMPTS = 5
 
 
@@ -303,7 +307,7 @@ class Fetcher:
             content_type = response.headers.get("content-type", "").split(";")[0].strip() or None
             if response.status_code == 200:
                 return 200, response.content, content_type
-            if response.status_code in (404, 410):  # gone for good; anything else is not archived
+            if response.status_code in REFUSED_STATUSES | GONE_STATUSES:  # archived; anything else is not
                 return response.status_code, None, content_type
             problem = f"HTTP {response.status_code}"
             if response.status_code not in RETRY_STATUSES:

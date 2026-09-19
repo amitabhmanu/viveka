@@ -43,6 +43,7 @@ class FakeSources:
     s2_citations: dict[str, list[dict]] = field(default_factory=dict)  # doi -> citation items
     crossref_search: list[tuple[str, list[dict]]] = field(default_factory=list)  # (query substring, items)
     documents: dict[str, tuple[bytes, str]] = field(default_factory=dict)  # url -> (content, content type)
+    refused_documents: set[str] = field(default_factory=set)  # urls the publisher answers with 403
     calls: list[httpx.Request] = field(default_factory=list)
 
     def add(self, *works: dict) -> None:
@@ -54,6 +55,8 @@ class FakeSources:
 
     def handle(self, request: httpx.Request) -> httpx.Response:
         self.calls.append(request)
+        if f"{request.url.scheme}://{request.url.host}{request.url.path}" in self.refused_documents:
+            return httpx.Response(403)
         document = self.documents.get(f"{request.url.scheme}://{request.url.host}{request.url.path}")
         if document is not None:
             return httpx.Response(200, content=document[0], headers={"content-type": document[1]})

@@ -87,14 +87,20 @@ def rows(works: list[IngestedWork], venue: Venue) -> dict[str, list[dict]]:
 
 def references(fetcher: Fetcher, venue_id: str, document_url: str | None) -> References | None:
     """A sampled work's reference list from its archived document, or None (the work is then unmeasured)."""
+    return document_references(fetcher, venue_id, document_url)[0]
+
+
+def document_references(fetcher: Fetcher, venue_id: str,
+                        document_url: str | None) -> tuple[References | None, int | None]:
+    """The reference list (or None) and the document's HTTP status (None when the work lists no document)."""
     if not document_url:
-        return None
+        return None, None
     document = fetcher.get_document(document_request(venue_id, document_url))
     if document.status != 200 or document.content is None:
-        return None
+        return None, document.status
     is_pdf = (document.content_type or "").endswith("pdf") or document.content[:5] == b"%PDF-"
     text = extract.pdf_text(document.content) if is_pdf else extract.html_reference_text(document.content)
-    return extract.extract_references(text, paragraphs=not is_pdf)
+    return extract.extract_references(text, paragraphs=not is_pdf), document.status
 
 
 def _adapters() -> dict[str, Callable[[Fetcher, Venue, int, int], list[IngestedWork]]]:

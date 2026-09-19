@@ -41,7 +41,7 @@ from viveka.corpus import crossref, ingest, openalex, semanticscholar, tables
 from viveka.corpus.audit import AUDIT_DIR, AuditError, AuditResult, draw, read_audit, report_lines, sheets, works_sheet
 from viveka.corpus.audit import write_once as write_sheet
 from viveka.corpus.config import LIVE_SOURCES, CensusSettings, CorpusConfig, load_corpus_config
-from viveka.corpus.http import Fetcher, FetchError, UsageMeter
+from viveka.corpus.http import REFUSED_STATUSES, Fetcher, FetchError, UsageMeter
 from viveka.corpus.ids import normalize_doi, short_id
 from viveka.corpus.manual import MANUAL_DIR, ManualImportError, load_manual
 from viveka.corpus.overlap import community_authors, overlaps
@@ -482,6 +482,7 @@ def census_case(root: Path, case_id: str, fold: str, *, field: bool = False, man
                           run_id=ctx.run_id) as fetcher:
             try:
                 references: dict[str, References | None] = {}
+                refused: dict[str, int] = {}
                 for work in (w for sample in samples.values() for w in sample):
                     if work.work_id in references:
                         continue
@@ -489,8 +490,11 @@ def census_case(root: Path, case_id: str, fold: str, *, field: bool = False, man
                         references[work.work_id] = manual_refs[work.work_id]
                     elif ingest.is_ingested(work.work_id):
                         row = listing.get(work.work_id) or {}
-                        references[work.work_id] = ingest.references(fetcher, row.get("venue") or "",
-                                                                     row.get("document_url"))
+                        venue = row.get("venue") or ""
+                        references[work.work_id], status = ingest.document_references(fetcher, venue,
+                                                                                      row.get("document_url"))
+                        if status in REFUSED_STATUSES:
+                            refused[venue] = refused.get(venue, 0) + 1
                     elif work.doi:
                         response = fetcher.get(crossref.work_request(work.doi))
                         references[work.work_id] = (crossref.references_of(response.body)
@@ -536,7 +540,8 @@ def census_case(root: Path, case_id: str, fold: str, *, field: bool = False, man
         for name, rows in (("coverage", coverage), ("census_sample", sample_rows)):
             written[name] = rel_posix(ctx.store(tables.to_parquet(name, rows), "parquet", rows=len(rows)), root)
         report = census_report(case, ctx.run_id, fetch["run_id"], config, coverage, draw.undated, bool(listing),
-                               audit_result, rel_posix(audit.resolve(), root) if audit is not None else None)
+                               audit_result, rel_posix(audit.resolve(), root) if audit is not None else None,
+                               refused)
         written["report"] = rel_posix(ctx.store(report.encode("utf-8"), "md"), root)
         ctx.params["tables"] = written
     out(report)
@@ -662,7 +667,7 @@ def field_overlap(root: Path, fold: str, *, out: Out = print) -> str:
 
 def census_report(case: Case, run_id: str, fetch_run: str, config: CorpusConfig, coverage: list[dict],
                   undated: int, ingested: bool = False, audit: AuditResult | None = None,
-                  audit_sheet: str | None = None) -> str:
+                  audit_sheet: str | None = None, refused: dict[str, int] | None = None) -> str:
     settings = config.census
     ingestion_note = []
     if ingested and config.ingestion is not None:
@@ -675,6 +680,9 @@ def census_report(case: Case, run_id: str, fetch_run: str, config: CorpusConfig,
             "unmeasured." + ("" if audit is not None else " The extraction is not yet audited against the documents "
                                                           "(decision D-1)."),
             "",
+            *([f"Documents the publisher refused (HTTP {'/'.join(map(str, sorted(REFUSED_STATUSES)))}; the paper "
+               "is unmeasured, and the refusal is archived so the run replays): "
+               + ", ".join(f"{v} {n}" for v, n in sorted(refused.items())) + ".", ""] if refused else []),
             *(report_lines(audit, audit_sheet or "") if audit is not None else []),
         ]
     whole = {s.frame_id: s for s in summarize(coverage, settings.max_unmeasured_share)}

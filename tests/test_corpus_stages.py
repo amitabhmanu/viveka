@@ -298,6 +298,31 @@ def test_an_ingested_venue_is_listed_extracted_and_matched_against_its_own_catal
         write_once(sheet, b"x")
 
 
+def test_a_document_the_publisher_refuses_leaves_its_paper_unmeasured_and_is_counted(world):
+    root, fake = world
+    base = "https://crsq.creationresearch.org"
+    listing = [
+        {"eprintid": n, "title": f"Paper {n}", "date": "1995-06", "volume": 32, "number": 1, "type": "article",
+         "creators": [{"name": {"family": "Wills", "given": "E. L."}}],
+         "documents": [{"format": "application/pdf", "files": [{"uri": f"{base}/id/file/{n}"}]}]}
+        for n in (11, 12)]
+    fake.documents[f"{base}/cgi/exportview/year/1995/JSON/1995.js"] = (json.dumps(listing).encode(), "application/json")
+    fake.documents[f"{base}/id/file/11"] = (text_pdf([
+        "Paper 11", "References", "Roe, B. 1986. Reanalysis. Physical Review Letters 56:3-6."]), "application/pdf")
+    fake.refused_documents.add(f"{base}/id/file/12")
+    write_field(root, FIELD_YAML.replace("sources: [S5]}", "ingest: [crsq]}"))
+    commands.fetch_case(root, "test-field", "dev", field=True, transport=fake.transport(), out=lambda s: None)
+    lines = []
+    census = load_manifest(root, commands.census_case(root, "test-field", "dev", field=True,
+                                                      transport=fake.transport(), out=lines.append))
+    (row,) = table(root, census, "coverage")
+    assert (row["sampled"], row["measured"], row["unmeasured"]) == (2, 1, 1)
+    assert "Documents the publisher refused (HTTP 401/403" in "\n".join(lines) and "): crsq 1." in "\n".join(lines)
+    replay = []
+    commands.census_case(root, "test-field", "dev", field=True, transport=no_network(), out=replay.append)
+    assert "): crsq 1." in "\n".join(replay)  # the refusal replays from the archive
+
+
 def test_field_overlap_is_a_registered_run_over_the_latest_fetches(world):
     root, fake = world
     write_field(root)
