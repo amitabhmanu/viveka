@@ -150,7 +150,7 @@ parameters:
     symbol: "e"
     used_in: trigger 1
     meaning: Tolerated share of misclassified commitments on held-out calibration fields
-    value: null
+    value: 0.1  # owner, 19 Sep 2026
     status: convention
     source_run: null
 
@@ -158,7 +158,7 @@ parameters:
     symbol: "i"
     used_in: trigger 1
     meaning: Tolerated share of indeterminate verdicts on held-out calibration fields
-    value: null
+    value: 0.5  # owner, 19 Sep 2026
     status: convention
     source_run: null
 
