@@ -1,0 +1,13 @@
+# Drafted 19 Sep 2026 (decision D-14, option 1) from OpenAlex venue lookups; awaiting owner review.
+format: 1
+field: chiropractic
+role: calibration
+side: pseudoscience
+window: {start: 1986, end: 2025}
+notes: "Candidate added under D-14 (owner, 19 Sep 2026) as a pseudoscience community large enough for gate 1, if the size bounds allow. The commitment in question is vertebral subluxation theory: the chiropractic subluxation as a cause of disease. Qualifying evidence for the selection rule (D-10, point 1): the UK General Chiropractic Council, the statutory regulator, stated in May 2010 that the chiropractic vertebral subluxation complex is an historical concept not supported by any clinical research evidence that would allow claims that it is the cause of disease or health concerns. The venues serve the whole chiropractic profession, in which evidence-based practitioners and subluxation-based practitioners publish side by side; the social layer is expected to separate them into lineages, and whether this counts as a venue devoted to the community (D-10, point 2) is for the owner's review."
+frames:
+  - {id: venues, kind: community, sources: [S104377164, S194730835, S67905653, S2764369126], note: "Journal of Manipulative and Physiological Therapeutics (ISSN-L 0161-4754), Chiropractic & Manual Therapies (1746-1340, from 2005 as Chiropractic & Osteopathy), Journal of Chiropractic Medicine (1556-3707, from 2002) and Chiropractic Journal of Australia (1036-0913)."}
+absent_venues:
+  - {name: "Journal of Vertebral Subluxation Research", issn_l: null, note: "Not found in OpenAlex (lookup 19 Sep 2026); the subluxation-based community's own research journal. Ingestion from its own archive is not yet checked."}
+  - {name: "Annals of Vertebral Subluxation Research", issn_l: null, note: "Not found in OpenAlex (lookup 19 Sep 2026). Ingestion is not yet checked."}
+  - {name: "Journal of the Canadian Chiropractic Association", issn_l: "0008-3194", note: "OpenAlex source S2754693713 lists only 37 works; its full run is on PubMed Central. Left out for now."}
