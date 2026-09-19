@@ -87,3 +87,25 @@ def test_planted_communities_are_followed_as_two_lineages_across_sliding_windows
     lineages = {s.lineage_id for s in steps}
     assert len(lineages) == 2 and all(s.parent is None for s in steps)
     assert len(steps) == 2 * len(partitions)
+
+
+def test_eligibility_counts_members_bearing_citations_old_disconfirmations_and_closure():
+    from viveka.social.eligibility import check
+    from viveka.social.lineage import LineageStep
+
+    w1, w2, w3 = Window(1990, 1994), Window(1991, 1995), Window(1992, 1996)
+    team = frozenset({"a", "b", "c"})
+    steps = [LineageStep("L1", w, 0, team, None, None) for w in (w1, w2, w3)]
+    years = {"P1": 1990, "P2": 1991, "P3": 1996, "P4": 1993, "S": 1989, "E": 1990}
+    authors = {"P1": ("a", "x"), "P2": ("b",), "P3": ("c",), "P4": ("c",)}
+    citations = [("P1", "S"), ("P1", "E"), ("P2", "S"), ("P4", "E"), ("P3", "Other"), ("X9", "S")]
+    first, second, third = check(steps, years, authors, citations, bearing={"S", "E"},
+                                 disconfirmation_dates=["1989-08-01", "1993-06-01"], m=3, v=2, r=0.7, lag=2,
+                                 coverage={("L1", 1990): 0.8})
+    # 1990-94: P1 (2), P2 (1), P4 (1); only the 1989 event is two years old by the end of 1994
+    assert (first.members, first.citations_on_claim, first.disconfirmations) == (3, 4, 1)
+    assert first.meets_m and first.meets_v and first.meets_r is True and first.eligible_pending_n
+    # 1991-95: P2 and P4; both events are old enough; coverage was not measured
+    assert (second.citations_on_claim, second.disconfirmations, second.closed, second.meets_r) == (2, 2, False, None)
+    # 1992-96: P4 only, below v after the lineage's last engaged sub-window: closed
+    assert third.citations_on_claim == 1 and third.closed and not third.eligible_pending_n
