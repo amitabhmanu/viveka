@@ -20,7 +20,10 @@ control:
   seed: 20260914
 
 grid:
-  members: [5, 10, 20, 40, 80, 160, 320, 640]
+  # D-13 (19 Sep 2026; post hoc, after the registered pilot-fold S4 under v3): steps of 2^(1/4) from 80 to 640.
+  # m and v are read at the first grid size reaching the registered power, and with doubling steps the
+  # crossing between 160 (asymmetric separation 0.76) and 320 (0.985) was rounded up to 320. Nothing else changes.
+  members: [5, 10, 20, 40, 80, 95, 113, 135, 160, 190, 226, 269, 320, 381, 453, 538, 640]
 
 rates:
   results_per_member: 4            # results bearing on the claim per member per window

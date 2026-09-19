@@ -94,7 +94,7 @@ def eligibility_run(root: Path, case_id: str, fold: str, *, out: Out = print) ->
     otherwise. n is pending until M8 (decision D-11). Predictions are never read: whether a case's predicted
     field summary needs one lineage or two is checked when predictions are frozen.
     """
-    from viveka.social.eligibility import check
+    from viveka.social.eligibility import bearing_results, check
     from viveka.social.lineage import LineageStep
 
     case, claim = load_subject(root, case_id, False)
@@ -117,17 +117,22 @@ def eligibility_run(root: Path, case_id: str, fold: str, *, out: Out = print) ->
     authors = authors_by_work((row["work_id"], keys[row["author_id"]]) for row in read["authorships"]
                               if row["author_id"] in keys)
     citations = [(row["citing_work"], row["cited_work"]) for row in read["citations"]]
-    bearing = {ref.openalex for ref in bearing_set(case, claim) if ref.openalex}
+    social = load_corpus_config(root).social
+    if social is None or social.bearing_results != "bearing_results_v1":
+        raise CaseError("corpus.yaml social settings register no known bearing_results rule")
+    anchors = {ref.openalex for ref in bearing_set(case, claim) if ref.openalex}
+    bearing = bearing_results(anchors, citations)
     dates = [e.date for e in claim.events if e.kind == "disconfirmation"]
     members: dict[tuple[float, int, int], set[str]] = {}
     for row in tables.read(root / s3["params"]["tables"]["clusters"]):
         members.setdefault((row["resolution"], row["window_start"], row["cluster"]), set()).add(row["author"])
     lineage_rows = tables.read(root / s3["params"]["tables"]["lineages"])
-    primary = float(load_corpus_config(root).social.primary_resolution)
+    primary = float(social.primary_resolution)
 
     params = {"s3_run": s3["run_id"], "fetch_run": fetch["run_id"], "m": m, "v": v, "r": r, "lag": lag,
               "n": "pending (fitted at M8, decision D-11)", "primary_resolution": primary,
-              "provisional": bool(s3["params"].get("provisional")), "bearing_works": len(bearing),
+              "provisional": bool(s3["params"].get("provisional")), "bearing_rule": social.bearing_results,
+              "bearing_anchors": len(anchors), "bearing_works": len(bearing),
               "disconfirmation_events": len(dates)}
     with RunContext(root, "S4", case_id, fold, [case.component, "thresholds"], params=params) as ctx:
         for name in ("works", "authors", "authorships", "citations"):
@@ -166,8 +171,9 @@ def _eligibility_report(case_id, run_id, s3_run, fold, params, by_resolution, pr
     lines = [
         f"# Eligibility (gate 1 before coding): {case_id} ({fold} fold)", "",
         f"Run `{run_id}` from social-layer run `{s3_run}`. A lineage's sub-window is eligible when its cluster has "
-        f"at least m = {params['m']} members, makes at least v = {params['v']} citations bearing on the claim "
-        f"({params['bearing_works']} seed and event works), and its literature's coverage is at least "
+        f"at least m = {params['m']} members, cites at least v = {params['v']} distinct results bearing on the "
+        f"claim (`{params['bearing_rule']}`: {params['bearing_anchors']} seed and event works and the corpus works "
+        f"citing them, {params['bearing_works']} in all), and its literature's coverage is at least "
         f"r = {params['r']:g}. n is pending until it is fitted at M8 (decision D-11); the report counts the "
         f"{params['disconfirmation_events']} registered disconfirmations at least {params['lag']:g} years old by each "
         "sub-window's end. A lineage below v after its last sub-window at or above v is closed.", "",

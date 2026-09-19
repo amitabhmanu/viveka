@@ -143,11 +143,17 @@ calibration_selection:
 #   Lineages link clusters of at least lineage_min_members authors across consecutive sub-windows by Jaccard
 #   overlap of at least o (thresholds), each successor keeping its best-linked predecessor; a cluster with two
 #   successors branches. S4 takes its go/replace at primary_resolution and reports every other resolution.
+#   bearing_results_v1 (D-13, 19 Sep 2026; post hoc, after the registered pilot-fold S4 under v3): S4's count
+#     against v is the number of distinct results bearing on p that a lineage's works cite in the sub-window,
+#     the quantity v was simulated for (the simulator's citations_on_claim). Before any coding the results
+#     bearing on p are the seeds, the event works and every corpus work that cites one of them. Under v3, S4
+#     counted only citations to the seeds and event works, which is not what v measures.
 social:
   graph: coauthor_citation_v1
   leiden_seed: 20260919
   lineage_min_members: 2
   primary_resolution: 1.0
+  bearing_results: bearing_results_v1
 
 # Community venues that OpenAlex does not index, ingested from their own archives (framework corpus row:
 # "each community's own venues ingested directly"; owner decision D-1, 17 Sep 2026: no GROBID, text layers

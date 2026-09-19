@@ -4,8 +4,10 @@ Framework, pilot step 3: using only the social layer, the registered events and 
 case has a lineage meeting m, n, v and r in the sub-windows its predictions need. Per lineage and sub-window:
 
 * members: the size of the lineage's cluster;
-* citations bearing on p: citations from works published in the sub-window with at least one member among
-  their authors to the case's bearing set (seeds and event works), each work-to-work citation counted once;
+* citations bearing on p: the number of distinct results bearing on p cited by works published in the
+  sub-window with at least one member among their authors, the quantity v was simulated for (the simulator's
+  citations_on_claim counts the distinct results a community cites). Before any coding, the results bearing
+  on p are the seeds, the event works and every corpus work that cites one of them (``bearing_results_v1``);
 * disconfirmations: registered disconfirmation events dated at least lag years before the sub-window's end
   (the n check waits for n, fitted at M8; decision D-11);
 * coverage: supplied by the caller, from a census of the lineage's papers (None when not measured).
@@ -43,6 +45,11 @@ class WindowCheck:
         return not self.closed and self.meets_m and self.meets_v and self.meets_r is True
 
 
+def bearing_results(seeds_and_events: set[str], citations: Iterable[tuple[str, str]]) -> set[str]:
+    """``bearing_results_v1``: the seeds and event works, and every corpus work citing a seed or event work."""
+    return seeds_and_events | {citing for citing, cited in citations if cited in seeds_and_events}
+
+
 def decimal_year(iso: str) -> float:
     """A registered event date as a decimal year. A partial date ("1990" or "1990-03") is read at the end of its
     period, so an event never counts as old enough before it certainly is."""
@@ -59,10 +66,10 @@ def check(steps: Sequence[LineageStep], years: Mapping[str, int | None], authors
           citations: Iterable[tuple[str, str]], bearing: set[str], disconfirmation_dates: Sequence[str],
           m: int, v: int, r: float, lag: float,
           coverage: Mapping[tuple[str, int], float | None] | None = None) -> list[WindowCheck]:
-    cites_bearing: dict[str, int] = {}
+    cites_bearing: dict[str, set[str]] = {}
     for citing, cited in citations:
         if cited in bearing and citing != cited:
-            cites_bearing[citing] = cites_bearing.get(citing, 0) + 1
+            cites_bearing.setdefault(citing, set()).add(cited)
     works_by_author: dict[str, list[str]] = {}
     for work, team in authors.items():
         for author in team:
@@ -74,7 +81,7 @@ def check(steps: Sequence[LineageStep], years: Mapping[str, int | None], authors
         window = step.window
         works = {w for a in step.members for w in works_by_author.get(a, ())
                  if years.get(w) is not None and window.start <= years[w] <= window.end}
-        on_claim = sum(cites_bearing.get(w, 0) for w in works)
+        on_claim = len(set().union(*(cites_bearing.get(w, set()) for w in works)))
         old_enough = sum(1 for d in dates if d + lag <= window.end + 1)
         raw.append((step, on_claim, old_enough))
 

@@ -101,13 +101,14 @@
     },
     "social": {
       "type": "object",
-      "required": ["graph", "leiden_seed", "lineage_min_members", "primary_resolution"],
+      "required": ["graph", "leiden_seed", "lineage_min_members", "primary_resolution", "bearing_results"],
       "additionalProperties": false,
       "properties": {
         "graph": {"enum": ["coauthor_citation_v1"]},
         "leiden_seed": {"type": "integer", "minimum": 0},
         "lineage_min_members": {"type": "integer", "minimum": 2},
-        "primary_resolution": {"type": "number", "exclusiveMinimum": 0}
+        "primary_resolution": {"type": "number", "exclusiveMinimum": 0},
+        "bearing_results": {"enum": ["bearing_results_v1"]}
       }
     },
     "ingestion": {

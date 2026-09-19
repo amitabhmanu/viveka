@@ -102,8 +102,8 @@ def test_eligibility_counts_members_bearing_citations_old_disconfirmations_and_c
     first, second, third = check(steps, years, authors, citations, bearing={"S", "E"},
                                  disconfirmation_dates=["1989-08-01", "1993-06-01"], m=3, v=2, r=0.7, lag=2,
                                  coverage={("L1", 1990): 0.8})
-    # 1990-94: P1 (2), P2 (1), P4 (1); only the 1989 event is two years old by the end of 1994
-    assert (first.members, first.citations_on_claim, first.disconfirmations) == (3, 4, 1)
+    # 1990-94: P1, P2 and P4 cite S and E, two distinct results; only the 1989 event is two years old by 1994's end
+    assert (first.members, first.citations_on_claim, first.disconfirmations) == (3, 2, 1)
     assert first.meets_m and first.meets_v and first.meets_r is True and first.eligible_pending_n
     # 1991-95: P2 and P4; both events are old enough; coverage was not measured
     assert (second.citations_on_claim, second.disconfirmations, second.closed, second.meets_r) == (2, 2, False, None)
@@ -117,3 +117,10 @@ def test_partial_event_dates_are_read_at_the_end_of_their_period():
     assert decimal_year("1990") > decimal_year("1990-12-01") > decimal_year("1990-03")
     assert decimal_year("1990-03") == pytest.approx(decimal_year("1990-03-31"))
     assert int(decimal_year("1989-08-01")) == 1989
+
+
+def test_results_bearing_on_p_are_the_anchors_and_the_works_citing_them():
+    from viveka.social.eligibility import bearing_results
+
+    citations = [("A", "S"), ("B", "A"), ("C", "E"), ("D", "X")]
+    assert bearing_results({"S", "E"}, citations) == {"S", "E", "A", "C"}  # B cites A, which is not an anchor

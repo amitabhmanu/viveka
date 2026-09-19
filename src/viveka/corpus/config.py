@@ -84,6 +84,7 @@ class SocialSettings:
     leiden_seed: int
     lineage_min_members: int
     primary_resolution: float
+    bearing_results: str | None = None  # S4's pre-coding rule for the results bearing on p
 
 
 @dataclass(frozen=True)
@@ -149,7 +150,8 @@ def from_mapping(data: Mapping[str, Any]) -> CorpusConfig:
                                int(data["calibration_selection"].get("core_min_works", 1)))
         if data.get("calibration_selection") else None,
         social=SocialSettings(str(data["social"]["graph"]), int(data["social"]["leiden_seed"]),
-                              int(data["social"]["lineage_min_members"]), float(data["social"]["primary_resolution"]))
+                              int(data["social"]["lineage_min_members"]), float(data["social"]["primary_resolution"]),
+                              data["social"].get("bearing_results"))
         if data.get("social") else None,
     )
 
