@@ -33,9 +33,9 @@ def test_validate_freeze_verify_bump_cycle(registry_root, capsys):
 
 
 def test_freeze_refusal_exits_1_with_reasons(registry_root, capsys):
-    code, _, err = run(capsys, "registry", "freeze", "thresholds", "--reason", "too early", "--no-git",
+    code, _, err = run(capsys, "registry", "freeze", "fitted", "--reason", "too early", "--no-git",
                        "--root", str(registry_root))
-    assert code == 1 and "has no value" in err
+    assert code == 1 and "n_min_disconfirmations has no value" in err
 
 
 def test_bump_requires_prompted_by(registry_root, capsys):

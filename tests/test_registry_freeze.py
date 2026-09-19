@@ -23,6 +23,13 @@ def _add_prompt_stack(root: Path) -> None:
     write_lf(root / "registry" / "prompts" / "t1.md", "---\nschema: thresholds\n---\nCode the citation.\n")
 
 
+def _unset(root: Path, name: str) -> None:
+    path = root / "registry" / "thresholds.yaml"
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    data["parameters"][name]["value"] = None
+    write_lf(path, yaml.safe_dump(data, allow_unicode=True, sort_keys=False))
+
+
 def _complete_thresholds(root: Path) -> None:
     run_id = "2026-09-14T0000Z-sim-all-abcd"
     write_lf(root / "runs" / run_id / "manifest.json", "{}")
@@ -90,7 +97,7 @@ def test_freeze_is_deterministic(tree):
 @pytest.mark.parametrize(
     ("setup", "message"),
     [
-        (lambda r: None, "has no value"),
+        (lambda r: _unset(r, "kappa_min"), "kappa_min has no value"),
         (lambda r: _complete_thresholds(r), None),
     ],
 )
@@ -103,6 +110,14 @@ def test_thresholds_need_values_and_provenance(registry_root, setup, message):
             freeze(registry_root, names, "calibrated", use_git=False)
     else:
         assert freeze(registry_root, names, "calibrated", use_git=False).version == 1
+
+
+def test_n_freezes_on_its_own_after_the_thresholds(registry_root):
+    # Decision D-11: thresholds freeze while n is unset; fitted, which holds n, refuses until n is fitted.
+    _complete_thresholds(registry_root)
+    assert freeze(registry_root, ["schemas", "simulation", "thresholds"], "before S3", use_git=False).version == 1
+    with pytest.raises(FreezeRefused, match="fitted: n_min_disconfirmations has no value"):
+        freeze(registry_root, ["fitted"], "too early", use_git=False)
 
 
 def test_thresholds_cannot_freeze_before_their_simulation_settings(registry_root):
