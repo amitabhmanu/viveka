@@ -12,7 +12,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "n_min_disconfirmations", "m_min_members", "v_min_citations", "r_min_coverage",
+        "m_min_members", "v_min_citations", "r_min_coverage",
         "l_lag_years", "delta", "delta_margin", "c_max_insulating_share", "k_min_loop", "j_idle_round_years",
         "interval_level", "t_tau_threshold", "h_honoured_threshold", "h0_min_met_conditions",
         "w_window_years", "o_min_overlap", "sweep", "e_max_error_share",
@@ -20,7 +20,6 @@
         "s_max_label_change_share", "bootstrap_draws", "omega_prominence_strata"
       ],
       "properties": {
-        "n_min_disconfirmations": {"$ref": "#/$defs/parameter"},
         "m_min_members": {"$ref": "#/$defs/parameter"},
         "v_min_citations": {"$ref": "#/$defs/parameter"},
         "r_min_coverage": {"$ref": "#/$defs/share"},

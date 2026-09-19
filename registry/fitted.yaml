@@ -1,0 +1,18 @@
+# Viveka fitted parameters.
+# Decision D-11 (19 Sep 2026): n is fitted on calibration fields at M8, but eligibility (S4, M5) must run in
+# the pilot fold before any coding, and a strict-fold run needs every component it uses frozen. The values set
+# by simulation or convention therefore stay in thresholds.yaml and freeze before any cluster sizes are seen;
+# n lives here and freezes on its own at M8. Until then S4 reports disconfirmation counts with the n check
+# pending, and reruns once n is fitted, before any pilot coding.
+
+version: 0
+state: draft
+
+parameters:
+  n_min_disconfirmations:
+    symbol: "n"
+    used_in: gate 1
+    meaning: Minimum disconfirmations per sub-window
+    value: null
+    status: fitted
+    source_run: null

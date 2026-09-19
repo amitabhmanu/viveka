@@ -71,8 +71,7 @@ def test_overridden_copies_in_memory_only(registry_root):
 def test_cli_diagnostics_name_what_is_unset(registry_root, capsys):
     path = registry_root / "registry" / "thresholds.yaml"
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
-    data["parameters"]["n_min_disconfirmations"]["value"] = None
-    data["parameters"]["delta"].update(value=None, source_run=None)
+    data["parameters"]["delta"].update(value=None, source_run=None)  # n is unset in fitted.yaml until M8
     write_lf(path, yaml.safe_dump(data, allow_unicode=True, sort_keys=False))
     code = main(["sim", "recover", "--members", "20", "--root", str(registry_root)])
     assert code == 1 and "pass --n" in capsys.readouterr().out

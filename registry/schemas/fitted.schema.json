@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/amitabhmanu/viveka/registry/schemas/fitted.schema.json",
+  "title": "Viveka fitted parameters (decision D-11: n freezes on its own at M8)",
+  "type": "object",
+  "required": ["version", "state", "parameters"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {"type": "integer", "minimum": 0},
+    "state": {"enum": ["draft", "frozen"]},
+    "parameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["n_min_disconfirmations"],
+      "properties": {
+        "n_min_disconfirmations": {"$ref": "#/$defs/count"}
+      }
+    }
+  },
+  "$defs": {
+    "parameter": {
+      "type": "object",
+      "required": ["symbol", "used_in", "meaning", "value", "status", "source_run"],
+      "properties": {
+        "symbol": {"type": "string"},
+        "used_in": {"type": "string"},
+        "meaning": {"type": "string"},
+        "value": {},
+        "status": {"enum": ["fitted"]},
+        "source_run": {"type": ["string", "null"]}
+      }
+    },
+    "count": {
+      "allOf": [
+        {"$ref": "#/$defs/parameter"},
+        {"properties": {"value": {"type": ["integer", "null"], "minimum": 1}}}
+      ]
+    }
+  }
+}

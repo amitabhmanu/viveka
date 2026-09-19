@@ -1,4 +1,8 @@
-"""Typed access to registry/thresholds.yaml.
+"""Typed access to registry/thresholds.yaml and registry/fitted.yaml.
+
+Decision D-11 (19 Sep 2026) splits the parameters: values set by simulation or convention live in
+``thresholds`` and freeze before any cluster sizes are seen; n, fitted on calibration fields at M8, lives in
+``fitted`` and freezes on its own. The loader reads both files into one set of parameters.
 
 ``PARAMETERS`` lists every parameter the code may use. The loader rejects a
 thresholds file that lacks any of them (spec §5: "the loader must reject a
@@ -17,9 +21,11 @@ import yaml
 from viveka.registry.errors import MissingParameter, RegistryError, UnsetParameter
 
 THRESHOLDS = "registry/thresholds.yaml"
+FITTED = "registry/fitted.yaml"
 
-PARAMETERS: tuple[str, ...] = (
-    "n_min_disconfirmations",
+FITTED_PARAMETERS: tuple[str, ...] = ("n_min_disconfirmations",)
+
+THRESHOLD_PARAMETERS: tuple[str, ...] = (
     "m_min_members",
     "v_min_citations",
     "r_min_coverage",
@@ -45,6 +51,8 @@ PARAMETERS: tuple[str, ...] = (
     "bootstrap_draws",
     "omega_prominence_strata",
 )
+
+PARAMETERS: tuple[str, ...] = FITTED_PARAMETERS + THRESHOLD_PARAMETERS
 
 _CORE_KEYS = {"symbol", "used_in", "meaning", "value", "status", "source_run"}
 
@@ -89,22 +97,19 @@ class Thresholds:
         return Thresholds(parameters, version=self.version, state=self.state)
 
 
-def load_thresholds(root: Path) -> Thresholds:
-    path = root / THRESHOLDS
+def _read(root: Path, rel: str, names: tuple[str, ...]) -> tuple[dict, dict[str, Parameter]]:
     try:
-        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        data = yaml.safe_load((root / rel).read_text(encoding="utf-8"))
     except (OSError, yaml.YAMLError) as exc:
-        raise RegistryError(f"cannot read {THRESHOLDS}: {exc}") from exc
+        raise RegistryError(f"cannot read {rel}: {exc}") from exc
     raw = (data or {}).get("parameters") if isinstance(data, dict) else None
     if not isinstance(raw, dict):
-        raise RegistryError(f"{THRESHOLDS} has no 'parameters' mapping")
-
-    missing = [name for name in PARAMETERS if name not in raw]
+        raise RegistryError(f"{rel} has no 'parameters' mapping")
+    missing = [name for name in names if name not in raw]
     if missing:
-        raise MissingParameter(f"{THRESHOLDS} is missing parameters used by the code: {', '.join(missing)}")
-
+        raise MissingParameter(f"{rel} is missing parameters used by the code: {', '.join(missing)}")
     parameters = {}
-    for name in PARAMETERS:
+    for name in names:
         entry = raw[name] or {}
         parameters[name] = Parameter(
             name=name,
@@ -114,4 +119,13 @@ def load_thresholds(root: Path) -> Thresholds:
             source_run=entry.get("source_run"),
             extra={k: v for k, v in entry.items() if k not in _CORE_KEYS},
         )
-    return Thresholds(parameters, version=int(data.get("version", 0)), state=str(data.get("state", "draft")))
+    return data, parameters
+
+
+def load_thresholds(root: Path) -> Thresholds:
+    """Both parameter files as one set; version and state are the thresholds file's."""
+    data, parameters = _read(root, THRESHOLDS, THRESHOLD_PARAMETERS)
+    _, fitted = _read(root, FITTED, FITTED_PARAMETERS)
+    merged = {**fitted, **parameters}
+    return Thresholds({name: merged[name] for name in PARAMETERS}, version=int(data.get("version", 0)),
+                      state=str(data.get("state", "draft")))

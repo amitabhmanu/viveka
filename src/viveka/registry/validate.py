@@ -23,7 +23,7 @@ import yaml
 from viveka.paths import REGISTRY, RUNS
 from viveka.registry import components as comp
 from viveka.registry.errors import UnknownComponent
-from viveka.registry.thresholds import PARAMETERS
+from viveka.registry.thresholds import FITTED_PARAMETERS, THRESHOLD_PARAMETERS
 
 SCHEMA_DIR = "registry/schemas"
 
@@ -76,7 +76,9 @@ def freeze_problems(root: Path, names: list[str], manifest: dict) -> list[str]:
             if upstream != name and upstream not in frozen and upstream not in names:
                 problems.append(f"{name}: upstream component {upstream} is not frozen")
         if name == "thresholds":
-            problems.extend(_thresholds_complete(root))
+            problems.extend(_parameters_complete(root, "thresholds", THRESHOLD_PARAMETERS))
+        if name == "fitted":
+            problems.extend(_parameters_complete(root, "fitted", FITTED_PARAMETERS))
     return problems
 
 
@@ -107,15 +109,23 @@ def _against_schema(root: Path, rel: str, data: object, schema_name: str) -> lis
 
 
 def _check_thresholds(root: Path, rel: str) -> list[str]:
+    return _check_parameters(root, rel, "thresholds", THRESHOLD_PARAMETERS)
+
+
+def _check_fitted(root: Path, rel: str) -> list[str]:
+    return _check_parameters(root, rel, "fitted", FITTED_PARAMETERS)
+
+
+def _check_parameters(root: Path, rel: str, schema_name: str, names: tuple[str, ...]) -> list[str]:
     data, problems = _load_yaml(root, rel)
     if problems:
         return problems
-    problems = _against_schema(root, rel, data, "thresholds")
-    schema = _schema(root, "thresholds")
+    problems = _against_schema(root, rel, data, schema_name)
+    schema = _schema(root, schema_name)
     if schema is not None:
         required = schema.get("properties", {}).get("parameters", {}).get("required", [])
-        if list(required) != list(PARAMETERS):
-            problems.append(f"{rel}: schema's required parameters differ from the code's PARAMETERS list")
+        if list(required) != list(names):
+            problems.append(f"{rel}: schema's required parameters differ from the code's parameter list")
     params = data.get("parameters", {}) if isinstance(data, dict) else {}
     for pname, entry in (params or {}).items():
         run = entry.get("source_run") if isinstance(entry, dict) else None
@@ -275,6 +285,7 @@ def _check_per_file(root: Path, rel: str) -> list[str]:
 
 _CHECKERS = {
     "thresholds": _check_thresholds,
+    "fitted": _check_fitted,
     "instrument": _check_instrument,
     "simulation": _check_simulation,
     "corpus": _check_corpus,
@@ -290,16 +301,16 @@ _CHECKERS = {
 }
 
 
-def _thresholds_complete(root: Path) -> list[str]:
+def _parameters_complete(root: Path, component: str, names: tuple[str, ...]) -> list[str]:
     from viveka.registry.thresholds import load_thresholds
 
     try:
         thresholds = load_thresholds(root)
     except Exception as exc:  # noqa: BLE001 - reported as a freeze problem
-        return [f"thresholds: {exc}"]
-    problems = [f"thresholds: {name} has no value" for name in thresholds.unset()]
-    for name in PARAMETERS:
+        return [f"{component}: {exc}"]
+    problems = [f"{component}: {name} has no value" for name in thresholds.unset() if name in names]
+    for name in names:
         p = thresholds.parameter(name)
         if p.status in ("fitted", "simulated") and not p.source_run:
-            problems.append(f"thresholds: {name} is {p.status} but has no source_run")
+            problems.append(f"{component}: {name} is {p.status} but has no source_run")
     return problems

@@ -6,7 +6,7 @@ from conftest import write_lf
 from corpus_fakes import EVENTS_YAML
 
 from viveka.registry.errors import MissingParameter, UnsetParameter
-from viveka.registry.thresholds import PARAMETERS, load_thresholds
+from viveka.registry.thresholds import FITTED_PARAMETERS, PARAMETERS, THRESHOLD_PARAMETERS, load_thresholds
 from viveka.registry.validate import validate
 
 
@@ -85,8 +85,12 @@ def test_unknown_component_name_is_reported(registry_root):
 
 
 def test_loader_matches_schema_and_rejects_missing_parameters(registry_root):
-    schema = json.loads((registry_root / "registry" / "schemas" / "thresholds.schema.json").read_text(encoding="utf-8"))
-    assert tuple(schema["properties"]["parameters"]["required"]) == PARAMETERS
+    schemas = registry_root / "registry" / "schemas"
+    thresholds = json.loads((schemas / "thresholds.schema.json").read_text(encoding="utf-8"))
+    fitted = json.loads((schemas / "fitted.schema.json").read_text(encoding="utf-8"))
+    assert tuple(thresholds["properties"]["parameters"]["required"]) == THRESHOLD_PARAMETERS
+    assert tuple(fitted["properties"]["parameters"]["required"]) == FITTED_PARAMETERS == ("n_min_disconfirmations",)
+    assert PARAMETERS == FITTED_PARAMETERS + THRESHOLD_PARAMETERS
 
     path = registry_root / "registry" / "thresholds.yaml"
     data = yaml.safe_load(path.read_text(encoding="utf-8"))

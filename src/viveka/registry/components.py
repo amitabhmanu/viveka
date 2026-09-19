@@ -2,7 +2,7 @@
 
 Components are derived from a fixed map, never configured by hand:
 
-* ``thresholds``, ``instrument``, ``simulation`` and ``corpus`` are single files;
+* ``thresholds``, ``fitted``, ``instrument``, ``simulation`` and ``corpus`` are single files;
 * ``schemas``, ``codebook`` and ``prompts`` are whole directories;
 * ``events/<claim>``, ``cases/<case>``, ``fields/<field>``, ``filters/<commitment>``,
   ``predictions/<case>`` and ``redaction/<case>`` are one YAML file each.
@@ -22,6 +22,7 @@ from viveka.registry.errors import UnknownComponent
 
 SINGLE_FILES = {
     "thresholds": "registry/thresholds.yaml",
+    "fitted": "registry/fitted.yaml",
     "instrument": "registry/instrument.yaml",
     "simulation": "registry/simulation.yaml",
     "corpus": "registry/corpus.yaml",
@@ -38,6 +39,7 @@ STATIC_UPSTREAM: dict[str, tuple[str, ...]] = {
     "instrument": ("schemas",),
     "simulation": ("schemas",),
     "thresholds": ("simulation",),  # decision D-7: simulated thresholds come from the simulation settings
+    "fitted": ("thresholds",),  # decision D-11: n is fitted at M8 with the other values already frozen
     "corpus": ("schemas",),
 }
 

@@ -9,15 +9,9 @@
 version: 0
 state: draft
 
-parameters:
-  n_min_disconfirmations:
-    symbol: "n"
-    used_in: gate 1
-    meaning: Minimum disconfirmations per sub-window
-    value: null
-    status: fitted
-    source_run: null
+# n (gate 1) is fitted at M8 and lives in fitted.yaml (decision D-11).
 
+parameters:
   m_min_members:
     symbol: "m"
     used_in: gate 1

@@ -138,12 +138,13 @@ def test_trigger_2_to_6():
 def test_gate_params_from_registry(registry_root):
     with pytest.raises(UnsetParameter):
         GateParams.from_thresholds(load_thresholds(registry_root))
-    path = registry_root / "registry" / "thresholds.yaml"
-    data = yaml.safe_load(path.read_text(encoding="utf-8"))
-    for entry in data["parameters"].values():
-        if entry["value"] is None:
-            entry["value"] = 3
-    write_lf(path, yaml.safe_dump(data, allow_unicode=True, sort_keys=False))
+    for name in ("thresholds.yaml", "fitted.yaml"):  # n lives in fitted.yaml (decision D-11)
+        path = registry_root / "registry" / name
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        for entry in data["parameters"].values():
+            if entry["value"] is None:
+                entry["value"] = 3
+        write_lf(path, yaml.safe_dump(data, allow_unicode=True, sort_keys=False))
     params = GateParams.from_thresholds(load_thresholds(registry_root))
     assert params.bootstrap_draws == 2000 and params.omega_strata == 5 and params.lag == 2.0
 
