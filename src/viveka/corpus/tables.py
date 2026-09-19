@@ -40,6 +40,11 @@ SCHEMAS: dict[str, pa.Schema] = {
                            ("doiless_sampled", _I32),
                            ("doiless_matched", _I32), ("doiless_rescued", _I32), ("doiless_unparseable", _I32),
                            ("resolved_estimated", pa.float64())]),
+    "clusters": pa.schema([("method", _S), ("resolution", pa.float64()), ("window_start", _I32),
+                           ("window_end", _I32), ("cluster", _I32), ("author", _S)]),
+    "lineages": pa.schema([("method", _S), ("resolution", pa.float64()), ("lineage_id", _S), ("window_start", _I32),
+                           ("window_end", _I32), ("cluster", _I32), ("members", _I32), ("parent", _S),
+                           ("overlap", pa.float64())]),
 }
 
 KEYS: dict[str, tuple[str, ...]] = {
@@ -53,6 +58,8 @@ KEYS: dict[str, tuple[str, ...]] = {
     "contexts": ("cited_work", "citing_s2_id", "context_index"),
     "census_sample": ("case_id", "frame_id", "year", "work_id"),
     "coverage": ("case_id", "frame_id", "year"),
+    "clusters": ("method", "resolution", "window_start", "window_end", "author"),
+    "lineages": ("method", "resolution", "window_start", "window_end", "cluster"),
 }
 
 

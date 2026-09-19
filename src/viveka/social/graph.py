@@ -51,6 +51,27 @@ def windows(start: int, end: int, length: int) -> list[Window]:
     return [Window(s, s + length - 1) for s in range(start, end - length + 2)]
 
 
+def node_keys(authors_rows: Iterable[dict], by_name: bool) -> dict[str, str]:
+    """The graph node of every author id. OpenAlex ids stand for themselves unless the case has ingested works,
+    whose authors are known only by name: then every author is keyed by folded family name and first initial
+    (the ingested ids' own form), so one person is one node whichever venue a paper came from."""
+    from viveka.corpus.overlap import name_key
+
+    keys = {}
+    for row in authors_rows:
+        author = row["author_id"]
+        if not by_name:
+            keys[author] = author
+        elif author.startswith("name:"):
+            keys[author] = author.removeprefix("name:")
+        else:
+            key = name_key(row.get("display_name"))
+            if key:
+                family, _, initials = key.partition(":")
+                keys[author] = f"{family}:{initials[:1]}"
+    return keys
+
+
 def authors_by_work(authorships: Iterable[tuple[str, str]]) -> dict[str, tuple[str, ...]]:
     grouped: dict[str, list[str]] = defaultdict(list)
     for work_id, author_id in authorships:

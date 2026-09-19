@@ -355,3 +355,22 @@ def test_case_validate_and_resolve(world):
     assert code == 0 and text.startswith("W1  doi=10.1/seed  1989")
     code, text = run_cli(root, "corpus", "resolve", "--source", "venue", transport=fake.transport())
     assert code == 0 and text.startswith("S5  Venue S5")
+
+
+def test_social_build_clusters_a_fetched_case_and_marks_the_run_provisional(world):
+    from viveka.social.commands import social_build, social_dry_run
+
+    root, fake = world
+    lines = []
+    assert social_dry_run(root, "cold-fusion", "dev", out=lines.append) == 1 and "fetch first" in lines[0]
+    commands.fetch_case(root, "cold-fusion", "dev", transport=fake.transport(), out=lambda s: None)
+    lines = []
+    run = load_manifest(root, social_build(root, "cold-fusion", "dev", out=lines.append))
+    assert run["stage"] == "S3" and run["params"]["provisional"] is True
+    assert run["params"]["methods_run"] == ["leiden"] and run["params"]["methods_unavailable"] == ["hsbm"]
+    assert "thresholds" in run["registry"]["components"] and "Provisional" in "\n".join(lines)
+    clusters, lineages = table(root, run, "clusters"), table(root, run, "lineages")
+    assert clusters and {r["resolution"] for r in clusters} == set(run["params"]["resolutions"])
+    assert all(r["members"] >= run["params"]["lineage_min_members"] for r in lineages)
+    again = load_manifest(root, social_build(root, "cold-fusion", "dev", out=lambda s: None))
+    assert again["params"]["tables"]["clusters"] == run["params"]["tables"]["clusters"]  # deterministic

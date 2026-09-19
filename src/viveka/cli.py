@@ -54,9 +54,11 @@ def _parser() -> argparse.ArgumentParser:
 
     from viveka.corpus.commands import add_parsers as add_corpus_parsers
     from viveka.sim.commands import add_parser as add_sim_parser
+    from viveka.social.commands import add_parser as add_social_parser
 
     add_sim_parser(sub, common)
     add_corpus_parsers(sub, common)
+    add_social_parser(sub, common)
     return parser
 
 
@@ -130,6 +132,10 @@ def main(argv: list[str] | None = None) -> int:
             from viveka.sim.commands import run as run_sim
 
             return run_sim(args, root)
+        if args.command == "social":
+            from viveka.social.commands import run as run_social
+
+            return run_social(args, root)
         if args.command in ("corpus", "case", "field", "census"):
             from viveka.corpus.commands import run as run_corpus
 

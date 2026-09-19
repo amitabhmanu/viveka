@@ -128,8 +128,10 @@ calibration_selection:
 
 # Social layer (stage S3; M5 plan, owner 19 Sep 2026), fixed before any clusters are seen. The framework
 # locates communities in the network of researchers (R1) from co-authorship and citation ties.
-#   coauthor_citation_v1: nodes are the authors of the case's works published in a sub-window (OpenAlex author
-#     ids; ingested venues' authors by folded family name and first initial). Each work with k >= 2 authors adds
+#   coauthor_citation_v1: nodes are the authors of the case's works published in a sub-window, by OpenAlex
+#     author id; when the case has ingested works, whose authors are known only by name, every author is keyed
+#     by folded family name and first initial, so one person is one node whichever venue a paper came from
+#     (ingested works have no citation data, so they add co-authorship ties only). Each work with k >= 2 authors adds
 #     1/(k-1) to every pair of its authors; each citation from a work in the sub-window to another corpus work
 #     adds 1/(a*b) to every pair of a citing and a cited author (a and b authors) who are both active in the
 #     sub-window. Ties are undirected; self-ties are dropped. Shared venues and institutions are not used: the
