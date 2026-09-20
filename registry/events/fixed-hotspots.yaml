@@ -1,0 +1,32 @@
+# Drafted 20 Sep 2026 under decision D-15 (calibration commitments); every work verified by lookup.
+# Awaiting owner review.
+
+format: 1
+claim: fixed-hotspots
+wording: "Hotspots are fixed relative to one another, so they define a reference frame for plate motion."
+notes: "Plate tectonics commitment P1."
+events:
+  - id: molnar-stock-1987
+    date: "1987"
+    kind: disconfirmation
+    works: [{openalex: W2034802911}]
+    note: "Relative motion between Pacific, Atlantic and Indian Ocean hotspots since the late Cretaceous."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: tarduno-cottrell-1997
+    date: "1997"
+    kind: disconfirmation
+    works: [{openalex: W2012625478}]
+    note: "Palaeomagnetic evidence that the Hawaiian hotspot moved while the Emperor seamounts formed."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: steinberger-oconnell-1998
+    date: "1998"
+    kind: disconfirmation
+    works: [{openalex: W2082195580}]
+    note: "Plumes are advected by mantle flow, so hotspots cannot be fixed."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: tarduno-2003
+    date: "2003"
+    kind: disconfirmation
+    works: [{openalex: W2133493439}]
+    note: "Southward motion of the Hawaiian plume from Emperor seamount palaeolatitudes."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."

@@ -59,6 +59,16 @@ class Claim:
 
 
 @dataclass(frozen=True)
+class Commitment:
+    """A calibration field's commitment (p, C, W): its claim (registry/events/<claim>.yaml) and seeds."""
+
+    commitment_id: str
+    claim: str
+    seeds: tuple[WorkRef, ...]
+    note: str | None = None
+
+
+@dataclass(frozen=True)
 class Case:
     case_id: str
     claim: str | None  # None for a calibration field
@@ -70,6 +80,7 @@ class Case:
     frames: tuple[Frame, ...]
     is_field: bool = False
     absent_venues: tuple[str, ...] = ()  # a field's core venues that are not in the corpus source
+    commitments: tuple[Commitment, ...] = ()  # a calibration field's commitments (fields format 2)
 
     @property
     def component(self) -> str:
@@ -118,8 +129,22 @@ def load_field(root: Path, field_id: str) -> Case:
                    for f in data["frames"])
     absent = tuple(f"{v['name']}" + (f" (ISSN-L {v['issn_l']})" if v.get("issn_l") else "") + f": {v['note']}"
                    for v in data["absent_venues"])
+    commitments = tuple(Commitment(c["id"], c["claim"], tuple(_ref(s) for s in c["seeds"]), c.get("note"))
+                        for c in data.get("commitments") or ())
     return Case(data["field"], None, data["role"], data["side"], int(data["window"]["start"]),
-                int(data["window"]["end"]), (), frames, is_field=True, absent_venues=absent)
+                int(data["window"]["end"]), (), frames, is_field=True, absent_venues=absent,
+                commitments=commitments)
+
+
+def load_commitment(root: Path, field_id: str, commitment_id: str) -> tuple[Case, Claim]:
+    """A field seen through one commitment: its claim and seeds set, its frames and window the field's."""
+    from dataclasses import replace
+
+    field = load_field(root, field_id)
+    found = next((c for c in field.commitments if c.commitment_id == commitment_id), None)
+    if found is None:
+        raise CaseError(f"field {field_id} has no commitment {commitment_id!r}")
+    return replace(field, claim=found.claim, seeds=found.seeds), load_claim(root, found.claim)
 
 
 def load_subject(root: Path, subject_id: str, is_field: bool) -> tuple[Case, Claim | None]:

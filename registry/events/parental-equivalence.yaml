@@ -1,0 +1,26 @@
+# Drafted 20 Sep 2026 under decision D-15 (calibration commitments); every work verified by lookup.
+# Awaiting owner review.
+
+format: 1
+claim: parental-equivalence
+wording: "Maternal and paternal alleles of a gene contribute equivalently to the offspring, as Mendelian inheritance assumes."
+notes: "Molecular genetics commitment G2."
+events:
+  - id: mcgrath-solter-1984
+    date: "1984"
+    kind: disconfirmation
+    works: [{openalex: W1978386737}]
+    note: "Mouse embryos with two maternal or two paternal genomes fail: the parental genomes are not equivalent."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: surani-1984
+    date: "1984"
+    kind: disconfirmation
+    works: [{openalex: W2075805514}]
+    note: "Reconstituted mouse eggs show the genome is imprinted during gametogenesis."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: nicholls-1989
+    date: "1989"
+    kind: disconfirmation
+    works: [{openalex: W2029299113}]
+    note: "Maternal heterodisomy in Prader-Willi syndrome: human disease from imprinting, not sequence."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."

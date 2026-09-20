@@ -1,0 +1,32 @@
+# Drafted 20 Sep 2026 under decision D-15 (calibration commitments); every work verified by lookup.
+# Awaiting owner review.
+
+format: 1
+claim: subluxation-causes-disease
+wording: "The chiropractic vertebral subluxation interferes with nerve function and is a cause of disease and ill health."
+notes: "Chiropractic commitment CH1. The claim the UK General Chiropractic Council judged unsupported in May 2010 (field file registry/fields/chiropractic.yaml)."
+events:
+  - id: nansel-szlazak-1995
+    date: "1995"
+    kind: disconfirmation
+    works: [{openalex: W2308053527}]
+    note: "Somatic dysfunction simulates visceral disease, which explains the apparent effect without a subluxation cause."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: keating-2005
+    date: "2005"
+    kind: disconfirmation
+    works: [{openalex: W2166509052}]
+    note: "Subluxation: dogma or science? The construct is not supported as a disease cause."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: ernst-2008
+    date: "2008"
+    kind: disconfirmation
+    works: [{openalex: W2058172942}]
+    note: "Critical evaluation of chiropractic, including the subluxation construct."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: mirtz-2009
+    date: "2009"
+    kind: disconfirmation
+    works: [{openalex: W2117279363}]
+    note: "The subluxation construct fails Hill's criteria of causation, in the community's own journal."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."

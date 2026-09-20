@@ -1,0 +1,26 @@
+# Drafted 20 Sep 2026 under decision D-15 (calibration commitments); every work verified by lookup.
+# Awaiting owner review.
+
+format: 1
+claim: central-dogma
+wording: "Sequence information passes from nucleic acid to protein and never from protein back to nucleic acid, and heritable information is carried by nucleic acid sequence."
+notes: "Molecular genetics commitment G1."
+events:
+  - id: prusiner-1982
+    date: "1982"
+    kind: disconfirmation
+    works: [{openalex: W2013679718}]
+    note: "Scrapie infectivity is carried by a protein, with no nucleic acid found."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: wickner-1994
+    date: "1994"
+    kind: disconfirmation
+    works: [{openalex: W2046445620}]
+    note: "[URE3] is inherited as an altered protein conformation in yeast: protein-based inheritance."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: anway-2005
+    date: "2005"
+    kind: disconfirmation
+    works: [{openalex: W2101037833}]
+    note: "Transgenerational inheritance of an induced phenotype through epigenetic marks rather than sequence."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."

@@ -1,0 +1,32 @@
+# Drafted 20 Sep 2026 under decision D-15 (calibration commitments); every work verified by lookup.
+# Awaiting owner review.
+
+format: 1
+claim: its90-thermodynamic-temperature
+wording: "The International Temperature Scale of 1990 realises thermodynamic temperature within its stated uncertainty, so temperatures measured on ITS-90 need no thermodynamic correction."
+notes: "Thermodynamics commitment T1. Primary thermometry (acoustic, and later refractive-index and noise) measures T - T90 directly; the community revised its practice as the differences grew clear."
+events:
+  - id: moldover-1988
+    date: "1988"
+    kind: disconfirmation
+    works: [{openalex: W4297835540}]
+    note: "Spherical acoustic resonator measurement of R, the basis of later primary acoustic thermometry."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: strouse-2003
+    date: "2003"
+    kind: disconfirmation
+    works: [{openalex: W1652425923}]
+    note: "Primary acoustic thermometry at NIST, 273 K to 505 K: T - T90 differences beyond ITS-90's stated uncertainty."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: pitre-2006
+    date: "2006"
+    kind: disconfirmation
+    works: [{openalex: W2053196580}]
+    note: "Acoustic thermometry from 273 K to 77 K, extending the measured differences to low temperatures."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: fischer-2011
+    date: "2011"
+    kind: disconfirmation
+    works: [{openalex: W2080900569}]
+    note: "Consensus estimates of T - T90 across the range, published in the community's own journal."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."

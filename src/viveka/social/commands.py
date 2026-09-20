@@ -11,7 +11,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from pathlib import Path
 
-from viveka.cases import CaseError, bearing_set, load_subject
+from viveka.cases import CaseError, bearing_set, load_commitment, load_subject
 from viveka.corpus import ingest, tables
 from viveka.corpus.commands import latest_run
 from viveka.corpus.config import load_corpus_config
@@ -27,8 +27,8 @@ Out = Callable[[str], None]
 UNAVAILABLE = ("hsbm",)  # graph-tool has no Windows build (decision D-1, 19 Sep 2026)
 
 
-def social_build(root: Path, case_id: str, fold: str, *, out: Out = print) -> str:
-    case, _ = load_subject(root, case_id, False)
+def social_build(root: Path, case_id: str, fold: str, *, field: bool = False, out: Out = print) -> str:
+    case, _ = load_subject(root, case_id, field)
     config = load_corpus_config(root)
     if config.social is None:
         raise CaseError("corpus.yaml registers no social settings")
@@ -85,7 +85,8 @@ def social_build(root: Path, case_id: str, fold: str, *, out: Out = print) -> st
     return ctx.run_id
 
 
-def eligibility_run(root: Path, case_id: str, fold: str, *, out: Out = print) -> str:
+def eligibility_run(root: Path, case_id: str, fold: str, *, field: bool = False, commitment: str | None = None,
+                    out: Out = print) -> str:
     """Stage S4: gate 1 before coding, per lineage and sub-window, from the case's latest S3 run.
 
     Coverage per lineage is measured only for lineage-windows that pass m and v, since no other can be eligible;
@@ -97,9 +98,15 @@ def eligibility_run(root: Path, case_id: str, fold: str, *, out: Out = print) ->
     from viveka.social.eligibility import bearing_results, check
     from viveka.social.lineage import LineageStep
 
-    case, claim = load_subject(root, case_id, False)
+    if field:
+        if not commitment:
+            raise CaseError(f"field {case_id} is scored per commitment; name one with --commitment")
+        case, claim = load_commitment(root, case_id, commitment)
+    else:
+        case, claim = load_subject(root, case_id, False)
     if claim is None:
         raise CaseError(f"{case_id} has no claim; eligibility needs one")
+    subject = f"{case_id}-{commitment}" if commitment else case_id
     thresholds = load_thresholds(root)
     m, v = int(thresholds["m_min_members"]), int(thresholds["v_min_citations"])
     r, lag = float(thresholds["r_min_coverage"]), float(thresholds["l_lag_years"])
@@ -132,9 +139,10 @@ def eligibility_run(root: Path, case_id: str, fold: str, *, out: Out = print) ->
     params = {"s3_run": s3["run_id"], "fetch_run": fetch["run_id"], "m": m, "v": v, "r": r, "lag": lag,
               "n": "pending (fitted at M8, decision D-11)", "primary_resolution": primary,
               "provisional": bool(s3["params"].get("provisional")), "bearing_rule": social.bearing_results,
+              "commitment": commitment, "claim": claim.claim_id,
               "bearing_anchors": len(anchors), "bearing_works": len(bearing),
               "disconfirmation_events": len(dates)}
-    with RunContext(root, "S4", case_id, fold, [case.component, "thresholds"], params=params) as ctx:
+    with RunContext(root, "S4", subject, fold, [case.component, "thresholds"], params=params) as ctx:
         for name in ("works", "authors", "authorships", "citations"):
             ctx.record_input(root / fetch["params"]["tables"][name])
         for name in ("clusters", "lineages"):
@@ -159,7 +167,7 @@ def eligibility_run(root: Path, case_id: str, fold: str, *, out: Out = print) ->
                           windows_needing_coverage=len(need_coverage), power_check="not run: no eligible lineage"
                           if not eligible else "pending")
         path = ctx.store(tables.to_parquet("eligibility", rows), "parquet", rows=len(rows))
-        report = _eligibility_report(case_id, ctx.run_id, s3["run_id"], fold, params, by_resolution, primary,
+        report = _eligibility_report(subject, ctx.run_id, s3["run_id"], fold, params, by_resolution, primary,
                                      decision, len(need_coverage))
         ctx.params["tables"] = {"eligibility": rel_posix(path, root),
                                 "report": rel_posix(ctx.store(report.encode("utf-8"), "md"), root)}
@@ -196,9 +204,9 @@ def _eligibility_report(case_id, run_id, s3_run, fold, params, by_resolution, pr
     return "\n".join(lines)
 
 
-def social_dry_run(root: Path, case_id: str, fold: str, *, out: Out = print) -> int:
+def social_dry_run(root: Path, case_id: str, fold: str, *, field: bool = False, out: Out = print) -> int:
     """What S3 would read and run, without writing anything."""
-    case, _ = load_subject(root, case_id, False)
+    case, _ = load_subject(root, case_id, field)
     thresholds = load_thresholds(root)
     fetch = latest_run(root, "S1", case_id, fold, require_frozen(root, [case.component], fold))
     spans = windows(case.start, case.end, int(thresholds["w_window_years"]))
@@ -211,12 +219,18 @@ def social_dry_run(root: Path, case_id: str, fold: str, *, out: Out = print) -> 
 def add_parser(sub, common) -> None:
     social = sub.add_parser("social", help="S3: the social layer (author graphs, clusters, lineages)")
     ssub = social.add_subparsers(dest="action", required=True)
-    p = ssub.add_parser("build", parents=[common], help="Cluster a case's authors per sub-window and link lineages")
-    p.add_argument("--case", required=True)
+    p = ssub.add_parser("build", parents=[common],
+                        help="Cluster a case's or field's authors per sub-window and link lineages")
+    group = p.add_mutually_exclusive_group(required=True)
+    group.add_argument("--case")
+    group.add_argument("--field")
     p.add_argument("--fold", required=True)
     p.add_argument("--dry-run", action="store_true")
     p = sub.add_parser("eligibility", parents=[common], help="S4: gate 1 before coding, per lineage and sub-window")
-    p.add_argument("--case", required=True)
+    group = p.add_mutually_exclusive_group(required=True)
+    group.add_argument("--case")
+    group.add_argument("--field")
+    p.add_argument("--commitment", help="A calibration field's commitment (fields format 2)")
     p.add_argument("--fold", required=True)
     p.add_argument("--dry-run", action="store_true")
 
@@ -224,16 +238,17 @@ def add_parser(sub, common) -> None:
 def run(args, root: Path, *, out: Out = print) -> int:
     from viveka.registry.errors import RegistryError
 
+    subject, is_field = (args.field, True) if getattr(args, "field", None) else (args.case, False)
     try:
         if args.command == "eligibility":
             if args.dry_run:
-                out(f"S4 dry run for {args.case} ({args.fold}): reads the latest S3 and S1 runs; local, no spend")
+                out(f"S4 dry run for {subject} ({args.fold}): reads the latest S3 and S1 runs; local, no spend")
                 return 0
-            eligibility_run(root, args.case, args.fold, out=out)
+            eligibility_run(root, subject, args.fold, field=is_field, commitment=args.commitment, out=out)
             return 0
         if args.dry_run:
-            return social_dry_run(root, args.case, args.fold, out=out)
-        social_build(root, args.case, args.fold, out=out)
+            return social_dry_run(root, subject, args.fold, field=is_field, out=out)
+        social_build(root, subject, args.fold, field=is_field, out=out)
         return 0
     except (CaseError, RegistryError) as exc:
         out(f"viveka: {exc}")

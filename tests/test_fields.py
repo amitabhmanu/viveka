@@ -33,6 +33,30 @@ def test_field_upstream_is_the_corpus_only(registry_root):
     assert comp.with_upstream(registry_root, ["fields/test-field"]) == ["schemas", "corpus", "fields/test-field"]
 
 
+def test_a_field_carries_its_commitments_and_their_claims(registry_root):
+    from conftest import write_lf
+
+    from viveka.cases import load_commitment
+
+    events = ('format: 1\nclaim: p-holds\nwording: "p holds."\nevents:\n'
+              '  - id: e1\n    date: "1991"\n    kind: disconfirmation\n'
+              "    works: [{openalex: W9}]\n"
+              '    note: "A result against p."\n    source: "Lookup."\n')
+    write_lf(registry_root / "registry" / "events" / "p-holds.yaml", events)
+    write_field(registry_root, FIELD_YAML.replace("format: 1", "format: 2").rstrip("\n")
+                + "\ncommitments:\n  - id: c1\n    claim: p-holds\n    seeds: [{openalex: W1}]\n"
+                  '    note: "The work the community cites as support."\n')
+    assert validate(registry_root, ["fields/test-field"]) == []
+    field, claim = load_subject(registry_root, "test-field", True)
+    assert claim is None and [c.commitment_id for c in field.commitments] == ["c1"]
+    case, claim = load_commitment(registry_root, "test-field", "c1")
+    assert case.claim == "p-holds" and case.seeds[0].openalex == "W1" and len(claim.events) == 1
+    assert case.frames == field.frames and case.component == "fields/test-field"
+    assert "events/p-holds" in comp.with_upstream(registry_root, ["fields/test-field"])
+    with pytest.raises(CaseError, match="no commitment"):
+        load_commitment(registry_root, "test-field", "missing")
+
+
 @pytest.mark.parametrize(
     ("text", "message"),
     [
@@ -48,6 +72,9 @@ def test_field_upstream_is_the_corpus_only(registry_root):
          "must list its absent venues"),
         (FIELD_YAML.replace("sources: [S5]}", "ingest: [nowhere]}"), "ingested venue 'nowhere' is not registered"),
         (FIELD_YAML.replace("kind: community, sources: [S5]}", "kind: community}"), "frames"),
+        (FIELD_YAML.replace("format: 1", "format: 2"), "commitments"),  # format 2 must carry them
+        (FIELD_YAML.rstrip("\n") + "\ncommitments:\n  - id: c1\n    claim: missing\n"
+         '    seeds: [{openalex: W1}]\n    note: "x"\n', "commitments"),  # format 1 must not
     ],
 )
 def test_invalid_fields_are_reported(registry_root, text, message):

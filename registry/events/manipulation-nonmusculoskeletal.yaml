@@ -1,0 +1,38 @@
+# Drafted 20 Sep 2026 under decision D-15 (calibration commitments); every work verified by lookup.
+# Awaiting owner review.
+
+format: 1
+claim: manipulation-nonmusculoskeletal
+wording: "Chiropractic spinal manipulation is an effective treatment for non-musculoskeletal conditions such as childhood asthma and infantile colic."
+notes: "Chiropractic commitment CH2."
+events:
+  - id: balon-1998
+    date: "1998"
+    kind: disconfirmation
+    works: [{openalex: W2328345995}]
+    note: "Randomised trial: active manipulation is no better than simulated manipulation for childhood asthma."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: olafsdottir-2001
+    date: "2001"
+    kind: disconfirmation
+    works: [{openalex: W2146271007}]
+    note: "Randomised controlled trial of infantile colic: chiropractic manipulation is no better than placebo."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: ernst-2009
+    date: "2009"
+    kind: disconfirmation
+    works: [{openalex: W2157871608}]
+    note: "Systematic review of randomised trials of spinal manipulation for infant colic: no convincing effect."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: bronfort-2010
+    date: "2010"
+    kind: disconfirmation
+    works: [{openalex: W2162777098}]
+    note: "UK evidence report: the evidence does not support manipulation for most non-musculoskeletal conditions."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: cochrane-2012
+    date: "2012"
+    kind: disconfirmation
+    works: [{openalex: W2000710385}]
+    note: "Cochrane review of manipulative therapies for infantile colic."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."

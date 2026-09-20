@@ -1,5 +1,5 @@
 # Drafted 17 Sep 2026 (M4b) from OpenAlex venue lookups; awaiting owner review.
-format: 1
+format: 2
 field: immunology
 role: calibration
 side: science
@@ -8,3 +8,12 @@ notes: "Added from the science candidates: a medical-biological science, a count
 frames:
   - {id: venues, kind: community, sources: [S38008053, S126191069, S79173686], note: "The Journal of Immunology (ISSN-L 0022-1767), European Journal of Immunology (0014-2980) and Scandinavian Journal of Immunology (0300-9475)."}
 absent_venues: []
+commitments:
+  - id: adaptive-only-memory
+    claim: adaptive-only-memory
+    seeds: [{openalex: W2162543584}]
+    note: "Seed: Ahmed and Gray 1996, the review of memory as a property of adaptive immunity."
+  - id: clonal-deletion
+    claim: clonal-deletion
+    seeds: [{openalex: W1691896390}, {openalex: W2007362831}]
+    note: "Seeds: Lederberg 1959 and Kappler et al. 1987, clonal selection and deletion of self-reactive clones."

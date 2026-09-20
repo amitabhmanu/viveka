@@ -1,5 +1,5 @@
 # Drafted 17 Sep 2026 (M4b) from OpenAlex venue lookups; awaiting owner review.
-format: 1
+format: 2
 field: molecular-genetics
 role: calibration
 side: science
@@ -8,3 +8,12 @@ notes: "Genetics (S65932378) and Nucleic Acids Research (S134668137) were consid
 frames:
   - {id: venues, kind: community, sources: [S4210168070, S129324922, S166515463], note: "Molecular and General Genetics MGG (ISSN-L 0026-8925, to 2000), its continuation Molecular Genetics and Genomics (1617-4615, from 2001), and Human Molecular Genetics (0964-6906)."}
 absent_venues: []
+commitments:
+  - id: central-dogma
+    claim: central-dogma
+    seeds: [{openalex: W2055214702}]
+    note: "Seed: Crick 1970, the statement of the dogma the field cites."
+  - id: parental-equivalence
+    claim: parental-equivalence
+    seeds: [{openalex: W2480019958}]
+    note: "Seed: Mendel's Experiments in plant-hybridisation (1925 English edition), the source of the equivalence assumption."

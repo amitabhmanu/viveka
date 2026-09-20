@@ -34,6 +34,10 @@ def no_network():
 def run_cli(root, *argv, transport=None):
     lines = []
     args = cli._parser().parse_args([*argv, "--root", str(root)])
+    if args.command in ("social", "eligibility"):
+        from viveka.social.commands import run as run_social
+
+        return run_social(args, root, out=lines.append), "\n".join(lines)
     code = commands.run(args, root, transport=transport, out=lines.append)
     return code, "\n".join(lines)
 
@@ -393,3 +397,29 @@ def test_eligibility_reads_the_latest_social_layer_and_records_the_decision(worl
     assert rows and not any(r["meets_m"] for r in rows)
     assert any(r["citations_on_claim"] > 0 for r in rows)  # the fake citing works cite the seeds
     assert "Decision at resolution 1: replace" in "\n".join(lines)
+
+
+def test_a_field_commitment_goes_through_the_social_layer_and_eligibility(world):
+    from viveka.social.commands import eligibility_run, social_build
+
+    root, fake = world
+    write_lf(root / "registry" / "events" / "p-holds.yaml",
+             'format: 1\nclaim: p-holds\nwording: "p holds."\nevents:\n'
+             '  - id: e1\n    date: "1990"\n    kind: disconfirmation\n'
+             "    works: [{openalex: W1}]\n"
+             '    note: "A result against p."\n    source: "Lookup."\n')
+    write_field(root, FIELD_YAML.replace("format: 1", "format: 2").rstrip("\n")
+                + "\ncommitments:\n  - id: c1\n    claim: p-holds\n    seeds: [{openalex: W2}]\n"
+                  '    note: "Cited as support."\n')
+    commands.fetch_case(root, "test-field", "dev", field=True, transport=fake.transport(), out=lambda s: None)
+    social_build(root, "test-field", "dev", field=True, out=lambda s: None)
+    with pytest.raises(CaseError, match="--commitment"):
+        eligibility_run(root, "test-field", "dev", field=True, out=lambda s: None)
+    lines = []
+    manifest = load_manifest(root, eligibility_run(root, "test-field", "dev", field=True, commitment="c1",
+                                                   out=lines.append))
+    assert manifest["case"] == "test-field-c1" and manifest["params"]["claim"] == "p-holds"
+    assert manifest["registry"]["components"]["fields/test-field"].startswith("draft:")
+    assert manifest["params"]["decision"] == "replace" and "Decision at resolution 1" in "\n".join(lines)
+    code, text = run_cli(root, "eligibility", "--field", "test-field", "--commitment", "c9", "--fold", "dev")
+    assert code == 1 and "no commitment" in text

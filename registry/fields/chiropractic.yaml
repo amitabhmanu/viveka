@@ -1,5 +1,5 @@
 # Drafted 19 Sep 2026 (decision D-14, option 1) from OpenAlex venue lookups; awaiting owner review.
-format: 1
+format: 2
 field: chiropractic
 role: calibration
 side: pseudoscience
@@ -11,3 +11,12 @@ absent_venues:
   - {name: "Journal of Vertebral Subluxation Research", issn_l: null, note: "Not found in OpenAlex (lookup 19 Sep 2026); the subluxation-based community's own research journal. Ingestion from its own archive is not yet checked."}
   - {name: "Annals of Vertebral Subluxation Research", issn_l: null, note: "Not found in OpenAlex (lookup 19 Sep 2026). Ingestion is not yet checked."}
   - {name: "Journal of the Canadian Chiropractic Association", issn_l: "0008-3194", note: "OpenAlex source S2754693713 lists only 37 works; its full run is on PubMed Central. Left out for now."}
+commitments:
+  - id: subluxation
+    claim: subluxation-causes-disease
+    seeds: [{openalex: W148106642}, {openalex: W2090396746}, {openalex: W2135456462}]
+    note: "Seeds: Seaman and Winterstein 1998 on dysafferentation, and Haavik-Taylor and Murphy 2006 and 2008 on sensorimotor effects of manipulation, which the community cites as the mechanism."
+  - id: nonmusculoskeletal
+    claim: manipulation-nonmusculoskeletal
+    seeds: [{openalex: W4251151091}, {openalex: W2063339427}]
+    note: "Seeds: Wiberg et al., the colic trial the community cites as support, and Hawk et al. 2007, its review of care for non-musculoskeletal conditions."

@@ -231,6 +231,14 @@ def _check_fields(root: Path, rel: str) -> list[str]:
     if dupes:
         problems.append(f"{rel}: duplicate frame ids: {', '.join(dupes)}")
     problems += _unknown_venues(root, rel, data["frames"])
+    commitments = data.get("commitments") or []
+    dupes = _duplicates([c["id"] for c in commitments])
+    if dupes:
+        problems.append(f"{rel}: duplicate commitment ids: {', '.join(dupes)}")
+    for c in commitments:
+        if not (root / REGISTRY / "events" / f"{c['claim']}.yaml").is_file():
+            problems.append(f"{rel}: commitment {c['id']}: claim {c['claim']!r} has no "
+                            f"{REGISTRY}/events/{c['claim']}.yaml")
     return problems
 
 

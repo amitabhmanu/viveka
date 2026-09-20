@@ -1,0 +1,26 @@
+# Drafted 20 Sep 2026 under decision D-15 (calibration commitments); every work verified by lookup.
+# Awaiting owner review.
+
+format: 1
+claim: rigid-plates
+wording: "Lithospheric plates are rigid, and deformation is confined to narrow boundaries between them."
+notes: "Plate tectonics commitment P2."
+events:
+  - id: wiens-1985
+    date: "1985"
+    kind: disconfirmation
+    works: [{openalex: W2012056720}]
+    note: "Indian Ocean seismicity and deformation require a diffuse plate boundary, not a narrow one."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: gordon-stein-1992
+    date: "1992"
+    kind: disconfirmation
+    works: [{openalex: W2031367151}]
+    note: "Space geodesy measures intraplate deformation against the rigid-plate model."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: gordon-1998
+    date: "1998"
+    kind: disconfirmation
+    works: [{openalex: W2158427587}]
+    note: "Review of plate non-rigidity and diffuse boundaries: the rigid plate is an approximation."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."

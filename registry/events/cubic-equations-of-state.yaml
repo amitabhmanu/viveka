@@ -1,0 +1,26 @@
+# Drafted 20 Sep 2026 under decision D-15 (calibration commitments); every work verified by lookup.
+# Awaiting owner review.
+
+format: 1
+claim: cubic-equations-of-state
+wording: "Cubic equations of state of the van der Waals family describe the phase behaviour and volumetric properties of fluids and their mixtures."
+notes: "Thermodynamics commitment T2. The failures are volumetric and near-critical; the community answered with volume translation, crossover terms and molecular-based equations rather than abandoning cubics."
+events:
+  - id: peneloux-1982
+    date: "1982"
+    kind: disconfirmation
+    works: [{openalex: W2053412108}]
+    note: "Liquid volumes from Redlich-Kwong-Soave are systematically wrong; a consistent volume correction is introduced."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: chapman-1990
+    date: "1990"
+    kind: disconfirmation
+    works: [{openalex: W2097494644}]
+    note: "SAFT: a molecular-based reference equation for associating liquids, where cubics fail."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: kiselev-1998
+    date: "1998"
+    kind: disconfirmation
+    works: [{openalex: W1993747455}]
+    note: "Cubic equations fail near the critical point; a crossover formulation is required."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."

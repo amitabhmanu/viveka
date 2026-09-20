@@ -1,0 +1,26 @@
+# Drafted 20 Sep 2026 under decision D-15 (calibration commitments); every work verified by lookup.
+# Awaiting owner review.
+
+format: 1
+claim: clonal-deletion
+wording: "Immune responses are governed by self-nonself discrimination, with self-reactive clones deleted during development."
+notes: "Immunology commitment I2."
+events:
+  - id: janeway-1989
+    date: "1989"
+    kind: disconfirmation
+    works: [{openalex: W2114737175}]
+    note: "Adaptive responses require innate signals of infection: recognition of nonself is not sufficient."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: matzinger-1994
+    date: "1994"
+    kind: disconfirmation
+    works: [{openalex: W2158500407}]
+    note: "The danger model: responses follow damage signals rather than nonself."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: sakaguchi-1995
+    date: "1995"
+    kind: disconfirmation
+    works: [{openalex: W4313324526}]
+    note: "Self-tolerance is actively maintained by regulatory T cells, not by deletion alone."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."

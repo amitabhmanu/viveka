@@ -885,7 +885,9 @@ def run(args: argparse.Namespace, root: Path, *, transport: httpx.BaseTransport 
             ingested = sorted({v for f in case.frames for v in f.ingest})
             out(f"field {case.case_id} valid: {case.pair}, {len(case.frames)} frame(s) over {sources} source(s)"
                 + (f" and ingested venue(s) {', '.join(ingested)}" if ingested else "") + ", "
-                f"window {case.start}–{case.end}, {len(case.absent_venues)} absent venue(s)")
+                f"window {case.start}–{case.end}, {len(case.absent_venues)} absent venue(s)"
+                + (", commitments " + ", ".join(c.commitment_id for c in case.commitments)
+                   if case.commitments else ", no commitments"))
             return 0
         if args.command == "corpus" and args.action == "resolve":
             return resolve_lookup(root, doi=args.doi, openalex_id=args.openalex_id, title=args.title,

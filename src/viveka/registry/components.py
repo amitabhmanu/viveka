@@ -127,6 +127,8 @@ def direct_upstream(root: Path, name: str) -> list[str]:
         claim = _claim_of(root, name)
         if claim:
             upstream.append(f"events/{claim}")
+    if name.startswith("fields/"):
+        upstream += [f"events/{claim}" for claim in _commitment_claims(root, name)]
     return upstream
 
 
@@ -150,6 +152,22 @@ def with_upstream(root: Path, names: list[str]) -> list[str]:
 def downstream(root: Path, name: str, candidates: list[str]) -> list[str]:
     """Candidates that depend on ``name``, directly or transitively."""
     return [c for c in candidates if c != name and name in with_upstream(root, [c])]
+
+
+def _commitment_claims(root: Path, name: str) -> list[str]:
+    """The claims a calibration field's commitments name (fields format 2), in order, without duplicates."""
+    import yaml
+
+    path = root / REGISTRY / f"{name}.yaml"
+    if not path.is_file():
+        return []
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except yaml.YAMLError:
+        return []
+    items = data.get("commitments") if isinstance(data, dict) else None
+    claims = [c.get("claim") for c in items or [] if isinstance(c, dict)]
+    return list(dict.fromkeys(c for c in claims if isinstance(c, str) and _PER_FILE_NAME.match(c)))
 
 
 def _claim_of(root: Path, name: str) -> str | None:

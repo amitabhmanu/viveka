@@ -1,0 +1,26 @@
+# Drafted 20 Sep 2026 under decision D-15 (calibration commitments); every work verified by lookup.
+# Awaiting owner review.
+
+format: 1
+claim: nonclassical-norbornyl-cation
+wording: "The 2-norbornyl cation is nonclassical: a single sigma-delocalised, symmetrically bridged species."
+notes: "Organic chemistry commitment O1. The classical-ion case was argued for two decades before the crystal structure of 2013 (W2094553604) settled the question for the community."
+events:
+  - id: brown-1982
+    date: "1982"
+    kind: disconfirmation
+    works: [{openalex: W2029003876}]
+    note: "The nonclassical ion problem twenty years later: the solvolysis evidence is read as classical, rapidly equilibrating ions."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: brown-1983
+    date: "1983"
+    kind: disconfirmation
+    works: [{openalex: W1998532368}]
+    note: "Transition-state energies leave no room for the claimed nonclassical stabilisation energy."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: mcmaster-1983
+    date: "1983"
+    kind: disconfirmation
+    works: [{openalex: W2023868697}]
+    note: "Acid-catalysed cleavage of 4-halonortricyclanes: evidence for an unsymmetrically bridged intermediate. Authorship to confirm at review."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."

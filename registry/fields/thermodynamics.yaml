@@ -1,5 +1,5 @@
 # Drafted 17 Sep 2026 (M4b) from OpenAlex venue lookups; awaiting owner review.
-format: 1
+format: 2
 field: thermodynamics
 role: calibration
 side: science
@@ -8,3 +8,12 @@ notes: "Core thermodynamics journals only; general chemistry and physics journal
 frames:
   - {id: venues, kind: community, sources: [S173979593, S201183278, S34870678, S101466443], note: "The Journal of Chemical Thermodynamics (ISSN-L 0021-9614), Journal of Non-Equilibrium Thermodynamics (0340-0204), Fluid Phase Equilibria (0378-3812) and International Journal of Thermophysics (0195-928X)."}
 absent_venues: []
+commitments:
+  - id: its90
+    claim: its90-thermodynamic-temperature
+    seeds: [{openalex: W2002119104}]
+    note: "Seed: Preston-Thomas 1990, the scale itself, which the metrology community cites as the basis of its measurements."
+  - id: cubic-eos
+    claim: cubic-equations-of-state
+    seeds: [{openalex: W2129288307}, {openalex: W2094818470}]
+    note: "Seeds: Peng-Robinson 1976 and Soave 1972, the two cubic equations the fluid-phase community builds on."

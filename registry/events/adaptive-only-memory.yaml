@@ -1,0 +1,32 @@
+# Drafted 20 Sep 2026 under decision D-15 (calibration commitments); every work verified by lookup.
+# Awaiting owner review.
+
+format: 1
+claim: adaptive-only-memory
+wording: "Immunological memory is a property of adaptive lymphocytes alone; innate immunity responds identically to every encounter."
+notes: "Immunology commitment I1."
+events:
+  - id: oleary-2006
+    date: "2006"
+    kind: disconfirmation
+    works: [{openalex: W1972452655}]
+    note: "Contact hypersensitivity memory mediated by natural killer cells, without T or B cells."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: sun-2009
+    date: "2009"
+    kind: disconfirmation
+    works: [{openalex: W1982084822}]
+    note: "Natural killer cells show clonal expansion and long-lived memory after viral infection."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: netea-2011
+    date: "2011"
+    kind: disconfirmation
+    works: [{openalex: W2116797415}]
+    note: "Trained immunity: innate cells mount an enhanced response to a second challenge."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: kleinnijenhuis-2012
+    date: "2012"
+    kind: disconfirmation
+    works: [{openalex: W2059403792}]
+    note: "BCG gives nonspecific protection through epigenetic reprogramming of monocytes."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."

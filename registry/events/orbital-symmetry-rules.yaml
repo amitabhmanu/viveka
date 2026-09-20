@@ -1,0 +1,32 @@
+# Drafted 20 Sep 2026 under decision D-15 (calibration commitments); every work verified by lookup.
+# Awaiting owner review.
+
+format: 1
+claim: orbital-symmetry-rules
+wording: "Orbital-symmetry (Woodward-Hoffmann) rules govern pericyclic reactions: symmetry-forbidden pathways do not occur."
+notes: "Organic chemistry commitment O2. The disconfirmations are mechanically driven reactions that follow the forbidden path."
+events:
+  - id: hickenboth-2007
+    date: "2007"
+    kind: disconfirmation
+    works: [{openalex: W2051769448}]
+    note: "Mechanical force biases a ring opening along the symmetry-forbidden pathway."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: nature-chem-2015
+    date: "2015"
+    kind: disconfirmation
+    works: [{openalex: W2023974158}]
+    note: "Forbidden reactivity induced and quantified in single-molecule polymer mechanochemistry."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: joc-2015
+    date: "2015"
+    kind: disconfirmation
+    works: [{openalex: W2197771435}]
+    note: "An anti-Woodward-Hoffmann ring opening accelerated by a polymer lever-arm effect, in the community's own journal."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
+  - id: jacs-2021
+    date: "2021"
+    kind: disconfirmation
+    works: [{openalex: W4200142691}]
+    note: "A forbidden conrotatory 4n+2 electrocyclisation found in a thermal reaction."
+    source: "OpenAlex lookup, 19 Sep 2026 (year from the record)."
