@@ -108,7 +108,7 @@
         "leiden_seed": {"type": "integer", "minimum": 0},
         "lineage_min_members": {"type": "integer", "minimum": 2},
         "primary_resolution": {"type": "number", "exclusiveMinimum": 0},
-        "bearing_results": {"enum": ["bearing_results_v1"]}
+        "bearing_results": {"enum": ["bearing_results_v1", "bearing_results_v2"]}
       }
     },
     "ingestion": {

@@ -148,12 +148,18 @@ calibration_selection:
 #     the quantity v was simulated for (the simulator's citations_on_claim). Before any coding the results
 #     bearing on p are the seeds, the event works and every corpus work that cites one of them. Under v3, S4
 #     counted only citations to the seeds and event works, which is not what v measures.
+#   bearing_results_v2 (D-15, 24 Sep 2026; post hoc, after the dev-fold S4 of the calibration commitments):
+#     as v1, and the results bearing on p are fetched rather than taken from the corpus. S1 gives every
+#     commitment a `bearing` frame, the works citing its anchors wherever they were published, as a case's
+#     citing frame already does. Under v1 a field's corpus held only its own venues, so results published
+#     elsewhere were invisible: molecular genetics counted three results bearing on the central dogma, since
+#     the prion and imprinting literature is not in its two journals. Bearing frames are never censused.
 social:
   graph: coauthor_citation_v1
   leiden_seed: 20260919
   lineage_min_members: 2
   primary_resolution: 1.0
-  bearing_results: bearing_results_v1
+  bearing_results: bearing_results_v2
 
 # Community venues that OpenAlex does not index, ingested from their own archives (framework corpus row:
 # "each community's own venues ingested directly"; owner decision D-1, 17 Sep 2026: no GROBID, text layers

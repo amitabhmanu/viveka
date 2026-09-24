@@ -411,8 +411,20 @@ def test_a_field_commitment_goes_through_the_social_layer_and_eligibility(world)
     write_field(root, FIELD_YAML.replace("format: 1", "format: 2").rstrip("\n")
                 + "\ncommitments:\n  - id: c1\n    claim: p-holds\n    seeds: [{openalex: W2}]\n"
                   '    note: "Cited as support."\n')
-    commands.fetch_case(root, "test-field", "dev", field=True, transport=fake.transport(), out=lambda s: None)
-    social_build(root, "test-field", "dev", field=True, out=lambda s: None)
+    fetch = load_manifest(root, commands.fetch_case(root, "test-field", "dev", field=True,
+                                                    transport=fake.transport(), out=lambda s: None))
+    frames = table(root, fetch, "frames")
+    bearing = {f["work_id"] for f in frames if f["kind"] == "bearing"}
+    # The bearing frame holds the commitment's anchors and the works citing them, wherever published: W2 is its
+    # seed, W1 its event work, and the citing works come from outside the field's own venue frame.
+    assert {"W1", "W2"} <= bearing and bearing - {f["work_id"] for f in frames if f["kind"] == "community"}
+    assert fetch["params"]["bearing_frames"] == {"c1": 2}
+    census = load_manifest(root, commands.census_case(root, "test-field", "dev", field=True,
+                                                      transport=fake.transport(), out=lambda s: None))
+    assert {r["frame_id"] for r in table(root, census, "coverage")} == {"venues"}  # never censused
+    social = load_manifest(root, social_build(root, "test-field", "dev", field=True, out=lambda s: None))
+    clustered = {r["author"] for r in table(root, social, "clusters")}
+    assert not (clustered & {f"A{10 + i}" for i in range(10)})  # the citing literature's authors are not nodes
     with pytest.raises(CaseError, match="--commitment"):
         eligibility_run(root, "test-field", "dev", field=True, out=lambda s: None)
     lines = []

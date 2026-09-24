@@ -50,6 +50,7 @@ from viveka.provenance import FOLDS, RunContext, recent_runs
 from viveka.registry.verify import require_frozen
 
 Out = Callable[[str], None]
+BEARING = "bearing"  # a commitment's frame of the results bearing on p (never censused)
 ASSUMED_REFS_PER_WORK = 40  # dry-run estimate only, for sampled works whose reference lists are not archived yet
 
 
@@ -106,7 +107,11 @@ def _seed_ids(case: Case, resolved: dict[WorkRef, dict | None]) -> list[str]:
     return sorted({short_id(obj["id"]) for ref, obj in resolved.items() if ref in case.seeds and obj})
 
 
-def collect_corpus(fetcher: Fetcher, config: CorpusConfig, case: Case, claim: Claim) -> dict[str, list[dict]]:
+def collect_corpus(fetcher: Fetcher, config: CorpusConfig, case: Case, claim: Claim | None,
+                   commitments: Sequence[tuple[str, tuple[WorkRef, ...]]] = ()) -> dict[str, list[dict]]:
+    """A subject's frames as rows. A calibration field also gets one `bearing` frame per commitment: the works
+    citing that commitment's anchors, wherever they were published, which are the results bearing on p
+    (`bearing_results_v2`). Those frames are not censused; S4 counts a lineage's citations against them."""
     bearing = bearing_set(case, claim)
     resolved = resolve_refs(fetcher, config, bearing)
     missing = [r.key for r in bearing if resolved[r] is None]
@@ -135,6 +140,26 @@ def collect_corpus(fetcher: Fetcher, config: CorpusConfig, case: Case, claim: Cl
                 listed[name] += found_rows
             frame_rows += [{"case_id": case.case_id, "frame_id": frame.frame_id, "kind": frame.kind,
                             "work_id": row["work_id"], "year": row["year"]} for row in found["works"]]
+    for commitment_id, anchors in commitments:
+        found = resolve_refs(fetcher, config, anchors)
+        unknown = [r.key for r in anchors if found[r] is None]
+        if unknown:
+            raise CaseError(f"commitment {commitment_id}: works not found in OpenAlex: {', '.join(unknown)}")
+        for obj in found.values():
+            if obj:
+                works.setdefault(short_id(obj["id"]), obj)
+        anchor_ids = [short_id(obj["id"]) for obj in found.values() if obj]
+        for flt in openalex.frame_filters(True, anchor_ids, case.start, case.end):
+            for page in openalex.iter_pages(fetcher, flt, per_page):
+                for obj in (page.body or {}).get("results") or []:
+                    work_id = short_id(obj.get("id"))
+                    works.setdefault(work_id, obj)
+                    frame_rows.append({"case_id": case.case_id, "frame_id": f"{BEARING}-{commitment_id}",
+                                       "kind": BEARING, "work_id": work_id,
+                                       "year": obj.get("publication_year")})
+        frame_rows += [{"case_id": case.case_id, "frame_id": f"{BEARING}-{commitment_id}", "kind": BEARING,
+                        "work_id": work_id, "year": works[work_id].get("publication_year")}
+                       for work_id in anchor_ids]
     objs = list(works.values())
     return {
         "works": [openalex.work_row(o) for o in objs] + listed["works"],
@@ -229,18 +254,34 @@ def probe(fetcher: Fetcher, config: CorpusConfig, case: Case, claim: Claim | Non
             fetcher.get(openalex.list_request(flt, "*", int(config.openalex["per_page"])))
 
 
+def _anchors(root: Path, case: Case, commitment) -> tuple[WorkRef, ...]:
+    """A commitment's seeds and its claim's event works: what results bearing on p are counted from."""
+    from viveka.cases import load_claim
+
+    claim = load_claim(root, commitment.claim)
+    seen, refs = set(), []
+    for ref in (*commitment.seeds, *(w for e in claim.events for w in e.works)):
+        if ref.key not in seen:
+            seen.add(ref.key)
+            refs.append(ref)
+    return tuple(refs)
+
+
 def fetch_case(root: Path, case_id: str, fold: str, *, field: bool = False,
                transport: httpx.BaseTransport | None = None, out: Out = print) -> str:
     case, claim = load_subject(root, case_id, field)
     config = load_corpus_config(root)
+    commitments = tuple((c.commitment_id, _anchors(root, case, c)) for c in case.commitments)
     params: dict = {"window": [case.start, case.end]}
+    if commitments:
+        params["bearing_frames"] = {cid: len(anchors) for cid, anchors in commitments}
     venues = sorted({v for f in case.frames for v in f.ingest})
     if venues:
         params["ingestion"] = {"venues": {v: config.venue(v).adapter for v in venues}}
     with RunContext(root, "S1", case_id, fold, [case.component], params=params) as ctx:
         with make_fetcher(root, config, need=("openalex",), transport=transport, run_id=ctx.run_id) as fetcher:
             try:
-                rows = collect_corpus(fetcher, config, case, claim)
+                rows = collect_corpus(fetcher, config, case, claim, commitments)
             finally:
                 _finish(ctx, fetcher)
         written = {}
@@ -250,7 +291,8 @@ def fetch_case(root: Path, case_id: str, fold: str, *, field: bool = False,
         ctx.params["tables"] = written
     frame_sizes = Counter(frame for frame, _ in {(r["frame_id"], r["work_id"]) for r in rows["frames"]})
     out(f"run {ctx.run_id}: {len({r['work_id'] for r in rows['works']})} works; "
-        + ", ".join(f"frame {f.frame_id}: {frame_sizes.get(f.frame_id, 0)}" for f in case.frames))
+        + ", ".join([f"frame {f.frame_id}: {frame_sizes.get(f.frame_id, 0)}" for f in case.frames]
+                    + [f"bearing {cid}: {frame_sizes.get(f'{BEARING}-{cid}', 0)}" for cid, _ in commitments]))
     out(_usage_line(ctx.usage))
     return ctx.run_id
 
@@ -323,6 +365,8 @@ def draw_sample(case: Case, frames_rows: list[dict], works_rows: list[dict], per
     excluded: dict[str, Counter] = defaultdict(Counter)
     undated = 0
     for row in frames_rows:
+        if row["kind"] == BEARING:
+            continue
         if row["year"] is None:
             undated += 1
             continue

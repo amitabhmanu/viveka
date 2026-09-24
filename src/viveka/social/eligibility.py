@@ -7,7 +7,8 @@ case has a lineage meeting m, n, v and r in the sub-windows its predictions need
 * citations bearing on p: the number of distinct results bearing on p cited by works published in the
   sub-window with at least one member among their authors, the quantity v was simulated for (the simulator's
   citations_on_claim counts the distinct results a community cites). Before any coding, the results bearing
-  on p are the seeds, the event works and every corpus work that cites one of them (``bearing_results_v1``);
+  on p are the seeds, the event works, the works of the commitment's fetched `bearing` frame (every work citing
+  one of them, wherever published) and any other corpus work citing one of them (``bearing_results_v2``);
 * disconfirmations: registered disconfirmation events dated at least lag years before the sub-window's end
   (the n check waits for n, fitted at M8; decision D-11);
 * coverage: supplied by the caller, from a census of the lineage's papers (None when not measured).

@@ -13,7 +13,7 @@ from pathlib import Path
 
 from viveka.cases import CaseError, bearing_set, load_commitment, load_subject
 from viveka.corpus import ingest, tables
-from viveka.corpus.commands import latest_run
+from viveka.corpus.commands import BEARING, latest_run
 from viveka.corpus.config import load_corpus_config
 from viveka.paths import rel_posix
 from viveka.provenance import RunContext
@@ -24,6 +24,11 @@ from viveka.social.leiden import METHOD, leiden
 from viveka.social.lineage import link
 
 Out = Callable[[str], None]
+
+
+def _own_works(frames_rows: list[dict]) -> set[str]:
+    """The subject's own works: every frame but a commitment's bearing frame, which is the literature on p."""
+    return {row["work_id"] for row in frames_rows if row["kind"] != BEARING}
 UNAVAILABLE = ("hsbm",)  # graph-tool has no Windows build (decision D-1, 19 Sep 2026)
 
 
@@ -45,10 +50,11 @@ def social_build(root: Path, case_id: str, fold: str, *, field: bool = False, ou
         raise CaseError(f"no successful S1 run for {case_id} in fold {fold} with the current registry; "
                         "run `viveka corpus fetch` first")
     read = {name: tables.read(root / fetch["params"]["tables"][name])
-            for name in ("works", "authors", "authorships", "citations")}
+            for name in ("works", "authors", "authorships", "citations", "frames")}
+    own = _own_works(read["frames"])
     by_name = any(ingest.is_ingested(r["work_id"]) for r in read["works"])
     keys = node_keys(read["authors"], by_name)
-    years = {r["work_id"]: r["year"] for r in read["works"]}
+    years = {r["work_id"]: r["year"] for r in read["works"] if not own or r["work_id"] in own}
     authors = authors_by_work((r["work_id"], keys[r["author_id"]]) for r in read["authorships"]
                               if r["author_id"] in keys)
     citations = [(r["citing_work"], r["cited_work"]) for r in read["citations"]]
@@ -60,7 +66,7 @@ def social_build(root: Path, case_id: str, fold: str, *, field: bool = False, ou
               "leiden_seed": settings.leiden_seed, "lineage_min_members": settings.lineage_min_members}
     with RunContext(root, "S3", case_id, fold, [case.component, "thresholds"], seed=settings.leiden_seed,
                     params=params) as ctx:
-        for name in ("works", "authors", "authorships", "citations"):
+        for name in ("works", "authors", "authorships", "citations", "frames"):
             ctx.record_input(root / fetch["params"]["tables"][name])
         graphs = [build_graph(span, years, authors, citations) for span in spans]
         cluster_rows, lineage_rows, summary = [], [], []
@@ -118,17 +124,20 @@ def eligibility_run(root: Path, case_id: str, fold: str, *, field: bool = False,
     if fetch is None or fetch["run_id"] != s3["params"]["fetch_run"]:
         raise CaseError(f"the latest S1 run for {case_id} is not the one S3 used; rerun `viveka social build`")
     read = {name: tables.read(root / fetch["params"]["tables"][name])
-            for name in ("works", "authors", "authorships", "citations")}
+            for name in ("works", "authors", "authorships", "citations", "frames")}
+    own = _own_works(read["frames"])
     keys = node_keys(read["authors"], s3["params"]["nodes"] == "name")
-    years = {row["work_id"]: row["year"] for row in read["works"]}
+    years = {row["work_id"]: row["year"] for row in read["works"] if not own or row["work_id"] in own}
     authors = authors_by_work((row["work_id"], keys[row["author_id"]]) for row in read["authorships"]
                               if row["author_id"] in keys)
     citations = [(row["citing_work"], row["cited_work"]) for row in read["citations"]]
     social = load_corpus_config(root).social
-    if social is None or social.bearing_results != "bearing_results_v1":
+    if social is None or social.bearing_results != "bearing_results_v2":
         raise CaseError("corpus.yaml social settings register no known bearing_results rule")
     anchors = {ref.openalex for ref in bearing_set(case, claim) if ref.openalex}
-    bearing = bearing_results(anchors, citations)
+    frame_works = {row["work_id"] for row in read["frames"]
+                   if row["kind"] == BEARING and (not commitment or row["frame_id"] == f"{BEARING}-{commitment}")}
+    bearing = bearing_results(anchors | frame_works, citations)
     dates = [e.date for e in claim.events if e.kind == "disconfirmation"]
     members: dict[tuple[float, int, int], set[str]] = {}
     for row in tables.read(root / s3["params"]["tables"]["clusters"]):
@@ -143,7 +152,7 @@ def eligibility_run(root: Path, case_id: str, fold: str, *, field: bool = False,
               "bearing_anchors": len(anchors), "bearing_works": len(bearing),
               "disconfirmation_events": len(dates)}
     with RunContext(root, "S4", subject, fold, [case.component, "thresholds"], params=params) as ctx:
-        for name in ("works", "authors", "authorships", "citations"):
+        for name in ("works", "authors", "authorships", "citations", "frames"):
             ctx.record_input(root / fetch["params"]["tables"][name])
         for name in ("clusters", "lineages"):
             ctx.record_input(root / s3["params"]["tables"][name])
