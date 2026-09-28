@@ -435,3 +435,47 @@ def test_a_field_commitment_goes_through_the_social_layer_and_eligibility(world)
     assert manifest["params"]["decision"] == "replace" and "Decision at resolution 1" in "\n".join(lines)
     code, text = run_cli(root, "eligibility", "--field", "test-field", "--commitment", "c9", "--fold", "dev")
     assert code == 1 and "no commitment" in text
+
+
+def _relax_gate_one(root):
+    """m and v down to 1 in the test registry, so the fixture's small clusters reach gate 1's first two checks."""
+    path = root / "registry" / "thresholds.yaml"
+    text = path.read_text(encoding="utf-8")
+    assert text.count("value: 190") == 1 and text.count("value: 463") == 1
+    write_lf(path, text.replace("value: 190", "value: 1").replace("value: 463", "value: 1"))
+
+
+def test_the_cluster_census_measures_the_windows_that_pass_m_and_v_and_s4_reads_its_coverage(world):
+    from viveka.social.commands import eligibility_run, social_build
+
+    root, fake = world
+    commands.fetch_case(root, "cold-fusion", "dev", transport=fake.transport(), out=lambda s: None)
+    social_build(root, "cold-fusion", "dev", out=lambda s: None)
+    eligibility_run(root, "cold-fusion", "dev", out=lambda s: None)
+    # At the registered m no window passes, and coverage can withhold eligibility but never grant it
+    with pytest.raises(CaseError, match="meets m and v"):
+        commands.census_clusters(root, "cold-fusion", "dev", transport=no_network(), out=lambda s: None)
+
+    _relax_gate_one(root)
+    social_build(root, "cold-fusion", "dev", out=lambda s: None)
+    before = load_manifest(root, eligibility_run(root, "cold-fusion", "dev", out=lambda s: None))
+    assert before["params"]["cluster_census_run"] is None
+    assert all(r["meets_r"] is None for r in table(root, before, "eligibility"))
+
+    lines = []
+    census = load_manifest(root, commands.census_clusters(root, "cold-fusion", "dev", transport=fake.transport(),
+                                                          out=lines.append))
+    assert census["stage"] == "S2C" and verify_run(root, census["run_id"]) == []
+    assert census["params"]["cluster_resolution"] == 1.0 and census["params"]["cluster_frames"] >= 1
+    assert census["params"]["s3_run"] and census["params"]["s4_runs"]["cold-fusion"]
+    coverage = table(root, census, "coverage")
+    assert coverage and {r["kind"] for r in coverage} == {"cluster"}
+    assert all("@" in r["frame_id"] for r in coverage)  # one frame per lineage and sub-window
+    assert "Coverage census with cluster frames" in "\n".join(lines)
+
+    after = load_manifest(root, eligibility_run(root, "cold-fusion", "dev", out=lambda s: None))
+    assert after["params"]["cluster_census_run"] == census["run_id"]
+    rows = table(root, after, "eligibility")
+    assert any(r["coverage"] is not None and r["meets_r"] is not None for r in rows if r["resolution"] == 1.0)
+    # the sweep's other resolutions have no cluster census of their own, so their coverage stays unmeasured
+    assert all(r["meets_r"] is None for r in rows if r["resolution"] != 1.0)

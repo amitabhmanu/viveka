@@ -12,7 +12,9 @@ from collections.abc import Callable
 from pathlib import Path
 
 from viveka.cases import CaseError, bearing_set, load_commitment, load_subject
+from viveka.census import summarize
 from viveka.corpus import ingest, tables
+from viveka.corpus.clusters import coverage_by_window
 from viveka.corpus.commands import BEARING, latest_run
 from viveka.corpus.config import load_corpus_config
 from viveka.paths import rel_posix
@@ -95,11 +97,13 @@ def eligibility_run(root: Path, case_id: str, fold: str, *, field: bool = False,
                     out: Out = print) -> str:
     """Stage S4: gate 1 before coding, per lineage and sub-window, from the case's latest S3 run.
 
-    Coverage per lineage is measured only for lineage-windows that pass m and v, since no other can be eligible;
-    a census with cluster frames is not built yet, so such a window's coverage is reported as not measured and
-    it cannot be declared eligible. The pilot power check needs at least one eligible lineage and is not run
-    otherwise. n is pending until M8 (decision D-11). Predictions are never read: whether a case's predicted
-    field summary needs one lineage or two is checked when predictions are frozen.
+    Coverage per lineage is measured only for lineage-windows that pass m and v, since no other can be eligible:
+    the census with cluster frames (S2C) frames exactly those, and a window it did not measure is reported as
+    coverage not measured and cannot be declared eligible. Coverage applies at the resolution that census used;
+    the other resolutions of the sweep keep it unmeasured until their own census runs. The pilot power check
+    needs at least one eligible lineage and is not run otherwise. n is pending until M8 (decision D-11).
+    Predictions are never read: whether a case's predicted field summary needs one lineage or two is checked
+    when predictions are frozen.
     """
     from viveka.social.eligibility import bearing_results, check
     from viveka.social.lineage import LineageStep
@@ -131,7 +135,8 @@ def eligibility_run(root: Path, case_id: str, fold: str, *, field: bool = False,
     authors = authors_by_work((row["work_id"], keys[row["author_id"]]) for row in read["authorships"]
                               if row["author_id"] in keys)
     citations = [(row["citing_work"], row["cited_work"]) for row in read["citations"]]
-    social = load_corpus_config(root).social
+    config = load_corpus_config(root)
+    social = config.social
     if social is None or social.bearing_results != "bearing_results_v2":
         raise CaseError("corpus.yaml social settings register no known bearing_results rule")
     anchors = {ref.openalex for ref in bearing_set(case, claim) if ref.openalex}
@@ -144,32 +149,45 @@ def eligibility_run(root: Path, case_id: str, fold: str, *, field: bool = False,
         members.setdefault((row["resolution"], row["window_start"], row["cluster"]), set()).add(row["author"])
     lineage_rows = tables.read(root / s3["params"]["tables"]["lineages"])
     primary = float(social.primary_resolution)
+    census = latest_run(root, "S2C", case_id, fold, require_frozen(root, [case.component, "thresholds"], fold))
+    coverage: dict[tuple[str, int], float | None] = {}
+    census_resolution = None
+    if census is not None and census["params"]["s3_run"] == s3["run_id"]:
+        census_resolution = float(census["params"]["cluster_resolution"])
+        coverage = coverage_by_window(summarize(tables.read(root / census["params"]["tables"]["coverage"]),
+                                                config.census.max_unmeasured_share))
 
     params = {"s3_run": s3["run_id"], "fetch_run": fetch["run_id"], "m": m, "v": v, "r": r, "lag": lag,
               "n": "pending (fitted at M8, decision D-11)", "primary_resolution": primary,
               "provisional": bool(s3["params"].get("provisional")), "bearing_rule": social.bearing_results,
               "commitment": commitment, "claim": claim.claim_id,
               "bearing_anchors": len(anchors), "bearing_works": len(bearing),
-              "disconfirmation_events": len(dates)}
+              "disconfirmation_events": len(dates),
+              "cluster_census_run": census["run_id"] if census_resolution is not None else None,
+              "cluster_census_resolution": census_resolution,
+              "cluster_frames_measured": len(coverage)}
     with RunContext(root, "S4", subject, fold, [case.component, "thresholds"], params=params) as ctx:
         for name in ("works", "authors", "authorships", "citations", "frames"):
             ctx.record_input(root / fetch["params"]["tables"][name])
         for name in ("clusters", "lineages"):
             ctx.record_input(root / s3["params"]["tables"][name])
+        if census_resolution is not None:
+            ctx.record_input(root / census["params"]["tables"]["coverage"])
         rows, by_resolution = [], {}
         for resolution in sorted({row["resolution"] for row in lineage_rows}):
             steps = [LineageStep(row["lineage_id"], Window(row["window_start"], row["window_end"]), row["cluster"],
                                  frozenset(members[(resolution, row["window_start"], row["cluster"])]),
                                  row["parent"], row["overlap"])
                      for row in lineage_rows if row["resolution"] == resolution]
-            checks = check(steps, years, authors, citations, bearing, dates, m, v, r, lag)
+            checks = check(steps, years, authors, citations, bearing, dates, m, v, r, lag,
+                           coverage if resolution == census_resolution else None)
             by_resolution[resolution] = checks
             rows += [{"resolution": resolution, "lineage_id": c.lineage_id, "window_start": c.window_start,
                       "window_end": c.window_end, "members": c.members, "citations_on_claim": c.citations_on_claim,
                       "disconfirmations": c.disconfirmations, "coverage": c.coverage, "closed": c.closed,
                       "meets_m": c.meets_m, "meets_v": c.meets_v, "meets_r": c.meets_r} for c in checks]
         chosen = by_resolution.get(primary, [])
-        need_coverage = [c for c in chosen if c.meets_m and c.meets_v and not c.closed]
+        need_coverage = [c for c in chosen if c.meets_m and c.meets_v and not c.closed and c.meets_r is None]
         eligible = sorted({c.lineage_id for c in chosen if c.eligible_pending_n})
         decision = "go (pending n)" if eligible else "replace"
         ctx.params.update(decision=decision, eligible_lineages=eligible,
@@ -191,13 +209,17 @@ def _eligibility_report(case_id, run_id, s3_run, fold, params, by_resolution, pr
         f"at least m = {params['m']} members, cites at least v = {params['v']} distinct results bearing on the "
         f"claim (`{params['bearing_rule']}`: {params['bearing_anchors']} seed and event works and the corpus works "
         f"citing them, {params['bearing_works']} in all), and its literature's coverage is at least "
-        f"r = {params['r']:g}. n is pending until it is fitted at M8 (decision D-11); the report counts the "
+        f"r = {params['r']:g}, from the census with cluster frames ("
+        + (f"run `{params['cluster_census_run']}`, resolution {params['cluster_census_resolution']:g}, "
+           f"{params['cluster_frames_measured']} lineage-window(s) measured"
+           if params.get("cluster_census_run") else "not run yet, so coverage is unmeasured")
+        + f"). n is pending until it is fitted at M8 (decision D-11); the report counts the "
         f"{params['disconfirmation_events']} registered disconfirmations at least {params['lag']:g} years old by each "
         "sub-window's end. A lineage below v after its last sub-window at or above v is closed.", "",
         "**Provisional:** clusters come from Leiden alone (decision D-1)." if params["provisional"] else "", "",
         "| resolution | lineage-windows | largest cluster | most citations on the claim | meet m | meet v | "
-        "meet m and v | eligible (pending n) |",
-        "|---:|---:|---:|---:|---:|---:|---:|---:|",
+        "meet m and v | coverage measured | meet r | eligible (pending n) |",
+        "|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for resolution, checks in sorted(by_resolution.items()):
         lines.append(
@@ -205,6 +227,7 @@ def _eligibility_report(case_id, run_id, s3_run, fold, params, by_resolution, pr
             f"{max((c.members for c in checks), default=0)} | "
             f"{max((c.citations_on_claim for c in checks), default=0)} | {sum(c.meets_m for c in checks)} | "
             f"{sum(c.meets_v for c in checks)} | {sum(c.meets_m and c.meets_v for c in checks)} | "
+            f"{sum(c.meets_r is not None for c in checks)} | {sum(c.meets_r is True for c in checks)} | "
             f"{sum(c.eligible_pending_n for c in checks)} |")
     lines += ["", f"**Decision at resolution {primary:g}: {decision}.**" + (
         f" {need} lineage-window(s) pass m and v but their coverage is not measured yet (census with cluster "

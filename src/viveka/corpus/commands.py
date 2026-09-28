@@ -40,13 +40,15 @@ from viveka.census import (
 from viveka.corpus import crossref, ingest, openalex, semanticscholar, tables
 from viveka.corpus.audit import AUDIT_DIR, AuditError, AuditResult, draw, read_audit, report_lines, sheets, works_sheet
 from viveka.corpus.audit import write_once as write_sheet
+from viveka.corpus.clusters import KIND as CLUSTER_KIND
+from viveka.corpus.clusters import cluster_frames, needed_windows
 from viveka.corpus.config import LIVE_SOURCES, CensusSettings, CorpusConfig, load_corpus_config
 from viveka.corpus.http import REFUSED_STATUSES, Fetcher, FetchError, UsageMeter
 from viveka.corpus.ids import normalize_doi, short_id
 from viveka.corpus.manual import MANUAL_DIR, ManualImportError, load_manual
 from viveka.corpus.overlap import community_authors, overlaps
 from viveka.paths import REGISTRY, rel_posix
-from viveka.provenance import FOLDS, RunContext, recent_runs
+from viveka.provenance import FOLDS, RunContext, load_manifest, recent_runs
 from viveka.registry.verify import require_frozen
 
 Out = Callable[[str], None]
@@ -359,7 +361,7 @@ class Draw:
 
 
 def draw_sample(case: Case, frames_rows: list[dict], works_rows: list[dict], per_year: int, seed: int,
-                paper_types: frozenset[str]) -> Draw:
+                paper_types: frozenset[str], kinds: dict[str, str] | None = None) -> Draw:
     works = {w["work_id"]: w for w in works_rows}
     by_frame: dict[str, list[FrameWork]] = defaultdict(list)
     excluded: dict[str, Counter] = defaultdict(Counter)
@@ -376,7 +378,8 @@ def draw_sample(case: Case, frames_rows: list[dict], works_rows: list[dict], per
             continue
         by_frame[row["frame_id"]].append(FrameWork(row["work_id"], int(row["year"]), work.get("doi")))
     samples = {fid: sample_frame(case.case_id, fid, papers, per_year, seed) for fid, papers in by_frame.items()}
-    return Draw(dict(by_frame), samples, dict(excluded), {f.frame_id: f.kind for f in case.frames}, undated)
+    return Draw(dict(by_frame), samples, dict(excluded),
+                kinds if kinds is not None else {f.frame_id: f.kind for f in case.frames}, undated)
 
 
 def _fetch_inputs(root: Path, case: Case, fold: str) -> tuple[dict, list[dict], list[dict]]:
@@ -522,64 +525,10 @@ def census_case(root: Path, case_id: str, fold: str, *, field: bool = False, man
             ctx.record_input(works_sheet(audit.resolve()))
         if manual is not None:
             ctx.record_input(manual.resolve())
-        with make_fetcher(root, config, need=("openalex", "crossref"), transport=transport,
-                          run_id=ctx.run_id) as fetcher:
-            try:
-                references: dict[str, References | None] = {}
-                refused: dict[str, int] = {}
-                for work in (w for sample in samples.values() for w in sample):
-                    if work.work_id in references:
-                        continue
-                    if work.work_id in manual_refs:
-                        references[work.work_id] = manual_refs[work.work_id]
-                    elif ingest.is_ingested(work.work_id):
-                        row = listing.get(work.work_id) or {}
-                        venue = row.get("venue") or ""
-                        references[work.work_id], status = ingest.document_references(fetcher, venue,
-                                                                                      row.get("document_url"))
-                        if status in REFUSED_STATUSES:
-                            refused[venue] = refused.get(venue, 0) + 1
-                    elif work.doi:
-                        response = fetcher.get(crossref.work_request(work.doi))
-                        references[work.work_id] = (crossref.references_of(response.body)
-                                                    if response.status == 200 else None)
-                    else:
-                        references[work.work_id] = None
-                reference_dois = [d for r in references.values() if r for d in r.dois if d]
-                found = openalex.lookup_dois(fetcher, reference_dois, int(config.openalex["doi_batch"]),
-                                             fields=(*openalex.ID_FIELDS, "type"))
-                doi_types = {doi: obj.get("type") for doi, obj in found.items()}
-                matches: dict[str, dict[int, bool | None]] = {}
-                rescued: dict[str, dict[int, str]] = {}
-                for work_id, refs in sorted(references.items()):
-                    if refs is not None:
-                        matches[work_id], rescued[work_id] = match_references(fetcher, case_id, work_id, refs,
-                                                                              settings, catalogue)
-                rescued_dois = sorted({doi for by_index in rescued.values() for doi in by_index.values()})
-                confirmed = openalex.lookup_dois(fetcher, rescued_dois, int(config.openalex["doi_batch"]),
-                                                 fields=(*openalex.ID_FIELDS, "type"))
-                for work_id, by_index in rescued.items():
-                    for index, doi in by_index.items():
-                        if (confirmed.get(doi) or {}).get("type") in settings.paper_types:
-                            matches[work_id][index] = True
-            finally:
-                _finish(ctx, fetcher)
-        coverage, sample_rows = [], []
-        for frame_id in sorted(set(draw.by_frame) | set(draw.excluded)):
-            outcomes = [outcome(w, references[w.work_id], doi_types, settings.paper_types, matches.get(w.work_id),
-                                rescued.get(w.work_id, {}))
-                        for w in samples.get(frame_id, [])]
-            coverage += coverage_rows(case_id, frame_id, draw.kinds[frame_id], draw.by_frame.get(frame_id, []),
-                                      outcomes, draw.excluded.get(frame_id))
-            sample_rows += [{"case_id": case_id, "frame_id": frame_id, "year": o.work.year, "work_id": o.work.work_id,
-                             "status": o.status,
-                             "reference_source": o.references.source if o.references else "none",
-                             "refs": o.refs, "resolved": o.resolved, "refs_excluded": o.refs_excluded,
-                             "refs_unclassifiable": o.refs_unclassifiable,
-                             "doiless": o.doiless, "doiless_sampled": o.doiless_sampled,
-                             "doiless_matched": o.doiless_matched, "doiless_rescued": o.doiless_rescued,
-                             "doiless_unparseable": o.doiless_unparseable}
-                            for o in outcomes]
+        references, refused, doi_types, matches, rescued = _measure(
+            ctx, root, config, settings, case_id, samples, manual_refs, listing, catalogue, transport)
+        coverage, sample_rows = _census_rows(case_id, draw, samples, references, doi_types, matches, rescued,
+                                             settings)
         written = {}
         for name, rows in (("coverage", coverage), ("census_sample", sample_rows)):
             written[name] = rel_posix(ctx.store(tables.to_parquet(name, rows), "parquet", rows=len(rows)), root)
@@ -591,6 +540,261 @@ def census_case(root: Path, case_id: str, fold: str, *, field: bool = False, man
     out(report)
     out(_usage_line(ctx.usage))
     return ctx.run_id
+
+
+def _measure(ctx: RunContext, root: Path, config: CorpusConfig, settings: CensusSettings, case_id: str,
+             samples: dict[str, list[FrameWork]], manual_refs: dict[str, References], listing: dict[str, dict],
+             catalogue: Sequence[CatalogueEntry], transport: httpx.BaseTransport | None
+             ) -> tuple[dict[str, References | None], dict[str, int], dict[str, str | None],
+                        dict[str, dict[int, bool | None]], dict[str, dict[int, str]]]:
+    """Every sampled paper's reference list, and which of its sampled DOI-less references the corpus holds."""
+    with make_fetcher(root, config, need=("openalex", "crossref"), transport=transport,
+                      run_id=ctx.run_id) as fetcher:
+        try:
+            references: dict[str, References | None] = {}
+            refused: dict[str, int] = {}
+            for work in (w for sample in samples.values() for w in sample):
+                if work.work_id in references:
+                    continue
+                if work.work_id in manual_refs:
+                    references[work.work_id] = manual_refs[work.work_id]
+                elif ingest.is_ingested(work.work_id):
+                    row = listing.get(work.work_id) or {}
+                    venue = row.get("venue") or ""
+                    references[work.work_id], status = ingest.document_references(fetcher, venue,
+                                                                                  row.get("document_url"))
+                    if status in REFUSED_STATUSES:
+                        refused[venue] = refused.get(venue, 0) + 1
+                elif work.doi:
+                    response = fetcher.get(crossref.work_request(work.doi))
+                    references[work.work_id] = (crossref.references_of(response.body)
+                                                if response.status == 200 else None)
+                else:
+                    references[work.work_id] = None
+            reference_dois = [d for r in references.values() if r for d in r.dois if d]
+            found = openalex.lookup_dois(fetcher, reference_dois, int(config.openalex["doi_batch"]),
+                                         fields=(*openalex.ID_FIELDS, "type"))
+            doi_types = {doi: obj.get("type") for doi, obj in found.items()}
+            matches: dict[str, dict[int, bool | None]] = {}
+            rescued: dict[str, dict[int, str]] = {}
+            for work_id, refs in sorted(references.items()):
+                if refs is not None:
+                    matches[work_id], rescued[work_id] = match_references(fetcher, case_id, work_id, refs,
+                                                                          settings, catalogue)
+            rescued_dois = sorted({doi for by_index in rescued.values() for doi in by_index.values()})
+            confirmed = openalex.lookup_dois(fetcher, rescued_dois, int(config.openalex["doi_batch"]),
+                                             fields=(*openalex.ID_FIELDS, "type"))
+            for work_id, by_index in rescued.items():
+                for index, doi in by_index.items():
+                    if (confirmed.get(doi) or {}).get("type") in settings.paper_types:
+                        matches[work_id][index] = True
+        finally:
+            _finish(ctx, fetcher)
+    return references, refused, doi_types, matches, rescued
+
+
+def _census_rows(case_id: str, draw: Draw, samples: dict[str, list[FrameWork]],
+                 references: dict[str, References | None], doi_types: dict[str, str | None],
+                 matches: dict[str, dict[int, bool | None]], rescued: dict[str, dict[int, str]],
+                 settings: CensusSettings) -> tuple[list[dict], list[dict]]:
+    """The coverage rows (per frame and year) and the sampled-work rows of a census."""
+    coverage, sample_rows = [], []
+    for frame_id in sorted(set(draw.by_frame) | set(draw.excluded)):
+        outcomes = [outcome(w, references[w.work_id], doi_types, settings.paper_types, matches.get(w.work_id),
+                            rescued.get(w.work_id, {}))
+                    for w in samples.get(frame_id, [])]
+        coverage += coverage_rows(case_id, frame_id, draw.kinds[frame_id], draw.by_frame.get(frame_id, []),
+                                  outcomes, draw.excluded.get(frame_id))
+        sample_rows += [{"case_id": case_id, "frame_id": frame_id, "year": o.work.year, "work_id": o.work.work_id,
+                         "status": o.status,
+                         "reference_source": o.references.source if o.references else "none",
+                         "refs": o.refs, "resolved": o.resolved, "refs_excluded": o.refs_excluded,
+                         "refs_unclassifiable": o.refs_unclassifiable,
+                         "doiless": o.doiless, "doiless_sampled": o.doiless_sampled,
+                         "doiless_matched": o.doiless_matched, "doiless_rescued": o.doiless_rescued,
+                         "doiless_unparseable": o.doiless_unparseable}
+                        for o in outcomes]
+    return coverage, sample_rows
+
+
+# ---------------------------------------------------------------- S2C: the census with cluster frames
+
+
+def _eligibility_runs(root: Path, fold: str, s3_run: str) -> dict[str, dict]:
+    """The newest successful S4 run per commitment from one social-layer run."""
+    found: dict[str, dict] = {}
+    for manifest in recent_runs(root, limit=10_000):
+        params = manifest.get("params") or {}
+        if (manifest.get("stage") == "S4" and manifest.get("status") == "ok" and manifest.get("fold") == fold
+                and params.get("s3_run") == s3_run):
+            found.setdefault(params.get("commitment") or manifest["case"], manifest)
+    return found
+
+
+def _cluster_inputs(root: Path, s3: dict, fetch: dict, resolution: float
+                    ) -> tuple[dict[tuple[str, int], frozenset[str]], dict[str, list[str]], dict[str, int | None]]:
+    """Each lineage-window's cluster members, every author's works, and publication years, as S4 reads them."""
+    from viveka.social.graph import node_keys
+
+    read = {name: tables.read(root / fetch["params"]["tables"][name])
+            for name in ("works", "authors", "authorships", "frames")}
+    own = {row["work_id"] for row in read["frames"] if row["kind"] != BEARING}
+    keys = node_keys(read["authors"], s3["params"]["nodes"] == "name")
+    years = {row["work_id"]: row["year"] for row in read["works"] if not own or row["work_id"] in own}
+    works_by_author: dict[str, list[str]] = defaultdict(list)
+    for row in read["authorships"]:
+        key = keys.get(row["author_id"])
+        if key is not None:
+            works_by_author[key].append(row["work_id"])
+    in_cluster: dict[tuple[int, int], set[str]] = defaultdict(set)
+    for row in tables.read(root / s3["params"]["tables"]["clusters"]):
+        if abs(row["resolution"] - resolution) < 1e-9:
+            in_cluster[(row["window_start"], row["cluster"])].add(row["author"])
+    members = {(row["lineage_id"], row["window_start"]):
+               frozenset(in_cluster.get((row["window_start"], row["cluster"]), set()))
+               for row in tables.read(root / s3["params"]["tables"]["lineages"])
+               if abs(row["resolution"] - resolution) < 1e-9}
+    return members, dict(works_by_author), years
+
+
+@dataclass
+class ClusterDraw:
+    case: Case
+    fetch: dict
+    s3: dict
+    draw: Draw
+    frames: list[dict]
+    resolution: float
+    per_commitment: dict[str, int]
+    s4_runs: dict[str, str]
+
+
+def cluster_draw(root: Path, subject_id: str, fold: str, *, field: bool = False,
+                 resolution: float | None = None) -> ClusterDraw:
+    """The cluster frames of a subject and the sample drawn from them; no network, nothing written."""
+    case, _ = load_subject(root, subject_id, field)
+    config = load_corpus_config(root)
+    settings = config.census
+    if config.social is None:
+        raise CaseError("corpus.yaml registers no social settings")
+    chosen = float(config.social.primary_resolution if resolution is None else resolution)
+    fetch, _, works_rows = _fetch_inputs(root, case, fold)
+    s3 = latest_run(root, "S3", subject_id, fold, require_frozen(root, [case.component, "thresholds"], fold))
+    if s3 is None:
+        raise CaseError(f"no successful S3 run for {subject_id} in fold {fold} with the current registry; "
+                        "run `viveka social build` first")
+    if s3["params"]["fetch_run"] != fetch["run_id"]:
+        raise CaseError(f"the latest S1 run for {subject_id} is not the one S3 used; rerun `viveka social build`")
+    eligibility = _eligibility_runs(root, fold, s3["run_id"])
+    if not eligibility:
+        raise CaseError(f"no successful S4 run from social-layer run {s3['run_id']}; "
+                        "run `viveka eligibility` first: the cluster frames are the windows it passes")
+    ends: dict[tuple[str, int], int] = {}
+    per_commitment: dict[str, int] = {}
+    for name, manifest in sorted(eligibility.items()):
+        windows = needed_windows(tables.read(root / manifest["params"]["tables"]["eligibility"]), chosen)
+        per_commitment[name] = len(windows)
+        for lineage_id, start, end in windows:
+            ends[(lineage_id, start)] = end
+    needed = sorted((lineage_id, start, end) for (lineage_id, start), end in ends.items())
+    if not needed:
+        raise CaseError(f"no lineage-window of {subject_id} meets m and v at resolution {chosen:g}; coverage can "
+                        "withhold eligibility but never grant it, so there is nothing to census")
+    members, works_by_author, years = _cluster_inputs(root, s3, fetch, chosen)
+    frames = cluster_frames(subject_id, needed, members, works_by_author, years)
+    draw = draw_sample(case, frames, works_rows, settings.works_per_year, settings.seed, settings.paper_types,
+                       {row["frame_id"]: CLUSTER_KIND for row in frames})
+    return ClusterDraw(case, fetch, s3, draw, frames, chosen, per_commitment,
+                       {name: m["run_id"] for name, m in sorted(eligibility.items())})
+
+
+def census_clusters(root: Path, subject_id: str, fold: str, *, field: bool = False, resolution: float | None = None,
+                    transport: httpx.BaseTransport | None = None, out: Out = print) -> str:
+    """Stage S2C: the coverage census again, with cluster frames (spec §7; framework "Coverage census").
+
+    The framework takes the census per cluster, and gate 1 reads a lineage-window's coverage from its own
+    cluster's papers. Only the windows that already meet m and v are framed, because coverage can withhold
+    eligibility and never grant it; inside a frame the sample is the registered seeded draw, unchanged.
+    """
+    config = load_corpus_config(root)
+    settings = config.census
+    scoped = cluster_draw(root, subject_id, fold, field=field, resolution=resolution)
+    case, fetch, draw = scoped.case, scoped.fetch, scoped.draw
+    samples = draw.samples
+    listing = _listing(root, fetch)
+    catalogue = _catalogue(config, listing, tables.read(root / fetch["params"]["tables"]["works"]))
+    params = {"fetch_run": fetch["run_id"], "s3_run": scoped.s3["run_id"], "s4_runs": scoped.s4_runs,
+              "cluster_resolution": scoped.resolution, "cluster_frames": len(draw.by_frame),
+              "frames_scope": "lineage-windows meeting m and v at the resolution, not closed",
+              "works_per_year": settings.works_per_year, "max_unmeasured_share": settings.max_unmeasured_share,
+              "resolution": settings.resolution, "doiless_sample_per_work": settings.doiless_sample_per_work,
+              "match_year_tolerance": settings.match_year_tolerance, "paper_types": sorted(settings.paper_types),
+              "reference_classification": settings.reference_classification}
+    with RunContext(root, "S2C", subject_id, fold, [case.component, "thresholds"], seed=settings.seed,
+                    params=params) as ctx:
+        for name in ("frames", "works", "authors", "authorships"):
+            ctx.record_input(root / fetch["params"]["tables"][name])
+        for name in ("clusters", "lineages"):
+            ctx.record_input(root / scoped.s3["params"]["tables"][name])
+        for run_id in scoped.s4_runs.values():
+            ctx.record_input(root / load_manifest(root, run_id)["params"]["tables"]["eligibility"])
+        references, refused, doi_types, matches, rescued = _measure(
+            ctx, root, config, settings, subject_id, samples, {}, listing, catalogue, transport)
+        coverage, sample_rows = _census_rows(subject_id, draw, samples, references, doi_types, matches, rescued,
+                                             settings)
+        written = {}
+        for name, rows in (("coverage", coverage), ("census_sample", sample_rows)):
+            written[name] = rel_posix(ctx.store(tables.to_parquet(name, rows), "parquet", rows=len(rows)), root)
+        report = cluster_census_report(case, ctx.run_id, config, coverage, params, scoped, refused)
+        written["report"] = rel_posix(ctx.store(report.encode("utf-8"), "md"), root)
+        ctx.params["tables"] = written
+    out(report)
+    out(_usage_line(ctx.usage))
+    return ctx.run_id
+
+
+def cluster_census_report(case: Case, run_id: str, config: CorpusConfig, coverage: list[dict], params: dict,
+                          scoped: ClusterDraw, refused: dict[str, int] | None = None) -> str:
+    settings = config.census
+    summaries = summarize(coverage, settings.max_unmeasured_share)
+    measurable = [s for s in summaries if s.measurable]
+    values = sorted(s.coverage for s in measurable if s.coverage is not None)
+    lines = [
+        f"# Coverage census with cluster frames: {case.case_id}",
+        "",
+        f"Run `{run_id}` from social-layer run `{scoped.s3['run_id']}` and corpus run `{scoped.fetch['run_id']}`. "
+        f"The framework takes the census per cluster: one frame is one lineage's cluster in one sub-window, "
+        f"holding the papers that cluster's members published in it. Frames are drawn for the "
+        f"{params['cluster_frames']} lineage-window(s) that meet m and v at resolution "
+        f"{params['cluster_resolution']:g} and are not closed, since coverage can withhold eligibility but never "
+        f"grant it. Up to {settings.works_per_year} papers are sampled per frame and year (seed {settings.seed}), "
+        f"and every reference is resolved exactly as in the frame census.",
+        "",
+        "Coverage is not compared with *r* here: gate 1 applies *r* per sub-window at S4.",
+        "",
+        "| commitment | lineage-windows framed | S4 run |",
+        "|---|---:|---|",
+        *(f"| {name} | {count} | `{scoped.s4_runs.get(name, '-')}` |"
+          for name, count in sorted(scoped.per_commitment.items())),
+        "",
+        "| cluster frames | papers | sampled | measurable | coverage min | median | max |",
+        "|---:|---:|---:|---:|---:|---:|---:|",
+        f"| {len(summaries)} | {sum(s.frame_works for s in summaries)} | {sum(s.sampled for s in summaries)} | "
+        f"{len(measurable)} | {_pct(values[0] if values else None)} | "
+        f"{_pct(values[len(values) // 2] if values else None)} | {_pct(values[-1] if values else None)} |",
+    ]
+    if refused:
+        lines += ["", "Documents the publisher refused (the paper is unmeasured): "
+                  + ", ".join(f"{v} {n}" for v, n in sorted(refused.items())) + "."]
+    if summaries:
+        lowest = sorted(summaries, key=lambda s: (s.coverage is None, s.coverage or 0.0))[:10]
+        lines += ["", "The ten lowest coverages, as a check on which literatures are thin (gate 1 judges, not this "
+                      "report):", "",
+                  "| cluster frame | papers | sampled | unmeasured | coverage (est.) | measurable |",
+                  "|---|---:|---:|---:|---:|---|",
+                  *(f"| {s.frame_id} | {s.frame_works} | {s.sampled} | {_pct(s.unmeasured_share)} | "
+                    f"{_pct(s.coverage)} | {'yes' if s.measurable else 'no'} |" for s in lowest)]
+    return "\n".join(lines) + "\n"
 
 
 def project_census(fetcher: Fetcher, config: CorpusConfig, samples: dict[str, list[FrameWork]],
@@ -875,6 +1079,10 @@ def add_parsers(sub: argparse._SubParsersAction, common: argparse.ArgumentParser
     p = sub.add_parser("census", parents=[common], help="S2: coverage census for a case or calibration field")
     _subject_arguments(p)
     p.add_argument("--fold", required=True, choices=FOLDS)
+    p.add_argument("--clusters", action="store_true",
+                   help="S2C: census the clusters S3 found, for the lineage-windows S4 passes on m and v")
+    p.add_argument("--resolution", type=float,
+                   help="With --clusters: the sweep resolution to census (default: the registered primary)")
     p.add_argument("--dry-run", action="store_true", help="Project live calls from the archive; no network")
     p.add_argument("--manual", type=Path, help=f"CSV of hand-entered reference lists under {MANUAL_DIR}/")
     p.add_argument("--audit", type=Path, help=f"A completed ingestion audit (<name>-references.csv under {AUDIT_DIR}/)")
@@ -896,6 +1104,15 @@ def _dry_run(root: Path, args: argparse.Namespace, out: Out) -> int:
     config = load_corpus_config(root)
     with make_fetcher(root, config, offline=True) as fetcher:
         if args.command == "census":
+            if getattr(args, "clusters", False):
+                scoped = cluster_draw(root, subject_id, args.fold, field=is_field, resolution=args.resolution)
+                samples = scoped.draw.samples
+                projection = project_census(fetcher, config, samples, {}, _listing(root, scoped.fetch))
+                out(f"cluster census dry run for {subject_id}: {len(scoped.draw.by_frame)} cluster frame(s) at "
+                    f"resolution {scoped.resolution:g}, {sum(len(s) for s in samples.values())} sampled works "
+                    f"({len({w.work_id for s in samples.values() for w in s})} distinct)")
+                out("\n".join(projection.lines(config)))
+                return 0
             fetch, frames_rows, works_rows = _fetch_inputs(root, case, args.fold)
             samples = draw_sample(case, frames_rows, works_rows, config.census.works_per_year, config.census.seed,
                                   config.census.paper_types).samples
@@ -949,7 +1166,10 @@ def run(args: argparse.Namespace, root: Path, *, transport: httpx.BaseTransport 
             return _dry_run(root, args, out)
         if args.dry_run:
             return _dry_run(root, args, out)
-        if args.command == "census":
+        if args.command == "census" and args.clusters:
+            census_clusters(root, subject_id, args.fold, field=is_field, resolution=args.resolution,
+                            transport=transport, out=out)
+        elif args.command == "census":
             census_case(root, subject_id, args.fold, field=is_field, manual=args.manual, audit=args.audit,
                         transport=transport, out=out)
         elif args.action == "fetch":

@@ -124,3 +124,26 @@ def test_results_bearing_on_p_are_the_anchors_and_the_works_citing_them():
 
     citations = [("A", "S"), ("B", "A"), ("C", "E"), ("D", "X")]
     assert bearing_results({"S", "E"}, citations) == {"S", "E", "A", "C"}  # B cites A, which is not an anchor
+
+
+def test_cluster_frames_hold_each_qualifying_window_s_papers_and_map_back_to_lineage_windows():
+    from viveka.corpus.clusters import cluster_frames, needed_windows, split_frame
+
+    rows = [{"resolution": 1.0, "lineage_id": "L1", "window_start": 1990, "window_end": 1994,
+             "meets_m": True, "meets_v": True, "closed": False},
+            {"resolution": 1.0, "lineage_id": "L2", "window_start": 1990, "window_end": 1994,
+             "meets_m": True, "meets_v": False, "closed": False},  # below v: coverage cannot make it eligible
+            {"resolution": 1.0, "lineage_id": "L3", "window_start": 1990, "window_end": 1994,
+             "meets_m": True, "meets_v": True, "closed": True},  # its trajectory on p closed
+            {"resolution": 2.0, "lineage_id": "L4", "window_start": 1990, "window_end": 1994,
+             "meets_m": True, "meets_v": True, "closed": False}]  # another resolution of the sweep
+    assert needed_windows(rows, 1.0) == [("L1", 1990, 1994)]
+
+    frames = cluster_frames("test", [("L1", 1990, 1994)], {("L1", 1990): frozenset({"a", "b"})},
+                            {"a": ["P1", "P2"], "b": ["P3"], "c": ["P4"]},
+                            {"P1": 1990, "P2": 1999, "P3": 1994, "P4": 1990})
+    # P2 is published outside the sub-window and P4 by an author outside the cluster
+    assert [(r["frame_id"], r["work_id"], r["year"]) for r in frames] == [
+        ("L1@1990", "P1", 1990), ("L1@1990", "P3", 1994)]
+    assert {r["kind"] for r in frames} == {"cluster"}
+    assert split_frame("L1@1990") == ("L1", 1990)
