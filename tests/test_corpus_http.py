@@ -86,6 +86,18 @@ def test_retries_transient_errors_and_archives_not_found(tmp_path):
     assert fetcher.usage.live_calls["openalex"] == {"list": 3, "singleton": 1}  # every attempt is charged
 
 
+def test_a_source_s_short_outage_is_ridden_out_rather_than_ending_the_stage(tmp_path):
+    # A gateway timeout ended the plate-tectonics cluster census after five attempts (28 Sep 2026); a stage of
+    # several hours has to outlive an outage of a few minutes, so the backoff runs to about three minutes.
+    from viveka.corpus.http import MAX_ATTEMPTS
+
+    outage = [httpx.Response(504) for _ in range(MAX_ATTEMPTS - 1)]
+    sleeps = []
+    with make(tmp_path, lambda r: outage.pop(0) if outage else ok(r), sleeps=sleeps) as fetcher:
+        assert fetcher.get(listing("x")).status == 200
+    assert sum(sleeps) >= 120 and max(sleeps) <= 60
+
+
 def test_hard_errors_raise_without_leaking_the_key(tmp_path):
     with make(tmp_path, lambda r: httpx.Response(401)) as fetcher, pytest.raises(FetchError) as info:
         fetcher.get(listing("x"))

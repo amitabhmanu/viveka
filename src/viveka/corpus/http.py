@@ -31,7 +31,7 @@ RETRY_STATUSES = frozenset({429, 500, 502, 503, 504})
 # run replays it; its paper is unmeasured, and the census counts refusals per venue.
 REFUSED_STATUSES = frozenset({401, 403})
 GONE_STATUSES = frozenset({404, 410})
-MAX_ATTEMPTS = 5
+MAX_ATTEMPTS = 8  # up to about 3 minutes of backoff: a stage of several hours outlives a source's short outage
 
 
 class FetchError(RuntimeError):
