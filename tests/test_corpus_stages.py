@@ -473,8 +473,15 @@ def test_the_cluster_census_measures_the_windows_that_pass_m_and_v_and_s4_reads_
     assert all("@" in r["frame_id"] for r in coverage)  # one frame per lineage and sub-window
     assert "Coverage census with cluster frames" in "\n".join(lines)
 
-    after = load_manifest(root, eligibility_run(root, "cold-fusion", "dev", out=lambda s: None))
+    said = []
+    after = load_manifest(root, eligibility_run(root, "cold-fusion", "dev", out=said.append))
     assert after["params"]["cluster_census_run"] == census["run_id"]
+    # the closing sentence has to follow the table: with coverage measured, it reports what passed, not the
+    # "no lineage passes m and v" line that belongs to a case where nothing did
+    decision = [line for line in "\n".join(said).splitlines() if line.startswith("**Decision")][0]
+    assert after["params"]["windows_passing_m_and_v"] >= 1
+    assert "No lineage passes m and v" not in decision
+    assert "eligible pending n" in decision if after["params"]["eligible_lineages"] else True
     rows = table(root, after, "eligibility")
     assert any(r["coverage"] is not None and r["meets_r"] is not None for r in rows if r["resolution"] == 1.0)
     # the sweep's other resolutions have no cluster census of their own, so their coverage stays unmeasured

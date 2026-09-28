@@ -187,22 +187,27 @@ def eligibility_run(root: Path, case_id: str, fold: str, *, field: bool = False,
                       "disconfirmations": c.disconfirmations, "coverage": c.coverage, "closed": c.closed,
                       "meets_m": c.meets_m, "meets_v": c.meets_v, "meets_r": c.meets_r} for c in checks]
         chosen = by_resolution.get(primary, [])
-        need_coverage = [c for c in chosen if c.meets_m and c.meets_v and not c.closed and c.meets_r is None]
+        passing = [c for c in chosen if c.meets_m and c.meets_v and not c.closed]
+        need_coverage = [c for c in passing if c.meets_r is None]
+        below_r = [c for c in passing if c.meets_r is False]
         eligible = sorted({c.lineage_id for c in chosen if c.eligible_pending_n})
         decision = "go (pending n)" if eligible else "replace"
         ctx.params.update(decision=decision, eligible_lineages=eligible,
-                          windows_needing_coverage=len(need_coverage), power_check="not run: no eligible lineage"
-                          if not eligible else "pending")
+                          windows_passing_m_and_v=len(passing), windows_needing_coverage=len(need_coverage),
+                          windows_below_r=len(below_r),
+                          power_check="not run: no eligible lineage" if not eligible else "pending")
         path = ctx.store(tables.to_parquet("eligibility", rows), "parquet", rows=len(rows))
         report = _eligibility_report(subject, ctx.run_id, s3["run_id"], fold, params, by_resolution, primary,
-                                     decision, len(need_coverage))
+                                     decision, len(passing), len(need_coverage), len(below_r),
+                                     sum(c.eligible_pending_n for c in chosen), len(eligible))
         ctx.params["tables"] = {"eligibility": rel_posix(path, root),
                                 "report": rel_posix(ctx.store(report.encode("utf-8"), "md"), root)}
     out(report)
     return ctx.run_id
 
 
-def _eligibility_report(case_id, run_id, s3_run, fold, params, by_resolution, primary, decision, need) -> str:
+def _eligibility_report(case_id, run_id, s3_run, fold, params, by_resolution, primary, decision, passing, need,
+                        below_r, eligible_windows, eligible_lineages) -> str:
     lines = [
         f"# Eligibility (gate 1 before coding): {case_id} ({fold} fold)", "",
         f"Run `{run_id}` from social-layer run `{s3_run}`. A lineage's sub-window is eligible when its cluster has "
@@ -229,10 +234,20 @@ def _eligibility_report(case_id, run_id, s3_run, fold, params, by_resolution, pr
             f"{sum(c.meets_v for c in checks)} | {sum(c.meets_m and c.meets_v for c in checks)} | "
             f"{sum(c.meets_r is not None for c in checks)} | {sum(c.meets_r is True for c in checks)} | "
             f"{sum(c.eligible_pending_n for c in checks)} |")
-    lines += ["", f"**Decision at resolution {primary:g}: {decision}.**" + (
-        f" {need} lineage-window(s) pass m and v but their coverage is not measured yet (census with cluster "
-        "frames), so none can be declared eligible." if need and decision == "replace" else
-        " No lineage passes m and v, so coverage and the pilot power check are not needed." if not need else ""), ""]
+    if not passing:
+        why = " No lineage passes m and v, so coverage and the pilot power check are not needed."
+    elif eligible_windows:
+        why = (f" {eligible_windows} of the {passing} lineage-window(s) passing m and v are eligible pending n, "
+               f"across {eligible_lineages} lineage(s)")
+        why += (f"; {below_r} fall below r" if below_r else "")
+        why += (f"; {need} still have no measured coverage" if need else "") + "."
+    elif need:
+        why = (f" {need} of the {passing} lineage-window(s) passing m and v have no measured coverage yet (census "
+               "with cluster frames), so none can be declared eligible.")
+    else:
+        why = (f" All {passing} lineage-window(s) passing m and v fall below r, so the corpus does not cover their "
+               "literature well enough to score them.")
+    lines += ["", f"**Decision at resolution {primary:g}: {decision}.**" + why, ""]
     return "\n".join(lines)
 
 
