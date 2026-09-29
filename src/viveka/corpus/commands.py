@@ -182,15 +182,22 @@ class Projection:
         return sum(n * config.price(source, kind) for (source, kind), n in self.calls.items())
 
     def lines(self, config: CorpusConfig) -> list[str]:
-        out = [f"  {source} {kind}: {n} live call(s)" for (source, kind), n in sorted(self.calls.items())]
-        out.append(f"  projected OpenAlex spend: ${self.usd(config):.4f} (cap ${config.openalex['daily_usd_cap']:.2f}"
-                   " per day, including other runs today)")
-        out += [f"  not projectable yet: {u}" for u in self.unknown]
-        return out or ["  nothing to fetch: every request is already archived"]
+        calls = [f"  {source} {kind}: {n} live call(s)" for (source, kind), n in sorted(self.calls.items()) if n]
+        if not calls and not self.unknown:
+            return ["  nothing to fetch: every request is already archived"]
+        return [*calls,
+                f"  projected OpenAlex spend: ${self.usd(config):.4f} (cap ${config.openalex['daily_usd_cap']:.2f}"
+                " per day, including other runs today)",
+                *(f"  not projectable yet: {u}" for u in self.unknown)]
 
 
-def project_fetch(fetcher: Fetcher, config: CorpusConfig, case: Case, claim: Claim) -> Projection:
-    """Live calls S1 still needs, read from the archive alone (the fetcher must be offline)."""
+def project_fetch(fetcher: Fetcher, config: CorpusConfig, case: Case, claim: Claim,
+                  commitments: Sequence[tuple[str, tuple[WorkRef, ...]]] = ()) -> Projection:
+    """Live calls S1 still needs, read from the archive alone (the fetcher must be offline).
+
+    A field's commitments each add a bearing frame (`bearing_results_v2`): the works citing that
+    commitment's anchors, wherever published, which is often the largest frame S1 fetches.
+    """
     projection = Projection()
     bearing = bearing_set(case, claim)
     resolved: dict[WorkRef, dict | None] = {}
@@ -229,21 +236,60 @@ def project_fetch(fetcher: Fetcher, config: CorpusConfig, case: Case, claim: Cla
         if not values:
             continue
         for flt in openalex.frame_filters(frame.cites_seeds, values, case.start, case.end):
-            first = fetcher.archived(openalex.list_request(flt, "*", per_page))
-            if first is None:
-                projection.calls[("openalex", "list")] += 1
-                projection.unknown.append(f"frame {frame.frame_id}: size unknown until its first page is probed")
-                continue
-            pages = max(1, math.ceil(int(((first.body or {}).get("meta") or {}).get("count", 0)) / per_page))
-            archived, page = 1, first
-            while archived < pages:
-                cursor = ((page.body or {}).get("meta") or {}).get("next_cursor")
-                page = fetcher.archived(openalex.list_request(flt, cursor, per_page)) if cursor else None
-                if page is None:
-                    break
-                archived += 1
-            projection.calls[("openalex", "list")] += pages - archived
+            _project_pages(fetcher, projection, flt, per_page, f"frame {frame.frame_id}")
+    for commitment_id, anchors in commitments:
+        anchor_ids, resolved_all = _archived_ids(fetcher, config, anchors, projection)
+        if not resolved_all:
+            projection.unknown.append(f"bearing frame {commitment_id}: its anchors are not resolved yet "
+                                      "(use --probe)")
+            continue
+        for flt in openalex.frame_filters(True, anchor_ids, case.start, case.end):
+            _project_pages(fetcher, projection, flt, per_page, f"bearing frame {commitment_id}")
     return projection
+
+
+def _project_pages(fetcher: Fetcher, projection: Projection, flt: str, per_page: int, label: str) -> None:
+    """The list calls a frame's remaining pages still need, counted from the archive alone."""
+    first = fetcher.archived(openalex.list_request(flt, "*", per_page))
+    if first is None:
+        projection.calls[("openalex", "list")] += 1
+        projection.unknown.append(f"{label}: size unknown until its first page is probed")
+        return
+    pages = max(1, math.ceil(int(((first.body or {}).get("meta") or {}).get("count", 0)) / per_page))
+    archived, page = 1, first
+    while archived < pages:
+        cursor = ((page.body or {}).get("meta") or {}).get("next_cursor")
+        page = fetcher.archived(openalex.list_request(flt, cursor, per_page)) if cursor else None
+        if page is None:
+            break
+        archived += 1
+    projection.calls[("openalex", "list")] += pages - archived
+
+
+def _archived_ids(fetcher: Fetcher, config: CorpusConfig, refs: Sequence[WorkRef],
+                  projection: Projection) -> tuple[list[str], bool]:
+    """The OpenAlex ids of registered works, read from the archive alone, and whether every one was there."""
+    ids: list[str] = []
+    complete = True
+    for ref in refs:
+        if not ref.openalex:
+            continue
+        hit = fetcher.archived(openalex.work_request(ref.openalex))
+        if hit is None:
+            projection.calls[("openalex", "singleton")] += 1
+            complete = False
+        elif hit.body:
+            ids.append(short_id(hit.body["id"]))
+    dois = sorted({r.doi for r in refs if not r.openalex and r.doi})
+    batch = int(config.openalex["doi_batch"])
+    for chunk in [dois[i : i + batch] for i in range(0, len(dois), batch)]:
+        hit = fetcher.archived(openalex.doi_batch_request(chunk))
+        if hit is None:
+            projection.calls[("openalex", "list")] += 1
+            complete = False
+        else:
+            ids += [short_id(o["id"]) for o in ((hit.body or {}).get("results") or []) if o.get("id")]
+    return ids, complete
 
 
 def probe(fetcher: Fetcher, config: CorpusConfig, case: Case, claim: Claim | None) -> None:
@@ -1120,7 +1166,8 @@ def _dry_run(root: Path, args: argparse.Namespace, out: Out) -> int:
                                         _listing(root, fetch))
             out(f"census dry run for {subject_id}: {sum(len(s) for s in samples.values())} sampled works")
         else:
-            projection = project_fetch(fetcher, config, case, claim)
+            commitments = tuple((c.commitment_id, _anchors(root, case, c)) for c in case.commitments)
+            projection = project_fetch(fetcher, config, case, claim, commitments)
             if args.action == "contexts":
                 projection.unknown.append("Semantic Scholar pages: one per 1000 citations of each bearing work")
             out(f"{args.action} dry run for {subject_id}:")

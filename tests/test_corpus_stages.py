@@ -155,7 +155,7 @@ def test_dry_runs_project_without_network(world):
     commands.fetch_case(root, "cold-fusion", "dev", transport=fake.transport(), out=lambda s: None)
     code, text = run_cli(root, "corpus", "fetch", "--case", "cold-fusion", "--fold", "dev", "--dry-run",
                          transport=no_network())
-    assert "openalex list: 0" in text or "projected OpenAlex spend: $0.0000" in text
+    assert "nothing to fetch: every request is already archived" in text  # no call left to project or price
     code, text = run_cli(root, "census", "--case", "cold-fusion", "--fold", "dev", "--dry-run",
                          transport=no_network())
     assert code == 0 and "crossref free: 13 live call(s)" in text and "assumed 40 references" in text
@@ -435,6 +435,26 @@ def test_a_field_commitment_goes_through_the_social_layer_and_eligibility(world)
     assert manifest["params"]["decision"] == "replace" and "Decision at resolution 1" in "\n".join(lines)
     code, text = run_cli(root, "eligibility", "--field", "test-field", "--commitment", "c9", "--fold", "dev")
     assert code == 1 and "no commitment" in text
+
+
+def test_the_fetch_dry_run_projects_each_commitment_s_bearing_frame(world):
+    root, fake = world
+    write_lf(root / "registry" / "events" / "p-holds.yaml",
+             'format: 1\nclaim: p-holds\nwording: "p holds."\nevents:\n'
+             '  - id: e1\n    date: "1990"\n    kind: disconfirmation\n'
+             "    works: [{openalex: W1}]\n"
+             '    note: "A result against p."\n    source: "Lookup."\n')
+    write_field(root, FIELD_YAML.replace("format: 1", "format: 2").rstrip("\n")
+                + "\ncommitments:\n  - id: c1\n    claim: p-holds\n    seeds: [{openalex: W2}]\n"
+                  '    note: "Cited as support."\n')
+    # before anything is archived the anchors cannot be resolved, so the frame is named as unprojectable
+    code, text = run_cli(root, "corpus", "fetch", "--field", "test-field", "--fold", "dev", "--dry-run",
+                         transport=no_network())
+    assert code == 0 and "bearing frame c1: its anchors are not resolved yet" in text
+    commands.fetch_case(root, "test-field", "dev", field=True, transport=fake.transport(), out=lambda s: None)
+    code, text = run_cli(root, "corpus", "fetch", "--field", "test-field", "--fold", "dev", "--dry-run",
+                         transport=no_network())
+    assert code == 0 and "nothing to fetch" in text  # the bearing frame's pages are archived too
 
 
 def _relax_gate_one(root):
