@@ -85,6 +85,7 @@ class SocialSettings:
     lineage_min_members: int
     primary_resolution: float
     bearing_results: str | None = None  # S4's pre-coding rule for the results bearing on p
+    lineage_works: str = "own_frames_v1"  # which of its members' papers a lineage is credited with (S4, S2C)
 
 
 @dataclass(frozen=True)
@@ -151,7 +152,8 @@ def from_mapping(data: Mapping[str, Any]) -> CorpusConfig:
         if data.get("calibration_selection") else None,
         social=SocialSettings(str(data["social"]["graph"]), int(data["social"]["leiden_seed"]),
                               int(data["social"]["lineage_min_members"]), float(data["social"]["primary_resolution"]),
-                              data["social"].get("bearing_results"))
+                              data["social"].get("bearing_results"),
+                              str(data["social"]["lineage_works"]))
         if data.get("social") else None,
     )
 

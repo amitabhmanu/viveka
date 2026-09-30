@@ -154,12 +154,22 @@ calibration_selection:
 #     citing frame already does. Under v1 a field's corpus held only its own venues, so results published
 #     elsewhere were invisible: molecular genetics counted three results bearing on the central dogma, since
 #     the prion and imprinting literature is not in its two journals. Bearing frames are never censused.
+#   lineage_works: which papers a lineage is credited with in S4 (its count against v) and S2C (its cluster
+#     frames). The community is always found in the subject's own frames by S3; this rule does not change S3.
+#     own_frames_v1 (D-15, 24 Sep 2026): only its members' papers in the subject's own frames.
+#     member_works_v1 (D-18, 30 Sep 2026; post hoc, after the dev-fold S4 of every calibration commitment):
+#     every fetched paper its members wrote, own frames and bearing frames alike, since the framework counts the
+#     citations C makes and C is people, not venues. A paper outside the own frames is credited to a member only
+#     through an OpenAlex author id that also signs one of the own works, so name-keyed nodes take in no
+#     namesakes from the literature on p. Bearing frames stay uncensused as frames; their papers enter the
+#     census only inside a lineage's cluster frame.
 social:
   graph: coauthor_citation_v1
   leiden_seed: 20260919
   lineage_min_members: 2
   primary_resolution: 1.0
   bearing_results: bearing_results_v2
+  lineage_works: member_works_v1
 
 # Community venues that OpenAlex does not index, ingested from their own archives (framework corpus row:
 # "each community's own venues ingested directly"; owner decision D-1, 17 Sep 2026: no GROBID, text layers

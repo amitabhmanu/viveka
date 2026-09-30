@@ -13,6 +13,9 @@ case has a lineage meeting m, n, v and r in the sub-windows its predictions need
   (the n check waits for n, fitted at M8; decision D-11);
 * coverage: supplied by the caller, from a census of the lineage's papers (None when not measured).
 
+A lineage's papers follow the registered ``lineage_works`` rule (see :func:`lineage_works`). The community is
+always found in the subject's own frames (S3); the rule says which of its members' papers S4 and S2C count.
+
 A lineage that has met v in some sub-window and stays below v in every later one is closed after its last
 sub-window at or above v; later sub-windows are not scored, and are not indeterminate either.
 """
@@ -23,6 +26,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
 
+from viveka.social.graph import authors_by_work
 from viveka.social.lineage import LineageStep
 
 
@@ -49,6 +53,34 @@ class WindowCheck:
 def bearing_results(seeds_and_events: set[str], citations: Iterable[tuple[str, str]]) -> set[str]:
     """``bearing_results_v1``: the seeds and event works, and every corpus work citing a seed or event work."""
     return seeds_and_events | {citing for citing, cited in citations if cited in seeds_and_events}
+
+
+LINEAGE_WORKS = ("own_frames_v1", "member_works_v1")
+
+
+def lineage_works(rule: str, works: Iterable[tuple[str, int | None]], authorships: Iterable[tuple[str, str]],
+                  keys: Mapping[str, str], own: set[str]) -> tuple[dict[str, int | None], dict[str, tuple[str, ...]]]:
+    """The papers a lineage's members can be credited with: (publication year, node keys of the authors) by work.
+
+    * ``own_frames_v1``: only the works of the subject's own frames (every work, when the subject has no bearing
+      frame);
+    * ``member_works_v1``: every fetched work, own or not, since the framework counts the citations C makes and C
+      is people, not venues. An authorship on a work outside the own frames counts only when the same author id
+      also signs one of the own works: nodes keyed by name would otherwise take in namesakes from the whole
+      literature on p, and a member known only from ingested works (no OpenAlex id) is credited with nothing
+      beyond them.
+
+    `works` are (work id, year), `authorships` (work id, author id) and `keys` maps author ids to graph nodes.
+    """
+    if rule not in LINEAGE_WORKS:
+        raise ValueError(f"unknown lineage_works rule {rule!r}")
+    authorships = list(authorships)
+    wide = rule == "member_works_v1"
+    years = {work: year for work, year in works if wide or not own or work in own}
+    signs_own = {author for work, author in authorships if work in own}
+    pairs = [(work, keys[author]) for work, author in authorships
+             if author in keys and (not wide or not own or work in own or author in signs_own)]
+    return years, authors_by_work(pairs)
 
 
 def decimal_year(iso: str) -> float:

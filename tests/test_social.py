@@ -126,6 +126,30 @@ def test_results_bearing_on_p_are_the_anchors_and_the_works_citing_them():
     assert bearing_results({"S", "E"}, citations) == {"S", "E", "A", "C"}  # B cites A, which is not an anchor
 
 
+def test_lineage_works_credit_members_outside_own_frames_only_through_an_id_that_signs_own_work():
+    from viveka.social.eligibility import lineage_works
+
+    # O1 is an own-venue paper by A1 (keyed "smith:j"); B1 and B2 sit in a bearing frame. B1 is by A1 again;
+    # B2 is by A2, a namesake whose id never signs an own paper, so name keys alone would credit it to smith:j.
+    works = [("O1", 1990), ("B1", 1991), ("B2", 1992)]
+    authorships = [("O1", "A1"), ("B1", "A1"), ("B1", "A3"), ("B2", "A2")]
+    keys = {"A1": "smith:j", "A2": "smith:j", "A3": "jones:k"}
+    own = {"O1"}
+
+    years, authors = lineage_works("own_frames_v1", works, authorships, keys, own)
+    assert years == {"O1": 1990}  # the lineage's papers are its own-frame papers only
+    years, authors = lineage_works("member_works_v1", works, authorships, keys, own)
+    assert years == {"O1": 1990, "B1": 1991, "B2": 1992}
+    assert authors["B1"] == ("smith:j",)  # A3 signs no own paper, so B1 is not credited to jones:k
+    assert "B2" not in authors  # the namesake is not credited
+    # a subject with no bearing frame (a case) keeps every work and authorship under either rule
+    for rule in ("own_frames_v1", "member_works_v1"):
+        years, authors = lineage_works(rule, works, authorships, keys, set())
+        assert set(years) == {"O1", "B1", "B2"} and authors["B2"] == ("smith:j",)
+    with pytest.raises(ValueError):
+        lineage_works("venues_v9", works, authorships, keys, own)
+
+
 def test_cluster_frames_hold_each_qualifying_window_s_papers_and_map_back_to_lineage_windows():
     from viveka.corpus.clusters import cluster_frames, needed_windows, split_frame
 

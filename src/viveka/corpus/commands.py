@@ -677,21 +677,23 @@ def _eligibility_runs(root: Path, fold: str, s3_run: str) -> dict[str, dict]:
     return found
 
 
-def _cluster_inputs(root: Path, s3: dict, fetch: dict, resolution: float
+def _cluster_inputs(root: Path, s3: dict, fetch: dict, resolution: float, rule: str
                     ) -> tuple[dict[tuple[str, int], frozenset[str]], dict[str, list[str]], dict[str, int | None]]:
-    """Each lineage-window's cluster members, every author's works, and publication years, as S4 reads them."""
+    """Each lineage-window's cluster members, every author's works, and publication years, as S4 reads them
+    under the registered `lineage_works` rule."""
+    from viveka.social.eligibility import lineage_works
     from viveka.social.graph import node_keys
 
     read = {name: tables.read(root / fetch["params"]["tables"][name])
             for name in ("works", "authors", "authorships", "frames")}
     own = {row["work_id"] for row in read["frames"] if row["kind"] != BEARING}
     keys = node_keys(read["authors"], s3["params"]["nodes"] == "name")
-    years = {row["work_id"]: row["year"] for row in read["works"] if not own or row["work_id"] in own}
+    years, authors = lineage_works(rule, ((row["work_id"], row["year"]) for row in read["works"]),
+                                   ((row["work_id"], row["author_id"]) for row in read["authorships"]), keys, own)
     works_by_author: dict[str, list[str]] = defaultdict(list)
-    for row in read["authorships"]:
-        key = keys.get(row["author_id"])
-        if key is not None:
-            works_by_author[key].append(row["work_id"])
+    for work, team in authors.items():
+        for key in team:
+            works_by_author[key].append(work)
     in_cluster: dict[tuple[int, int], set[str]] = defaultdict(set)
     for row in tables.read(root / s3["params"]["tables"]["clusters"]):
         if abs(row["resolution"] - resolution) < 1e-9:
@@ -735,6 +737,12 @@ def cluster_draw(root: Path, subject_id: str, fold: str, *, field: bool = False,
     if not eligibility:
         raise CaseError(f"no successful S4 run from social-layer run {s3['run_id']}; "
                         "run `viveka eligibility` first: the cluster frames are the windows it passes")
+    rule = config.social.lineage_works
+    stale = sorted(name for name, manifest in eligibility.items()
+                   if manifest["params"].get("lineage_works", "own_frames_v1") != rule)
+    if stale:
+        raise CaseError(f"the latest S4 run of {', '.join(stale)} counted a lineage's papers under another "
+                        f"lineage_works rule than the registered {rule}; rerun `viveka eligibility` first")
     ends: dict[tuple[str, int], int] = {}
     per_commitment: dict[str, int] = {}
     for name, manifest in sorted(eligibility.items()):
@@ -746,7 +754,7 @@ def cluster_draw(root: Path, subject_id: str, fold: str, *, field: bool = False,
     if not needed:
         raise CaseError(f"no lineage-window of {subject_id} meets m and v at resolution {chosen:g}; coverage can "
                         "withhold eligibility but never grant it, so there is nothing to census")
-    members, works_by_author, years = _cluster_inputs(root, s3, fetch, chosen)
+    members, works_by_author, years = _cluster_inputs(root, s3, fetch, chosen, rule)
     frames = cluster_frames(subject_id, needed, members, works_by_author, years)
     draw = draw_sample(case, frames, works_rows, settings.works_per_year, settings.seed, settings.paper_types,
                        {row["frame_id"]: CLUSTER_KIND for row in frames})
@@ -772,6 +780,7 @@ def census_clusters(root: Path, subject_id: str, fold: str, *, field: bool = Fal
     params = {"fetch_run": fetch["run_id"], "s3_run": scoped.s3["run_id"], "s4_runs": scoped.s4_runs,
               "cluster_resolution": scoped.resolution, "cluster_frames": len(draw.by_frame),
               "frames_scope": "lineage-windows meeting m and v at the resolution, not closed",
+              "lineage_works": config.social.lineage_works,
               "works_per_year": settings.works_per_year, "max_unmeasured_share": settings.max_unmeasured_share,
               "resolution": settings.resolution, "doiless_sample_per_work": settings.doiless_sample_per_work,
               "match_year_tolerance": settings.match_year_tolerance, "paper_types": sorted(settings.paper_types),

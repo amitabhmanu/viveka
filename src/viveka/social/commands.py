@@ -105,7 +105,7 @@ def eligibility_run(root: Path, case_id: str, fold: str, *, field: bool = False,
     Predictions are never read: whether a case's predicted field summary needs one lineage or two is checked
     when predictions are frozen.
     """
-    from viveka.social.eligibility import bearing_results, check
+    from viveka.social.eligibility import bearing_results, check, lineage_works
     from viveka.social.lineage import LineageStep
 
     if field:
@@ -129,16 +129,15 @@ def eligibility_run(root: Path, case_id: str, fold: str, *, field: bool = False,
         raise CaseError(f"the latest S1 run for {case_id} is not the one S3 used; rerun `viveka social build`")
     read = {name: tables.read(root / fetch["params"]["tables"][name])
             for name in ("works", "authors", "authorships", "citations", "frames")}
-    own = _own_works(read["frames"])
-    keys = node_keys(read["authors"], s3["params"]["nodes"] == "name")
-    years = {row["work_id"]: row["year"] for row in read["works"] if not own or row["work_id"] in own}
-    authors = authors_by_work((row["work_id"], keys[row["author_id"]]) for row in read["authorships"]
-                              if row["author_id"] in keys)
-    citations = [(row["citing_work"], row["cited_work"]) for row in read["citations"]]
     config = load_corpus_config(root)
     social = config.social
     if social is None or social.bearing_results != "bearing_results_v2":
         raise CaseError("corpus.yaml social settings register no known bearing_results rule")
+    own = _own_works(read["frames"])
+    keys = node_keys(read["authors"], s3["params"]["nodes"] == "name")
+    years, authors = lineage_works(social.lineage_works, ((row["work_id"], row["year"]) for row in read["works"]),
+                                   ((row["work_id"], row["author_id"]) for row in read["authorships"]), keys, own)
+    citations = [(row["citing_work"], row["cited_work"]) for row in read["citations"]]
     anchors = {ref.openalex for ref in bearing_set(case, claim) if ref.openalex}
     frame_works = {row["work_id"] for row in read["frames"]
                    if row["kind"] == BEARING and (not commitment or row["frame_id"] == f"{BEARING}-{commitment}")}
@@ -152,7 +151,9 @@ def eligibility_run(root: Path, case_id: str, fold: str, *, field: bool = False,
     census = latest_run(root, "S2C", case_id, fold, require_frozen(root, [case.component, "thresholds"], fold))
     coverage: dict[tuple[str, int], float | None] = {}
     census_resolution = None
-    if census is not None and census["params"]["s3_run"] == s3["run_id"]:
+    # A census framed under another lineage_works rule measured other papers (runs before D-18 record none).
+    if (census is not None and census["params"]["s3_run"] == s3["run_id"]
+            and census["params"].get("lineage_works", "own_frames_v1") == social.lineage_works):
         census_resolution = float(census["params"]["cluster_resolution"])
         coverage = coverage_by_window(summarize(tables.read(root / census["params"]["tables"]["coverage"]),
                                                 config.census.max_unmeasured_share))
@@ -160,7 +161,7 @@ def eligibility_run(root: Path, case_id: str, fold: str, *, field: bool = False,
     params = {"s3_run": s3["run_id"], "fetch_run": fetch["run_id"], "m": m, "v": v, "r": r, "lag": lag,
               "n": "pending (fitted at M8, decision D-11)", "primary_resolution": primary,
               "provisional": bool(s3["params"].get("provisional")), "bearing_rule": social.bearing_results,
-              "commitment": commitment, "claim": claim.claim_id,
+              "lineage_works": social.lineage_works, "commitment": commitment, "claim": claim.claim_id,
               "bearing_anchors": len(anchors), "bearing_works": len(bearing),
               "disconfirmation_events": len(dates),
               "cluster_census_run": census["run_id"] if census_resolution is not None else None,
@@ -211,7 +212,8 @@ def _eligibility_report(case_id, run_id, s3_run, fold, params, by_resolution, pr
     lines = [
         f"# Eligibility (gate 1 before coding): {case_id} ({fold} fold)", "",
         f"Run `{run_id}` from social-layer run `{s3_run}`. A lineage's sub-window is eligible when its cluster has "
-        f"at least m = {params['m']} members, cites at least v = {params['v']} distinct results bearing on the "
+        f"at least m = {params['m']} members, its members' papers (`{params['lineage_works']}`) cite at least "
+        f"v = {params['v']} distinct results bearing on the "
         f"claim (`{params['bearing_rule']}`: {params['bearing_anchors']} seed and event works and the corpus works "
         f"citing them, {params['bearing_works']} in all), and its literature's coverage is at least "
         f"r = {params['r']:g}, from the census with cluster frames ("
