@@ -1,0 +1,26 @@
+# Drafted 30 Sep 2026 under decision D-15 (calibration commitments); every work verified by lookup.
+# Awaiting owner review.
+
+format: 1
+claim: homeopathy-beyond-placebo
+wording: "Homeopathic medicines have specific therapeutic effects beyond placebo."
+notes: "Homeopathy commitment H1: the claim the D-10 judgements reject. The UK House of Commons Science and Technology Committee's Evidence Check 2 (2010) concluded that homeopathy performs no better than placebo, and Australia's NHMRC statement (2015) that there are no health conditions for which there is reliable evidence that homeopathy is effective (field file registry/fields/homeopathy.yaml)."
+events:
+  - id: linde-1999
+    date: "1999"
+    kind: disconfirmation
+    works: [{openalex: W2137254688}]
+    note: "The 1997 meta-analysis's own authors: the better the trial's quality, the smaller the effect, which weakens their earlier result."
+    source: "OpenAlex lookup, 30 Sep 2026 (year from the record)."
+  - id: ernst-2002
+    date: "2002"
+    kind: disconfirmation
+    works: [{openalex: W1813387120}]
+    note: "A systematic review of systematic reviews: the best evidence does not support the claim of effects beyond placebo."
+    source: "OpenAlex lookup, 30 Sep 2026 (year from the record)."
+  - id: shang-2005
+    date: "2005"
+    kind: disconfirmation
+    works: [{openalex: W2110707035}]
+    note: "Matched comparison with allopathy trials: the effects are compatible with placebo once bias and small-study effects are accounted for."
+    source: "OpenAlex lookup, 30 Sep 2026 (year from the record)."

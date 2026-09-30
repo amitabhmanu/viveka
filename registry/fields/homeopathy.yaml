@@ -1,5 +1,6 @@
-# Drafted 17 Sep 2026 (M4b) from OpenAlex venue lookups; awaiting owner review.
-format: 1
+# Drafted 17 Sep 2026 (M4b) from OpenAlex venue lookups; commitments added 30 Sep 2026 (D-15).
+# Awaiting owner review.
+format: 2
 field: homeopathy
 role: calibration
 side: pseudoscience
@@ -9,3 +10,12 @@ frames:
   - {id: venues, kind: community, sources: [S4310451, S4210225608, S4210212727, S4210168090], ingest: [ijrh, ijhdr], note: "Homeopathy (ISSN-L 1475-4916) and its predecessor the British Homeopathic Journal (0007-0785); Allgemeine Homöopathische Zeitung (0002-5887); Zeitschrift für Klassische Homöopathie (0935-0853), all from OpenAlex; the Indian Journal of Research in Homoeopathy (0974-7168) and the International Journal of High Dilution Research (1982-6206) ingested from their open archives in place of their OpenAlex sources (S2764361555, S2764825727), whose reference lists are not deposited (owner decision after the deposit check, 19 Sep 2026). The four subscription journals deposit few or no reference lists and their publisher's site blocks automated access, so they stay largely unmeasured."}
 absent_venues:
   - {name: "Journal of the American Institute of Homeopathy", issn_l: "0002-8967", note: "OpenAlex source S2764844109 lists 1 work; its back issues are not indexed."}
+commitments:
+  - id: beyond-placebo
+    claim: homeopathy-beyond-placebo
+    seeds: [{openalex: W2137708603}, {openalex: W2162028237}, {openalex: W2126492696}]
+    note: "Seeds: Kleijnen, Knipschild and ter Riet 1991 and Linde et al. 1997, the meta-analyses the community cites as showing effects beyond placebo, and Mathie et al. 2014, its later meta-analysis of individualised treatment."
+  - id: immunotherapy-allergy
+    claim: homeopathic-immunotherapy-allergy
+    seeds: [{openalex: W1996492700}, {openalex: W1989007942}, {openalex: W1838433061}]
+    note: "Seeds: the Glasgow group's trial series, Reilly et al. 1986 in hay fever and 1994 in allergic asthma, and Taylor et al. 2000 in perennial allergic rhinitis with its overview of the four series."

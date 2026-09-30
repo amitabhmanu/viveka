@@ -1,0 +1,26 @@
+# Drafted 30 Sep 2026 under decision D-15 (calibration commitments); every work verified by lookup.
+# Awaiting owner review.
+
+format: 1
+claim: homeopathic-immunotherapy-allergy
+wording: "Homeopathic immunotherapy, an ultramolecular dilution of the patient's own allergen, is an effective treatment for allergic rhinitis and asthma."
+notes: "Homeopathy commitment H2: the community's most sustained clinical trial lineage, run by the Glasgow group across four trial series from 1986. Deliberately distinct from the memory of water, which is registered as the reserve case cases/water-memory."
+events:
+  - id: lewith-2002
+    date: "2002"
+    kind: disconfirmation
+    works: [{openalex: W2118791757}]
+    note: "Ultramolecular house-dust-mite allergen in asthma: no difference from placebo on any primary outcome."
+    source: "OpenAlex lookup, 30 Sep 2026 (year from the record)."
+  - id: white-2003
+    date: "2003"
+    kind: disconfirmation
+    works: [{openalex: W2040566096}]
+    note: "Individualised homeopathy as an adjunct in childhood asthma: no evidence of benefit over placebo."
+    source: "OpenAlex lookup, 30 Sep 2026 (year from the record)."
+  - id: cochrane-2004
+    date: "2004"
+    kind: disconfirmation
+    works: [{openalex: W2129937123}]
+    note: "Cochrane review of homeopathy for chronic asthma: not enough evidence to assess a role reliably."
+    source: "OpenAlex lookup, 30 Sep 2026 (year from the record)."
