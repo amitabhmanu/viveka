@@ -171,3 +171,35 @@ def test_cluster_frames_hold_each_qualifying_window_s_papers_and_map_back_to_lin
         ("L1@1990", "P1", 1990), ("L1@1990", "P3", 1994)]
     assert {r["kind"] for r in frames} == {"cluster"}
     assert split_frame("L1@1990") == ("L1", 1990)
+
+
+def test_a_social_run_is_reused_only_when_the_registry_and_fetch_would_reproduce_it(tmp_path):
+    import json
+
+    from viveka.corpus.commands import SOCIAL_TABLES, reusable_social_run
+    from viveka.paths import RUNS
+
+    settings = {"graph": "coauthor_citation_v1", "w": 5, "o": 0.3, "resolutions": [0.5, 1.0], "leiden_seed": 1,
+                "lineage_min_members": 2}
+    tables = {name: f"data/derived/{name}.parquet" for name in SOCIAL_TABLES}
+    fetch = {"run_id": "new-s1", "params": {"tables": tables}}
+    built = {"schemas": "s0", "corpus": "c0", "simulation": "sim0", "thresholds": "t0", "fields/x": "f0",
+             "events/e": "e0"}
+    run_id = "2026-01-01T0000Z-s3-x-aaaa"
+    manifest = {"run_id": run_id, "stage": "S3", "case": "x", "fold": "dev", "status": "ok",
+                "registry": {"components": built}, "params": {**settings, "fetch_run": "old-s1"},
+                "inputs": [{"path": path, "sha256": "sha256:0"} for path in tables.values()]}
+    (tmp_path / RUNS / run_id).mkdir(parents=True)
+    (tmp_path / RUNS / run_id / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+
+    # corpus, thresholds and simulation moved on (m, v, a census convention); the subject and its claims did not
+    now = {**built, "corpus": "c1", "thresholds": "t1", "simulation": "sim1"}
+    found = reusable_social_run(tmp_path, "x", "dev", now, fetch, settings)
+    assert found is not None and found["run_id"] == run_id
+    # a changed field or claim, a changed S3 setting, or different fetched tables each make it stale
+    assert reusable_social_run(tmp_path, "x", "dev", {**now, "fields/x": "f1"}, fetch, settings) is None
+    assert reusable_social_run(tmp_path, "x", "dev", {**now, "events/e": "e1"}, fetch, settings) is None
+    assert reusable_social_run(tmp_path, "x", "dev", now, fetch, {**settings, "w": 10}) is None
+    other = {"run_id": "s1", "params": {"tables": {**tables, "citations": "data/derived/other.parquet"}}}
+    assert reusable_social_run(tmp_path, "x", "dev", now, other, settings) is None
+    assert reusable_social_run(tmp_path, "x", "calibration", now, fetch, settings) is None

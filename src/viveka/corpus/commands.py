@@ -12,7 +12,7 @@ from __future__ import annotations
 import argparse
 import math
 from collections import Counter, defaultdict
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -49,6 +49,7 @@ from viveka.corpus.manual import MANUAL_DIR, ManualImportError, load_manual
 from viveka.corpus.overlap import community_authors, overlaps
 from viveka.paths import REGISTRY, rel_posix
 from viveka.provenance import FOLDS, RunContext, load_manifest, recent_runs
+from viveka.registry.thresholds import load_thresholds
 from viveka.registry.verify import require_frozen
 
 Out = Callable[[str], None]
@@ -397,6 +398,46 @@ def latest_run(root: Path, stage: str, case_id: str, fold: str, components: dict
     return None
 
 
+SOCIAL_TABLES = ("works", "authors", "authorships", "citations", "frames")
+# Components S3 reads only through the settings below (or not at all): a change elsewhere in them, such as m, v
+# or a census convention, leaves the social layer what it was.
+SOCIAL_BY_SETTINGS = frozenset({"schemas", "corpus", "simulation", "thresholds"})
+
+
+def social_settings(config: CorpusConfig, thresholds: Mapping) -> dict:
+    """Every registered value S3 computes from, as its manifest records them."""
+    if config.social is None:
+        raise CaseError("corpus.yaml registers no social settings")
+    return {"graph": config.social.graph, "w": int(thresholds["w_window_years"]),
+            "o": float(thresholds["o_min_overlap"]),
+            "resolutions": [float(r) for r in thresholds["sweep"]["resolutions"]],
+            "leiden_seed": config.social.leiden_seed, "lineage_min_members": config.social.lineage_min_members}
+
+
+def reusable_social_run(root: Path, case_id: str, fold: str, components: dict[str, str], fetch: dict,
+                        settings: Mapping) -> dict | None:
+    """The newest successful S3 run that the current registry and fetch would reproduce (decision D-19).
+
+    S3 takes days on the large fields, and an edit to corpus.yaml or thresholds.yaml that it never reads used to
+    make every social layer stale. A run stands when it was built from the same subject and claims (every
+    component outside `SOCIAL_BY_SETTINGS` has the hash it has now), under the same S3 settings, from exactly
+    the tables of the current fetch (content-addressed, so an identical replay of S1 gives the same paths).
+    """
+    tables_now = {fetch["params"]["tables"][name] for name in SOCIAL_TABLES}
+    own = {name: value for name, value in components.items() if name not in SOCIAL_BY_SETTINGS}
+    for manifest in recent_runs(root, limit=10_000):
+        if not (manifest.get("stage") == "S3" and manifest.get("case") == case_id and manifest.get("fold") == fold
+                and manifest.get("status") == "ok"):
+            continue
+        built = manifest["registry"]["components"]
+        params = manifest.get("params") or {}
+        if (set(built) == set(components) and all(built[name] == value for name, value in own.items())
+                and all(params.get(key) == value for key, value in settings.items())
+                and {item["path"] for item in manifest.get("inputs") or []} == tables_now):
+            return manifest
+    return None
+
+
 @dataclass
 class Draw:
     by_frame: dict[str, list[FrameWork]]  # each frame's papers
@@ -727,12 +768,11 @@ def cluster_draw(root: Path, subject_id: str, fold: str, *, field: bool = False,
         raise CaseError("corpus.yaml registers no social settings")
     chosen = float(config.social.primary_resolution if resolution is None else resolution)
     fetch, _, works_rows = _fetch_inputs(root, case, fold)
-    s3 = latest_run(root, "S3", subject_id, fold, require_frozen(root, [case.component, "thresholds"], fold))
+    s3 = reusable_social_run(root, subject_id, fold, require_frozen(root, [case.component, "thresholds"], fold),
+                             fetch, social_settings(config, load_thresholds(root)))
     if s3 is None:
-        raise CaseError(f"no successful S3 run for {subject_id} in fold {fold} with the current registry; "
-                        "run `viveka social build` first")
-    if s3["params"]["fetch_run"] != fetch["run_id"]:
-        raise CaseError(f"the latest S1 run for {subject_id} is not the one S3 used; rerun `viveka social build`")
+        raise CaseError(f"no successful S3 run for {subject_id} in fold {fold} that the current registry and "
+                        "fetch would reproduce; run `viveka social build` first")
     eligibility = _eligibility_runs(root, fold, s3["run_id"])
     if not eligibility:
         raise CaseError(f"no successful S4 run from social-layer run {s3['run_id']}; "

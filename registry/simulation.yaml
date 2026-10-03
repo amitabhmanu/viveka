@@ -15,7 +15,11 @@ state: draft
 
 control:
   alpha: 0.05
-  power: 0.8
+  # D-17 (2 Oct 2026; post hoc, after the dev-fold S4 of every calibration commitment under D-18): 0.75, was 0.8.
+  # No pseudoscience commitment reached v at 0.8 (homeopathy 417 and 384, chiropractic 334 and 235 against 463),
+  # which left trigger 1 untestable. Power only moves m and v; alpha and the thresholds it sets are untouched, so
+  # the cost is more unclear readings, not more false ones.
+  power: 0.75
   replicates: 200
   seed: 20260914
 

@@ -16,17 +16,17 @@ parameters:
     symbol: "m"
     used_in: gate 1
     meaning: Minimum members of C
-    value: 190
+    value: 135
     status: simulated
-    source_run: 2026-09-19T1135Z-sim-thresholds-144b
+    source_run: 2026-10-02T1052Z-sim-thresholds-354b
 
   v_min_citations:
     symbol: "v"
     used_in: gate 1
     meaning: Minimum citations by C bearing on p per sub-window; below it an engaged lineage is closed
-    value: 463
+    value: 329
     status: simulated
-    source_run: 2026-09-19T1135Z-sim-thresholds-144b
+    source_run: 2026-10-02T1052Z-sim-thresholds-354b
 
   r_min_coverage:
     symbol: "r"
@@ -50,7 +50,7 @@ parameters:
     meaning: Smallest asymmetry treated as real, for Δ and Ω alike; the larger of the noise edge and δ₀
     value: 0.15
     status: simulated
-    source_run: 2026-09-19T1135Z-sim-thresholds-144b
+    source_run: 2026-10-02T1052Z-sim-thresholds-354b
 
   delta_margin:
     symbol: "δ₀"
@@ -66,7 +66,7 @@ parameters:
     meaning: Largest share of insulating responses compatible with S
     value: 0.908108
     status: simulated
-    source_run: 2026-09-19T1135Z-sim-thresholds-144b
+    source_run: 2026-10-02T1052Z-sim-thresholds-354b
 
   k_min_loop:
     symbol: "k"
@@ -74,7 +74,7 @@ parameters:
     meaning: Shortest insulating loop compatible with A
     value: 5
     status: simulated
-    source_run: 2026-09-19T1135Z-sim-thresholds-144b
+    source_run: 2026-10-02T1052Z-sim-thresholds-354b
 
   j_idle_round_years:
     symbol: "j"
@@ -98,7 +98,7 @@ parameters:
     meaning: Threshold for tie retention
     value: 0.857143
     status: simulated
-    source_run: 2026-09-19T1135Z-sim-thresholds-144b
+    source_run: 2026-10-02T1052Z-sim-thresholds-354b
 
   h_honoured_threshold:
     symbol: "h"
@@ -106,7 +106,7 @@ parameters:
     meaning: Threshold for honoured rate
     value: 0.810811
     status: simulated
-    source_run: 2026-09-19T1135Z-sim-thresholds-144b
+    source_run: 2026-10-02T1052Z-sim-thresholds-354b
 
   h0_min_met_conditions:
     symbol: "h₀"

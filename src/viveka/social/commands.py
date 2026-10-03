@@ -15,7 +15,7 @@ from viveka.cases import CaseError, bearing_set, load_commitment, load_subject
 from viveka.census import summarize
 from viveka.corpus import ingest, tables
 from viveka.corpus.clusters import coverage_by_window
-from viveka.corpus.commands import BEARING, latest_run
+from viveka.corpus.commands import BEARING, latest_run, reusable_social_run, social_settings
 from viveka.corpus.config import load_corpus_config
 from viveka.paths import rel_posix
 from viveka.provenance import RunContext
@@ -120,16 +120,18 @@ def eligibility_run(root: Path, case_id: str, fold: str, *, field: bool = False,
     thresholds = load_thresholds(root)
     m, v = int(thresholds["m_min_members"]), int(thresholds["v_min_citations"])
     r, lag = float(thresholds["r_min_coverage"]), float(thresholds["l_lag_years"])
-    s3 = latest_run(root, "S3", case_id, fold, require_frozen(root, [case.component, "thresholds"], fold))
-    if s3 is None:
-        raise CaseError(f"no successful S3 run for {case_id} in fold {fold} with the current registry; "
-                        "run `viveka social build` first")
+    config = load_corpus_config(root)
+    components = require_frozen(root, [case.component, "thresholds"], fold)
     fetch = latest_run(root, "S1", case_id, fold, require_frozen(root, [case.component], fold))
-    if fetch is None or fetch["run_id"] != s3["params"]["fetch_run"]:
-        raise CaseError(f"the latest S1 run for {case_id} is not the one S3 used; rerun `viveka social build`")
+    if fetch is None:
+        raise CaseError(f"no successful S1 run for {case_id} in fold {fold} with the current registry; "
+                        "run `viveka corpus fetch` first")
+    s3 = reusable_social_run(root, case_id, fold, components, fetch, social_settings(config, thresholds))
+    if s3 is None:
+        raise CaseError(f"no successful S3 run for {case_id} in fold {fold} that the current registry and fetch "
+                        "would reproduce; run `viveka social build` first")
     read = {name: tables.read(root / fetch["params"]["tables"][name])
             for name in ("works", "authors", "authorships", "citations", "frames")}
-    config = load_corpus_config(root)
     social = config.social
     if social is None or social.bearing_results != "bearing_results_v2":
         raise CaseError("corpus.yaml social settings register no known bearing_results rule")
@@ -148,7 +150,7 @@ def eligibility_run(root: Path, case_id: str, fold: str, *, field: bool = False,
         members.setdefault((row["resolution"], row["window_start"], row["cluster"]), set()).add(row["author"])
     lineage_rows = tables.read(root / s3["params"]["tables"]["lineages"])
     primary = float(social.primary_resolution)
-    census = latest_run(root, "S2C", case_id, fold, require_frozen(root, [case.component, "thresholds"], fold))
+    census = latest_run(root, "S2C", case_id, fold, components)
     coverage: dict[tuple[str, int], float | None] = {}
     census_resolution = None
     # A census framed under another lineage_works rule measured other papers (runs before D-18 record none).
@@ -161,7 +163,9 @@ def eligibility_run(root: Path, case_id: str, fold: str, *, field: bool = False,
     params = {"s3_run": s3["run_id"], "fetch_run": fetch["run_id"], "m": m, "v": v, "r": r, "lag": lag,
               "n": "pending (fitted at M8, decision D-11)", "primary_resolution": primary,
               "provisional": bool(s3["params"].get("provisional")), "bearing_rule": social.bearing_results,
-              "lineage_works": social.lineage_works, "commitment": commitment, "claim": claim.claim_id,
+              "lineage_works": social.lineage_works,
+              "s3_reused": s3["registry"]["components"] != components,
+              "commitment": commitment, "claim": claim.claim_id,
               "bearing_anchors": len(anchors), "bearing_works": len(bearing),
               "disconfirmation_events": len(dates),
               "cluster_census_run": census["run_id"] if census_resolution is not None else None,
