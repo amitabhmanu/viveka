@@ -40,6 +40,42 @@ def iter_citations(fetcher: Fetcher, doi: str, page_size: int, max_offset: int) 
         offset = int(following)
 
 
+def references_request(doi: str, offset: int, limit: int) -> Request:
+    return Request.build(SOURCE, "free", f"{BASE}/paper/DOI:{doi}/references", fields=FIELDS, offset=offset,
+                         limit=limit)
+
+
+def iter_references(fetcher: Fetcher, doi: str, page_size: int, max_offset: int) -> tuple[list[dict], bool]:
+    """Every reference item S2 returns for the citing DOI (none when S2 does not know it), and whether the
+    offset limit cut the list short."""
+    items: list[dict] = []
+    offset = 0
+    while True:
+        limit = min(page_size, max_offset - 1 - offset)
+        if limit <= 0:
+            return items, True
+        response = fetcher.get(references_request(doi, offset, limit))
+        if response.status == 404:
+            return items, False
+        if response.status != 200 or response.body is None:
+            raise FetchError(f"semanticscholar references of {doi}: HTTP {response.status}")
+        items.extend(response.body.get("data") or [])
+        following = response.body.get("next")
+        if following is None:
+            return items, False
+        offset = int(following)
+
+
+def reference_rows(citing_doi: str, citing_s2_id: str | None, cited_work: str, item: dict) -> list[dict]:
+    """Context rows for one reference of a citing paper, in the same table as :func:`context_rows`."""
+    intents = sorted(str(i) for i in item.get("intents") or [])
+    return [
+        {"cited_work": cited_work, "citing_doi": citing_doi, "citing_s2_id": citing_s2_id, "context_index": index,
+         "text": text, "intents": intents, "is_influential": bool(item.get("isInfluential")), "source": SOURCE}
+        for index, text in enumerate(item.get("contexts") or [])
+    ]
+
+
 def context_rows(cited_work: str, item: dict) -> list[dict]:
     citing = item.get("citingPaper") or {}
     external = citing.get("externalIds") or {}

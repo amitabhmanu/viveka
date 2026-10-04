@@ -412,6 +412,176 @@ def fetch_contexts(root: Path, case_id: str, fold: str, *, field: bool = False, 
     return ctx.run_id
 
 
+MEMBER_WINDOWS_PER_SCIENCE = 3  # decision D-28
+MEMBER_WINDOWS_SEED = 20261007  # decision D-28
+
+
+def coding_scope(root: Path, field_id: str, commitment: str, fold: str) -> tuple[dict, dict, list, list[dict]]:
+    """The citations D-28 codes for one commitment: (S4 run, fetch run, chosen windows, scope rows), from the
+    newest successful S4 run under the current registry, its fetch and its social layer."""
+    from viveka.social.commands import _own_works
+    from viveka.social.eligibility import bearing_results, lineage_works
+    from viveka.social.graph import node_keys
+    from viveka.social.scope import coding_windows, eligible_windows, window_citations
+
+    case, claim = load_commitment(root, field_id, commitment)
+    subject = f"{field_id}-{commitment}"
+    s4 = latest_run(root, "S4", subject, fold, require_frozen(root, [case.component, "thresholds"], fold))
+    if s4 is None:
+        raise CaseError(f"no successful S4 run for {subject} in fold {fold} with the current registry; run "
+                        "`viveka eligibility` first")
+    fetch, s3 = load_manifest(root, s4["params"]["fetch_run"]), load_manifest(root, s4["params"]["s3_run"])
+    read = {name: tables.read(root / fetch["params"]["tables"][name])
+            for name in ("works", "authors", "authorships", "citations", "frames")}
+    resolution = float(s4["params"]["primary_resolution"])
+    eligible = eligible_windows(tables.read(root / s4["params"]["tables"]["eligibility"]), resolution)
+    windows = coding_windows(eligible, case.pair, subject, per_science=MEMBER_WINDOWS_PER_SCIENCE,
+                             seed=MEMBER_WINDOWS_SEED)
+    keys = node_keys(read["authors"], s3["params"]["nodes"] == "name")
+    years, authors = lineage_works(s4["params"]["lineage_works"],
+                                   ((r["work_id"], r["year"]) for r in read["works"]),
+                                   ((r["work_id"], r["author_id"]) for r in read["authorships"]), keys,
+                                   _own_works(read["frames"]))
+    citations = [(r["citing_work"], r["cited_work"]) for r in read["citations"]]
+    anchors = {ref.openalex for ref in bearing_set(case, claim) if ref.openalex}
+    frame_works = {r["work_id"] for r in read["frames"]
+                   if r["kind"] == BEARING and r["frame_id"] == f"{BEARING}-{commitment}"}
+    bearing = bearing_results(anchors | frame_works, citations)
+    members: dict[tuple[float, int, int], set[str]] = {}
+    for r in tables.read(root / s3["params"]["tables"]["clusters"]):
+        members.setdefault((r["resolution"], r["window_start"], r["cluster"]), set()).add(r["author"])
+    rows = window_citations(windows, tables.read(root / s3["params"]["tables"]["lineages"]), members, resolution,
+                            years, authors, citations, bearing)
+    return s4, fetch, windows, rows
+
+
+def fetch_member_contexts(root: Path, field_id: str, commitment: str, fold: str, *,
+                          transport: httpx.BaseTransport | None = None, out: Out = print) -> str:
+    """Semantic Scholar's contexts for the citations D-28 codes: for each citing paper of the scope, its
+    references with contexts, kept where the cited paper is a bearing result it cites in the corpus.
+
+    A citation is unmeasured when its citing paper has no DOI, Semantic Scholar does not know the paper, the
+    cited result has no DOI to match, or Semantic Scholar gives the reference no context; each is counted."""
+    from viveka.social.scope import WINDOWS_RULE
+
+    case, _ = load_commitment(root, field_id, commitment)
+    config = load_corpus_config(root)
+    s2 = config.semanticscholar
+    s4, fetch, windows, scope = coding_scope(root, field_id, commitment, fold)
+    works = {r["work_id"]: r for r in tables.read(root / fetch["params"]["tables"]["works"])}
+    doi_of = {w: normalize_doi(r["doi"]) for w, r in works.items() if r["doi"]}
+    work_of_doi = {doi: w for w, doi in doi_of.items() if doi}
+    wanted: dict[str, set[str]] = defaultdict(set)
+    for r in scope:
+        wanted[r["citing_work"]].add(r["cited_work"])
+    pairs = {(c, d) for c, ds in wanted.items() for d in ds}
+    subject = f"{field_id}-{commitment}"
+    params = {"commitment": commitment, "s4_run": s4["run_id"], "fetch_run": fetch["run_id"],
+              "windows_rule": WINDOWS_RULE, "windows_per_science": MEMBER_WINDOWS_PER_SCIENCE,
+              "windows_seed": MEMBER_WINDOWS_SEED, "side": case.pair,
+              "windows": [list(w) for w in windows], "scope_citations": len(pairs),
+              "scope_results": len({d for _, d in pairs}), "citing_works": len(wanted)}
+    with RunContext(root, "S1-member-contexts", subject, fold, [case.component, "thresholds"], params=params) as ctx:
+        for name in ("works", "citations", "authorships"):
+            ctx.record_input(root / fetch["params"]["tables"][name])
+        ctx.record_input(root / s4["params"]["tables"]["eligibility"])
+        with make_fetcher(root, config, need=("semanticscholar",), transport=transport,
+                          run_id=ctx.run_id) as fetcher:
+            try:
+                rows, truncated, without_doi, unknown = [], [], [], []
+                for citing in sorted(wanted):
+                    doi = doi_of.get(citing)
+                    if not doi:
+                        without_doi.append(citing)
+                        continue
+                    items, cut = semanticscholar.iter_references(fetcher, doi, int(s2["page_size"]),
+                                                                 int(s2["max_offset"]))
+                    if cut:
+                        truncated.append(citing)
+                    if not items:
+                        unknown.append(citing)
+                    for item in items:
+                        cited_doi = normalize_doi(((item.get("citedPaper") or {}).get("externalIds") or {}).get("DOI"))
+                        cited = work_of_doi.get(cited_doi) if cited_doi else None
+                        if cited in wanted[citing]:
+                            rows += [dict(r, citing_work=citing)
+                                     for r in semanticscholar.reference_rows(doi, None, cited, item)]
+            finally:
+                _finish(ctx, fetcher)
+        with_context = {(r["citing_work"], r["cited_work"]) for r in rows}
+        scope_path = ctx.store(tables.to_parquet("scope", scope), "parquet", rows=len(scope))
+        path = ctx.store(tables.to_parquet("member_contexts", rows), "parquet", rows=len(rows))
+        no_doi_cited = {(c, d) for c, d in pairs if not doi_of.get(d)}
+        ctx.params.update({"tables": {"scope": rel_posix(scope_path, root), "member_contexts": rel_posix(path, root)},
+                           "citing_without_doi": len(without_doi), "citing_unknown_to_s2": len(unknown),
+                           "truncated": sorted(truncated), "cited_without_doi": len(no_doi_cited),
+                           "citations_with_context": len(with_context),
+                           "results_with_context": len({d for _, d in with_context}),
+                           "semanticscholar_key": env.get(env.S2_API_KEY) is not None})
+    share = len(with_context) / len(pairs) if pairs else 0.0
+    out(f"{subject}: {len(windows)} lineage-window(s), {len(pairs)} citations of {params['scope_results']} bearing "
+        f"results from {len(wanted)} citing papers; with a context: {len(with_context)} ({share:.1%}); citing "
+        f"papers without DOI {len(without_doi)}, unknown to Semantic Scholar {len(unknown)}")
+    out(f"run {ctx.run_id}: {len(rows)} contexts")
+    out(_usage_line(ctx.usage))
+    return ctx.run_id
+
+
+def abstract_text(inverted: Mapping[str, Sequence[int]] | None) -> str | None:
+    """An abstract from OpenAlex's inverted index (word -> positions), or None when there is none."""
+    if not inverted:
+        return None
+    placed = sorted((position, word) for word, positions in inverted.items() for position in positions)
+    text = " ".join(word for _, word in placed).strip()
+    return text or None
+
+
+def latest_member_contexts(root: Path, field_id: str, commitment: str, fold: str) -> dict:
+    case, _ = load_commitment(root, field_id, commitment)
+    run = latest_run(root, "S1-member-contexts", f"{field_id}-{commitment}", fold,
+                     require_frozen(root, [case.component, "thresholds"], fold))
+    if run is None:
+        raise CaseError(f"no successful member-contexts run for {field_id}-{commitment} in fold {fold} with the "
+                        "current registry; run `viveka corpus member-contexts` first")
+    return run
+
+
+def fetch_abstracts(root: Path, field_id: str, commitment: str, fold: str, *,
+                    transport: httpx.BaseTransport | None = None, out: Out = print) -> str:
+    """OpenAlex abstracts of the bearing results that have at least one member context (the items of the
+    direction task, D-28). A result without an abstract is unmeasured for direction and counted."""
+    case, _ = load_commitment(root, field_id, commitment)
+    config = load_corpus_config(root)
+    contexts_run = latest_member_contexts(root, field_id, commitment, fold)
+    contexts = tables.read(root / contexts_run["params"]["tables"]["member_contexts"])
+    results = sorted({r["cited_work"] for r in contexts})
+    params = {"commitment": commitment, "member_contexts_run": contexts_run["run_id"], "results": len(results)}
+    with RunContext(root, "S1-abstracts", f"{field_id}-{commitment}", fold, [case.component, "thresholds"],
+                    params=params) as ctx:
+        ctx.record_input(root / contexts_run["params"]["tables"]["member_contexts"])
+        found: dict[str, str | None] = {}
+        with make_fetcher(root, config, need=("openalex",), transport=transport, run_id=ctx.run_id) as fetcher:
+            try:
+                for chunk in chunks(results, openalex.OR_LIMIT):
+                    response = fetcher.get(openalex.id_batch_request(chunk, ("id", "abstract_inverted_index")))
+                    if response.status != 200 or response.body is None:
+                        raise FetchError(f"openalex abstracts: HTTP {response.status}")
+                    for obj in response.body.get("results") or []:
+                        found[short_id(obj["id"])] = abstract_text(obj.get("abstract_inverted_index"))
+            finally:
+                _finish(ctx, fetcher)
+        rows = [{"work_id": w, "abstract": found.get(w), "source": openalex.SOURCE} for w in results]
+        path = ctx.store(tables.to_parquet("abstracts", rows), "parquet", rows=len(rows))
+        with_abstract = sum(r["abstract"] is not None for r in rows)
+        ctx.params.update({"tables": {"abstracts": rel_posix(path, root)}, "with_abstract": with_abstract,
+                           "not_returned": sum(w not in found for w in results)})
+    out(f"{field_id}-{commitment}: {len(results)} results with a member context; with an abstract: {with_abstract}"
+        + (f" ({with_abstract / len(results):.1%})" if results else ""))
+    out(f"run {ctx.run_id}")
+    out(_usage_line(ctx.usage))
+    return ctx.run_id
+
+
 # ---------------------------------------------------------------- S2: census
 
 
@@ -1259,6 +1429,19 @@ def add_parsers(sub: argparse._SubParsersAction, common: argparse.ArgumentParser
         else:
             p.add_argument("--commitment", help="A calibration field's commitment (fields format 2)")
 
+    p = csub.add_parser("member-contexts", parents=[common],
+                        help="S1: contexts of lineage members' citations of results bearing on a claim (D-28)")
+    p.add_argument("--field", required=True)
+    p.add_argument("--commitment", required=True)
+    p.add_argument("--fold", required=True, choices=FOLDS)
+    p.add_argument("--dry-run", action="store_true", help="Show the scope and the requests; no network")
+
+    p = csub.add_parser("abstracts", parents=[common],
+                        help="S1: OpenAlex abstracts of the bearing results with a member context (D-28)")
+    p.add_argument("--field", required=True)
+    p.add_argument("--commitment", required=True)
+    p.add_argument("--fold", required=True, choices=FOLDS)
+
     p = csub.add_parser("access", parents=[common],
                         help="Lookup: how much of the literature citing a commitment's results has open full text")
     p.add_argument("--field", required=True)
@@ -1361,6 +1544,21 @@ def run(args: argparse.Namespace, root: Path, *, transport: httpx.BaseTransport 
         if args.command == "corpus" and args.action == "resolve":
             return resolve_lookup(root, doi=args.doi, openalex_id=args.openalex_id, title=args.title,
                                   source_name=args.source_name, transport=transport, out=out)
+        if args.command == "corpus" and args.action == "member-contexts":
+            if args.dry_run:
+                _, _, windows, scope = coding_scope(root, args.field, args.commitment, args.fold)
+                citing = {r["citing_work"] for r in scope}
+                out(f"member-contexts dry run for {args.field}-{args.commitment}: {len(windows)} lineage-window(s), "
+                    f"{len({(r['citing_work'], r['cited_work']) for r in scope})} citations of "
+                    f"{len({r['cited_work'] for r in scope})} bearing results from {len(citing)} citing papers")
+                out(f"  semanticscholar free: about {len(citing)} reference request(s), one per citing paper "
+                    "(archived ones replay)")
+                return 0
+            fetch_member_contexts(root, args.field, args.commitment, args.fold, transport=transport, out=out)
+            return 0
+        if args.command == "corpus" and args.action == "abstracts":
+            fetch_abstracts(root, args.field, args.commitment, args.fold, transport=transport, out=out)
+            return 0
         if args.command == "corpus" and args.action == "access":
             return access_lookup(root, args.field, args.commitment, args.fold, transport=transport, out=out)
         subject_id, is_field = _subject(args)

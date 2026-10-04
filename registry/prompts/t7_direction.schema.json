@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "t7_direction",
+  "title": "T7 direction of one result relative to a claim, from its abstract (codebook: direction.md)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["label", "basis_span"],
+  "properties": {
+    "label": {"enum": ["for", "against", "not_bearing", "cannot_tell"]},
+    "basis_span": {"type": ["string", "null"], "maxLength": 400}
+  },
+  "if": {"properties": {"label": {"enum": ["for", "against"]}}},
+  "then": {"properties": {"basis_span": {"type": "string", "minLength": 1}}},
+  "else": {"properties": {"basis_span": {"type": "null"}}}
+}
