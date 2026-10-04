@@ -215,3 +215,19 @@ def test_distinctive_terms_ranks_what_one_subject_says_and_the_others_do_not():
     assert {w for w, _, _ in found["a"]} >= {"dilution", "shaken"}
     assert "study" not in {w for w, _, _ in found["a"]} and "plate" in {w for w, _, _ in found["b"]}
     assert all(z > 0 for _, z, _ in found["a"])
+
+
+def test_leakage_scoring_counts_accuracy_against_chance_and_cannot_tell_as_a_miss():
+    from viveka.coders.base import Label, Missing
+    from viveka.coders.leakage import score
+
+    truth = {"a": "homeopathy", "b": "plate-tectonics", "c": "homeopathy", "d": "thermodynamics"}
+    results = [Label("a", "x", 0, "r", {"guess": "homeopathy", "confidence": 0.9}),
+               Label("b", "x", 0, "r", {"guess": "plate_tectonics", "confidence": 0.8}),
+               Label("c", "x", 0, "r", {"guess": "cannot_tell", "confidence": 0.2}),
+               Missing("d", "x", 0, "r", "absent")]
+    fields = ["homeopathy", "chiropractic", "plate-tectonics", "molecular-genetics", "thermodynamics"]
+    r = score(truth, results, fields, g_pp=10)["coders"]["x"]
+    assert (r["answered"], r["missing"], r["accuracy"]) == (3, 1, 2 / 3)
+    assert r["above_chance_pp"] == 46.7 and r["passes"] is False
+    assert r["by_subject"]["homeopathy"] == {"correct": 1, "n": 2}

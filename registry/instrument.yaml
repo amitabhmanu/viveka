@@ -8,7 +8,12 @@
 version: 0
 state: draft
 
-coders: []                   # [{coder_id, family, kind: automated|human, model_id, effort, prompt_set}]
+# Decision D-4 (4 Oct 2026): three Claude models through the Claude Code CLI, effort high (owner, 4 Oct 2026).
+# Decision D-21: each model is its own family for resampling, a declared departure from the one-family rule.
+coders:
+  - {coder_id: "claude-cli:claude-opus-5-5", family: "claude-opus-5-5", kind: automated, model_id: claude-opus-5-5, effort: high, prompt_set: null}
+  - {coder_id: "claude-cli:claude-sonnet-5-5", family: "claude-sonnet-5-5", kind: automated, model_id: claude-sonnet-5-5, effort: high, prompt_set: null}
+  - {coder_id: "claude-cli:claude-haiku-4-5-20251001", family: "claude-haiku-4-5-20251001", kind: automated, model_id: claude-haiku-4-5-20251001, effort: high, prompt_set: null}
 
 budget:
   currency: USD

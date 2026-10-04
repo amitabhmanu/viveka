@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "t6_leakage",
+  "title": "T6 leakage probe: the guessed research area of one redacted passage",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["guess", "confidence"],
+  "properties": {
+    "guess": {"enum": ["homeopathy", "chiropractic", "plate_tectonics", "molecular_genetics", "thermodynamics",
+                       "cannot_tell"]},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+  }
+}
