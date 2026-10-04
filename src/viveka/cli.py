@@ -59,6 +59,15 @@ def _parser() -> argparse.ArgumentParser:
     add_sim_parser(sub, common)
     add_corpus_parsers(sub, common)
     add_social_parser(sub, common)
+
+    p = sub.add_parser("code", parents=[common],
+                       help="S8: direction (T7) or stance (T1) labels for one commitment, by the qualified pool")
+    p.add_argument("--task", required=True, choices=["T7", "T1"])
+    p.add_argument("--field", required=True)
+    p.add_argument("--commitment", required=True)
+    p.add_argument("--fold", required=True)
+    p.add_argument("--max-live-calls", type=int, help="Per coder; archived answers still replay")
+    p.add_argument("--dry-run", action="store_true", help="Count items and calls; no coder is called")
     return parser
 
 
@@ -140,6 +149,17 @@ def main(argv: list[str] | None = None) -> int:
             from viveka.corpus.commands import run as run_corpus
 
             return run_corpus(args, root)
+        if args.command == "code":
+            from viveka.cases import CaseError
+            from viveka.coders.coding import CodingRefused, run_coding
+
+            try:
+                run_coding(root, args.task, args.field, args.commitment, args.fold,
+                           max_live_calls=args.max_live_calls, dry_run=args.dry_run)
+            except (CodingRefused, CaseError) as exc:
+                print(f"viveka: {exc}")
+                return 1
+            return 0
         if args.command == "verify":
             problems = verify_run(root, args.run_id)
             if problems:
