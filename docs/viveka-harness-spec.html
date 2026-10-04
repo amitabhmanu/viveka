@@ -478,7 +478,7 @@ parameters:
       </tbody>
     </table>
   </div>
-  <p>Every task has a prompt in <code>registry/prompts/</code> and a JSON Schema in <code>registry/schemas/</code>. The prompt embeds the relevant codebook section verbatim, so a codebook change changes the prompt hash and therefore the task version.</p>
+  <p>Every task has a prompt in <code>registry/prompts/</code> and a JSON Schema beside it, <code>registry/prompts/&lt;name&gt;.schema.json</code> (D-23: in <code>registry/schemas/</code> it would make every corpus run stale whenever a task changes). The prompt embeds the relevant codebook section verbatim, so a codebook change changes the prompt hash and therefore the task version.</p>
 
   <h3>Automated coder: Anthropic adapter</h3>
   <ul class="tight">

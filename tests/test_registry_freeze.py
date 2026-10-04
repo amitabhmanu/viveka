@@ -20,7 +20,8 @@ from viveka.registry.verify import check, require_frozen, verify
 
 def _add_prompt_stack(root: Path) -> None:
     write_lf(root / "registry" / "codebook" / "rules.md", "# Stance rules\n\nDiscounts need a reason.\n")
-    write_lf(root / "registry" / "prompts" / "t1.md", "---\nschema: thresholds\n---\nCode the citation.\n")
+    write_lf(root / "registry" / "prompts" / "t1.md", "---\nschema: t1\n---\nCode the citation.\n")
+    write_lf(root / "registry" / "prompts" / "t1.schema.json", '{"type": "object"}')  # beside its prompt (D-23)
 
 
 def _unset(root: Path, name: str) -> None:
@@ -137,6 +138,8 @@ def test_fitted_value_without_source_run_is_refused(registry_root):
 
 
 def test_other_refusals(registry_root, git_project):
+    for path in (registry_root / "registry" / "codebook").iterdir():  # whatever the project's codebook holds
+        path.unlink()
     with pytest.raises(FreezeRefused, match="no files to freeze"):
         freeze(registry_root, ["codebook"], "empty", use_git=False)
     with pytest.raises(FreezeRefused, match="reason is required"):

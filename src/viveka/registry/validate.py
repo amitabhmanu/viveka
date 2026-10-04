@@ -259,7 +259,19 @@ def _check_codebook(root: Path, rel: str) -> list[str]:
     return []
 
 
+PROMPT_DIR = "registry/prompts"
+
+
 def _check_prompt(root: Path, rel: str) -> list[str]:
+    # A coding task's label schema lives beside its prompt (decision D-23): schemas/ is upstream of every
+    # registry component, so a task schema there would make every corpus and census run stale.
+    if rel.endswith(".schema.json"):
+        try:
+            schema = json.loads((root / rel).read_text(encoding="utf-8"))
+            jsonschema.Draft202012Validator.check_schema(schema)
+        except (OSError, json.JSONDecodeError, jsonschema.SchemaError) as exc:
+            return [f"{rel}: not a valid JSON Schema ({exc})"]
+        return []
     text = (root / rel).read_text(encoding="utf-8")
     if not text.startswith("---\n") or "\n---" not in text[4:]:
         return [f"{rel}: prompt must begin with YAML front matter naming its schema"]
@@ -271,8 +283,8 @@ def _check_prompt(root: Path, rel: str) -> list[str]:
     schema_name = meta.get("schema") if isinstance(meta, dict) else None
     if not schema_name:
         return [f"{rel}: front matter has no 'schema'"]
-    if _schema(root, str(schema_name)) is None:
-        return [f"{rel}: names schema {schema_name!r}, but {SCHEMA_DIR}/{schema_name}.schema.json does not exist"]
+    if not (root / PROMPT_DIR / f"{schema_name}.schema.json").is_file():
+        return [f"{rel}: names schema {schema_name!r}, but {PROMPT_DIR}/{schema_name}.schema.json does not exist"]
     return []
 
 

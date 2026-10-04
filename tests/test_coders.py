@@ -132,3 +132,22 @@ def test_a_failed_call_or_an_answer_from_another_model_yields_no_labels(tmp_path
     assert {x.reason for x in failed} == {"call_failed"}
     other = make(tmp_path / "b", runner=FakeCli(model="claude-haiku-4-5-20251001"))
     assert {x.reason for x in other.code(TASK, ITEMS[:2], seed=7)} == {"wrong_model"}
+
+
+def test_the_registered_stance_task_renders_its_codebook_and_versions_by_content(tmp_path):
+    import shutil
+    from pathlib import Path
+
+    from viveka.coders.tasks import load_task
+
+    repo = Path(__file__).resolve().parents[1]
+    task = load_task(repo, "T1-stance")
+    assert task.task_id == "T1" and task.batch_size == 25 and "{{codebook}}" not in task.system_prompt
+    assert "## Labels" in task.system_prompt and task.item_schema["required"] == ["label", "reason_span"]
+    copy = tmp_path / "repo"
+    for sub in ("registry/prompts", "registry/codebook"):
+        shutil.copytree(repo / sub, copy / sub)
+    assert load_task(copy, "T1-stance").version == task.version
+    book = copy / "registry" / "codebook" / "stance.md"
+    book.write_text(book.read_text(encoding="utf-8") + "\nOne more rule.\n", encoding="utf-8")
+    assert load_task(copy, "T1-stance").version != task.version  # a codebook change is a new task version

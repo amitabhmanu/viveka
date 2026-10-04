@@ -60,8 +60,14 @@ def test_prompts_must_name_an_existing_schema(registry_root):
     assert any("front matter" in p for p in validate(registry_root, ["prompts"]))
     write_lf(prompt, "---\nschema: stance\n---\nCode the citation.\n")
     assert any("does not exist" in p for p in validate(registry_root, ["prompts"]))
-    write_lf(prompt, "---\nschema: thresholds\n---\nCode the citation.\n")
+    write_lf(prompt, "---\nschema: thresholds\n---\nCode the citation.\n")  # a registry schema is not a task's
+    assert any("does not exist" in p for p in validate(registry_root, ["prompts"]))
+    schema = registry_root / "registry" / "prompts" / "stance.schema.json"
+    write_lf(schema, '{"type": "object", "properties": {"label": {"enum": ["+"]}}}')
+    write_lf(prompt, "---\nschema: stance\n---\nCode the citation.\n")
     assert validate(registry_root, ["prompts"]) == []
+    write_lf(schema, '{"type": 7}')
+    assert any("not a valid JSON Schema" in p for p in validate(registry_root, ["prompts"]))
 
 
 def test_filters_must_name_an_existing_claim(registry_root):

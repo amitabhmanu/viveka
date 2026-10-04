@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "t1_stance",
+  "title": "T1 stance label for one citation context (codebook: stance.md)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["label", "reason_span"],
+  "properties": {
+    "label": {"enum": ["+", "-", "x", "none"]},
+    "reason_span": {"type": ["string", "null"], "maxLength": 400}
+  },
+  "if": {"properties": {"label": {"const": "x"}}},
+  "then": {"properties": {"reason_span": {"type": "string", "minLength": 1}}},
+  "else": {"properties": {"reason_span": {"type": "null"}}}
+}
