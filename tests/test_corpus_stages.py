@@ -435,6 +435,19 @@ def test_a_field_commitment_goes_through_the_social_layer_and_eligibility(world)
     assert manifest["params"]["decision"] == "replace" and "Decision at resolution 1" in "\n".join(lines)
     code, text = run_cli(root, "eligibility", "--field", "test-field", "--commitment", "c9", "--fold", "dev")
     assert code == 1 and "no commitment" in text
+    # contexts are fetched per commitment, and the run counts the citations that came with none (decision D-9)
+    fake.s2_citations["10.1/seed"] = [
+        {"contexts": ["as reported [1]"], "intents": [], "isInfluential": False,
+         "citingPaper": {"paperId": "p1", "year": 1994, "externalIds": {}}},
+        {"contexts": [], "intents": [], "isInfluential": False,
+         "citingPaper": {"paperId": "p2", "year": 2003, "externalIds": {}}}]
+    lines = []
+    contexts = load_manifest(root, commands.fetch_contexts(root, "test-field", "dev", field=True, commitment="c1",
+                                                           transport=fake.transport(), out=lines.append))
+    assert contexts["case"] == "test-field-c1" and len(table(root, contexts, "contexts")) == 1
+    assert (contexts["params"]["citations_listed"], contexts["params"]["citations_with_context"]) == (2, 1)
+    assert contexts["params"]["by_decade"] == {"1990s": [1, 1], "2000s": [1, 0]}
+    assert "with at least one context: 1 (50.0%)" in "\n".join(lines)
 
 
 def test_the_fetch_dry_run_projects_each_commitment_s_bearing_frame(world):

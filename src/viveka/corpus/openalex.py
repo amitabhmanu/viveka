@@ -37,6 +37,11 @@ def doi_batch_request(dois: Sequence[str], fields: Sequence[str] = WORK_FIELDS) 
                          select=_select(fields))
 
 
+def id_batch_request(ids: Sequence[str], fields: Sequence[str] = WORK_FIELDS) -> Request:
+    return Request.build(SOURCE, "list", f"{BASE}/works", filter="openalex:" + "|".join(ids), per_page=200,
+                         select=_select(fields))
+
+
 def list_request(filter_value: str, cursor: str, per_page: int, fields: Sequence[str] = WORK_FIELDS) -> Request:
     return Request.build(SOURCE, "list", f"{BASE}/works", filter=filter_value, cursor=cursor, per_page=per_page,
                          select=_select(fields))

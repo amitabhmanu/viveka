@@ -164,5 +164,10 @@ def recent_runs(root: Path, limit: int = 5) -> list[dict]:
     runs_dir = root / RUNS
     if not runs_dir.is_dir():
         return []
-    manifests = sorted(runs_dir.glob("*/manifest.json"), reverse=True)[:limit]
+    # Newest first. A run id is its start minute and a random suffix, so two runs started in one minute are
+    # ordered by when each manifest was written (once, as the run ended), never by the suffix.
+    def age(path: Path) -> tuple[str, int, str]:
+        return path.parent.name[:16], path.stat().st_mtime_ns, path.parent.name
+
+    manifests = sorted(runs_dir.glob("*/manifest.json"), key=age, reverse=True)[:limit]
     return [json.loads(p.read_text(encoding="utf-8")) for p in manifests]

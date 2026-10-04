@@ -29,13 +29,15 @@ def test_reason_covers_this_sessions_pending_changes(project, log_decision):
 def test_resolving_a_decision_appends_and_changes_status(project, log_decision):
     decisions = project / "ledger" / "decisions.md"
     original = decisions.read_bytes()
+    others = {name: status for name, status in decision_status(project).items() if name != "D-1"}
 
     result = log_decision(project, "--session", "s1", "--reason", "Use WSL2", "--decision", "D-1", "--resolve")
 
     assert result.returncode == 0, result.stderr
     assert decisions.read_bytes().startswith(original)
     assert decision_status(project)["D-1"] == ("DECIDED", "Use WSL2")
-    assert decision_status(project)["D-2"][0] == "OPEN"
+    # every other decision is as it was, whatever the project's ledger says of it today
+    assert {name: status for name, status in decision_status(project).items() if name != "D-1"} == others
 
 
 def test_note_without_resolve_keeps_status(project, log_decision):

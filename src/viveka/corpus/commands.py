@@ -19,7 +19,7 @@ from pathlib import Path
 import httpx
 
 from viveka import env
-from viveka.cases import Case, CaseError, Claim, WorkRef, bearing_set, load_subject
+from viveka.cases import Case, CaseError, Claim, WorkRef, bearing_set, load_commitment, load_subject
 from viveka.census import (
     CatalogueEntry,
     FrameWork,
@@ -44,7 +44,7 @@ from viveka.corpus.clusters import KIND as CLUSTER_KIND
 from viveka.corpus.clusters import cluster_frames, needed_windows
 from viveka.corpus.config import LIVE_SOURCES, CensusSettings, CorpusConfig, load_corpus_config
 from viveka.corpus.http import REFUSED_STATUSES, Fetcher, FetchError, UsageMeter
-from viveka.corpus.ids import normalize_doi, short_id
+from viveka.corpus.ids import chunks, normalize_doi, short_id
 from viveka.corpus.manual import MANUAL_DIR, ManualImportError, load_manual
 from viveka.corpus.overlap import community_authors, overlaps
 from viveka.paths import REGISTRY, rel_posix
@@ -349,20 +349,32 @@ def fetch_case(root: Path, case_id: str, fold: str, *, field: bool = False,
 # ---------------------------------------------------------------- S1: contexts
 
 
-def fetch_contexts(root: Path, case_id: str, fold: str, *, field: bool = False,
+def fetch_contexts(root: Path, case_id: str, fold: str, *, field: bool = False, commitment: str | None = None,
                    transport: httpx.BaseTransport | None = None, out: Out = print) -> str:
+    """Semantic Scholar's citation contexts for a case's bearing set, or for one commitment of a field.
+
+    The run records, by decade of the citing paper, how many citations Semantic Scholar lists and how many
+    of them carry at least one context (decision D-9: a citation without a context is unmeasured, and the
+    share with one is reported before any coding).
+    """
     if field:
-        raise CaseError(f"field {case_id} has no bearing set: contexts are fetched per commitment, once the field's "
-                        "commitments are registered")
-    case, claim = load_subject(root, case_id, False)
+        if not commitment:
+            raise CaseError(f"field {case_id} has no bearing set: contexts are fetched per commitment; name one "
+                            "with --commitment")
+        case, claim = load_commitment(root, case_id, commitment)
+    else:
+        case, claim = load_subject(root, case_id, False)
+    subject = f"{case_id}-{commitment}" if commitment else case_id
     config = load_corpus_config(root)
     s2 = config.semanticscholar
-    with RunContext(root, "S1-contexts", case_id, fold, [case.component]) as ctx:
+    with RunContext(root, "S1-contexts", subject, fold, [case.component]) as ctx:
         with make_fetcher(root, config, need=("openalex", "semanticscholar"), transport=transport,
                           run_id=ctx.run_id) as fetcher:
             try:
                 resolved = resolve_refs(fetcher, config, bearing_set(case, claim))
                 rows, truncated, without_doi = [], [], []
+                listed: Counter = Counter()
+                with_context: Counter = Counter()
                 for obj in (o for o in resolved.values() if o):
                     work_id, doi = short_id(obj["id"]), normalize_doi(obj.get("doi"))
                     if not doi:
@@ -372,13 +384,27 @@ def fetch_contexts(root: Path, case_id: str, fold: str, *, field: bool = False,
                                                                 int(s2["max_offset"]))
                     if cut:
                         truncated.append(work_id)
+                    for item in items:
+                        year = (item.get("citingPaper") or {}).get("year")
+                        decade = f"{int(year) // 10 * 10}s" if isinstance(year, int) else "undated"
+                        listed[decade] += 1
+                        with_context[decade] += bool(item.get("contexts"))
                     rows += [row for item in items for row in semanticscholar.context_rows(work_id, item)]
             finally:
                 _finish(ctx, fetcher)
         path = ctx.store(tables.to_parquet("contexts", rows), "parquet", rows=len(rows))
         ctx.params.update({"tables": {"contexts": rel_posix(path, root)}, "truncated": sorted(truncated),
-                           "without_doi": sorted(without_doi),
+                           "without_doi": sorted(without_doi), "commitment": commitment,
+                           "citations_listed": sum(listed.values()),
+                           "citations_with_context": sum(with_context.values()),
+                           "by_decade": {d: [listed[d], with_context[d]] for d in sorted(listed)},
                            "semanticscholar_key": env.get(env.S2_API_KEY) is not None})
+    total, have = sum(listed.values()), sum(with_context.values())
+    out(f"citations listed by Semantic Scholar: {total}; with at least one context: {have}"
+        + (f" ({have / total:.1%})" if total else ""))
+    for decade in sorted(listed):
+        out(f"  {decade}: {with_context[decade]} of {listed[decade]}"
+            + (f" ({with_context[decade] / listed[decade]:.1%})" if listed[decade] else ""))
     out(f"run {ctx.run_id}: {len(rows)} citation contexts"
         + (f"; truncated at the offset limit for {', '.join(truncated)}" if truncated else "")
         + (f"; no DOI for {', '.join(without_doi)}" if without_doi else ""))
@@ -1122,6 +1148,84 @@ def resolve_lookup(root: Path, *, doi: str | None = None, openalex_id: str | Non
     return 0
 
 
+ACCESS_FIELDS = ("id", "doi", "publication_year", "open_access", "ids", "best_oa_location")
+
+
+def access_lookup(root: Path, field_id: str, commitment: str, fold: str, *,
+                  transport: httpx.BaseTransport | None = None, out: Out = print) -> int:
+    """How much of the literature citing a commitment's results has open full text (decision D-9).
+
+    A lookup, not a run: nothing is stored beyond the archived responses, and spend counts toward the daily cap.
+    The papers are the fetched works that cite at least one result bearing on p; for each, OpenAlex says whether
+    an open copy exists, whether its best open copy is in PubMed Central (full text as structured XML) and whether
+    a PDF address is known. Nothing is downloaded.
+    """
+    from urllib.parse import urlsplit
+
+    from viveka.social.eligibility import bearing_results
+
+    case, claim = load_commitment(root, field_id, commitment)
+    config = load_corpus_config(root)
+    fetch = latest_run(root, "S1", field_id, fold, require_frozen(root, [case.component], fold))
+    if fetch is None:
+        raise CaseError(f"no successful S1 run for {field_id} in fold {fold} with the current registry; "
+                        "run `viveka corpus fetch` first")
+    read = {name: tables.read(root / fetch["params"]["tables"][name]) for name in ("works", "citations", "frames")}
+    citations = [(row["citing_work"], row["cited_work"]) for row in read["citations"]]
+    anchors = {ref.openalex for ref in bearing_set(case, claim) if ref.openalex}
+    frame_works = {row["work_id"] for row in read["frames"]
+                   if row["kind"] == BEARING and row["frame_id"] == f"{BEARING}-{commitment}"}
+    bearing = bearing_results(anchors | frame_works, citations)
+    own = {row["work_id"] for row in read["frames"] if row["kind"] != BEARING}
+    known = {row["work_id"] for row in read["works"]}
+    citing = sorted({a for a, b in citations if b in bearing and a != b and a in known and not ingest.is_ingested(a)})
+    found: dict[str, dict] = {}
+    with make_fetcher(root, config, need=("openalex",), transport=transport) as fetcher:
+        for chunk in chunks(citing, openalex.OR_LIMIT):
+            response = fetcher.get(openalex.id_batch_request(chunk, ACCESS_FIELDS))
+            if response.status != 200 or response.body is None:
+                raise FetchError(f"openalex access lookup: HTTP {response.status}")
+            for obj in response.body.get("results") or []:
+                found[short_id(obj["id"])] = obj
+    rows: dict[str, Counter] = defaultdict(Counter)
+    hosts: Counter = Counter()
+    for work_id in citing:
+        obj = found.get(work_id)
+        if obj is None:
+            rows["not returned"]["papers"] += 1
+            continue
+        year = obj.get("publication_year")
+        group = f"{int(year) // 10 * 10}s" if isinstance(year, int) else "undated"
+        access = obj.get("open_access") or {}
+        best = obj.get("best_oa_location") or {}
+        pdf = best.get("pdf_url")
+        # OpenAlex no longer lists a PubMed Central id among a work's ids; its best open copy says where it is
+        pmc = ("PubMed Central" in ((best.get("source") or {}).get("display_name") or "")
+               or "ncbi.nlm.nih.gov/pmc" in (best.get("landing_page_url") or ""))
+        for key in (group, "all", *(("own venues",) if work_id in own else ())):
+            rows[key]["papers"] += 1
+            rows[key]["open"] += bool(access.get("is_oa"))
+            rows[key]["pmc"] += bool(pmc)
+            rows[key]["pdf"] += bool(pdf)
+            rows[key]["either"] += bool(pmc or pdf)
+        if pdf:
+            hosts[urlsplit(pdf).netloc.removeprefix("www.")] += 1
+    out(f"open full text among the {len(citing)} fetched papers citing a result bearing on {field_id} "
+        f"{commitment} (run {fetch['run_id']}); nothing downloaded")
+    out("| papers | n | open copy | best copy in PubMed Central | PDF address | either |")
+    out("|---|---:|---:|---:|---:|---:|")
+    for key in (*sorted(k for k in rows if k.endswith("s") and k[:1].isdigit()), "undated", "not returned",
+                "own venues", "all"):
+        r = rows.get(key)
+        if r:
+            n = r["papers"]
+            out(f"| {key} | {n} | " + " | ".join(f"{r[c]} ({r[c] / n:.0%})" for c in ("open", "pmc", "pdf", "either"))
+                + " |")
+    out("PDF hosts: " + ", ".join(f"{host} {n}" for host, n in hosts.most_common(12)))
+    out(_usage_line(fetcher.usage.as_manifest()))
+    return 0
+
+
 # ---------------------------------------------------------------- CLI
 
 
@@ -1152,6 +1256,14 @@ def add_parsers(sub: argparse._SubParsersAction, common: argparse.ArgumentParser
         if action == "fetch":
             p.add_argument("--probe", action="store_true",
                            help="Live: resolve registered works and first pages only, then project")
+        else:
+            p.add_argument("--commitment", help="A calibration field's commitment (fields format 2)")
+
+    p = csub.add_parser("access", parents=[common],
+                        help="Lookup: how much of the literature citing a commitment's results has open full text")
+    p.add_argument("--field", required=True)
+    p.add_argument("--commitment", required=True)
+    p.add_argument("--fold", required=True, choices=FOLDS)
 
     p = csub.add_parser("audit", parents=[common],
                         help="Write ingestion audit sheets for the latest census of ingested venues (no network)")
@@ -1249,6 +1361,8 @@ def run(args: argparse.Namespace, root: Path, *, transport: httpx.BaseTransport 
         if args.command == "corpus" and args.action == "resolve":
             return resolve_lookup(root, doi=args.doi, openalex_id=args.openalex_id, title=args.title,
                                   source_name=args.source_name, transport=transport, out=out)
+        if args.command == "corpus" and args.action == "access":
+            return access_lookup(root, args.field, args.commitment, args.fold, transport=transport, out=out)
         subject_id, is_field = _subject(args)
         if args.command == "corpus" and args.action == "audit":
             audit_sheets(root, subject_id, args.fold, field=is_field, out=out)
@@ -1271,7 +1385,8 @@ def run(args: argparse.Namespace, root: Path, *, transport: httpx.BaseTransport 
         elif args.action == "fetch":
             fetch_case(root, subject_id, args.fold, field=is_field, transport=transport, out=out)
         else:
-            fetch_contexts(root, subject_id, args.fold, field=is_field, transport=transport, out=out)
+            fetch_contexts(root, subject_id, args.fold, field=is_field, commitment=args.commitment,
+                           transport=transport, out=out)
         return 0
     except (CaseError, FetchError, env.MissingCredential, ManualImportError, AuditError) as exc:
         out(f"viveka: {exc}")
