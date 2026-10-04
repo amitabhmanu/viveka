@@ -119,9 +119,11 @@ def discount_agreement(results: Sequence) -> dict[str, dict]:
 
 
 def run_audits(root, fields: Sequence[str], fold: str, *, anchor_per_subject: int, pairs_per_subject: int,
-               seed: int, max_live_calls: int | None = None, out=print) -> str:
+               seed: int, max_live_calls: int | None = None, pairs_seed: int | None = None,
+               exclude_pairs: Sequence[str] = (), out=print) -> str:
     """Stage S7: test-retest and agreement on an anchor set, and the symmetry audit on exchanged pairs, for every
-    registered coder, with stance task T1."""
+    registered coder, with stance task T1. A rerun of the symmetry audit (D-26) draws its pairs with its own seed
+    from items used neither in the anchor set nor in ``exclude_pairs``; the anchor set replays from the archive."""
     import yaml
 
     from viveka.coders.claude_cli import ClaudeCliCoder
@@ -142,14 +144,16 @@ def run_audits(root, fields: Sequence[str], fold: str, *, anchor_per_subject: in
     redact = build(load_dictionaries(root, fields))
     by_subject = {f: subject_items(root, f, fold, redact) for f in fields}
     anchor = draw(by_subject, anchor_per_subject, seed)
-    anchored = {item.item_id for _, item in anchor}
+    anchored = {item.item_id for _, item in anchor} | set(exclude_pairs)
     rest = {f: SubjectItems(v.subject, [i for i in v.items if i.item_id not in anchored], v.dropped,
                             v.context_runs) for f, v in by_subject.items()}
-    pair_items, pairs = exchanged_pairs(draw(rest, pairs_per_subject, seed + 1), sides, seed)
+    pairs_seed = seed + 1 if pairs_seed is None else pairs_seed
+    pair_items, pairs = exchanged_pairs(draw(rest, pairs_per_subject, pairs_seed), sides, pairs_seed)
     coders = load_coders(root)
     params = {"fields": list(fields), "sides": sides, "rules": list(RULES), "task": task.task_id,
               "task_version": task.version, "batch_size": task.batch_size,
               "anchor_per_subject": anchor_per_subject, "pairs_per_subject": pairs_per_subject,
+              "pairs_seed": pairs_seed, "excluded_pairs": len(exclude_pairs),
               "s": s, "kappa_min": kappa_min, "q": q, "coders": [c.coder_id for c in coders],
               "context_runs": {f: v.context_runs for f, v in by_subject.items()},
               "items_available": {f: len(v.items) for f, v in by_subject.items()},
