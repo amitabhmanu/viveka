@@ -77,7 +77,8 @@ def label_rows(task_id: str, subject: str, results: Sequence, work_of: Mapping[s
 
 
 def run_coding(root: Path, task_id: str, field_id: str, commitment: str, fold: str, *,
-               max_live_calls: int | None = None, dry_run: bool = False, out=print) -> str | None:
+               max_live_calls: int | None = None, dry_run: bool = False, directed_only: bool = False,
+               out=print) -> str | None:
     from viveka.cases import load_commitment
     from viveka.coders.claude_cli import ClaudeCliCoder
     from viveka.coders.items import CitedWork, build_items
@@ -87,11 +88,13 @@ def run_coding(root: Path, task_id: str, field_id: str, commitment: str, fold: s
     from viveka.corpus import tables
     from viveka.corpus.commands import latest_member_contexts, latest_run
     from viveka.paths import rel_posix
-    from viveka.provenance import RunContext, load_manifest
+    from viveka.provenance import RunContext, load_manifest, recent_runs
     from viveka.registry.verify import require_frozen
 
     if task_id not in TASKS:
         raise CodingRefused(f"unknown task {task_id}")
+    if directed_only and task_id != "T1":
+        raise CodingRefused("--directed-only applies to stance (T1) only")
     case, claim = load_commitment(root, field_id, commitment)
     subject = f"{field_id}-{commitment}"
     task = load_task(root, TASKS[task_id])
@@ -125,14 +128,27 @@ def run_coding(root: Path, task_id: str, field_id: str, commitment: str, fold: s
         cited = {w: CitedWork(w, first[w].split()[-1] if first.get(w) else None, (works.get(w) or {}).get("year"))
                  for w in {r["cited_work"] for r in contexts}}
         built, dropped = build_items(contexts, cited, build(load_dictionaries(root, [field_id])))
+        extra = {"rules": list(RULES), "dropped": dict(dropped), "contexts": len(contexts)}
+        if directed_only:  # D-29: stance only on contexts citing a result some coder gave a direction
+            direction_run = next((m for m in recent_runs(root, limit=10_000)
+                                  if m.get("stage") == "S8" and m.get("case") == subject and m.get("fold") == fold
+                                  and m.get("status") == "ok" and m["params"]["task"] == "T7"
+                                  and m["params"]["member_contexts_run"] == contexts_run["run_id"]), None)
+            if direction_run is None:
+                raise CodingRefused(f"--directed-only needs a T7 run for {subject} on member contexts "
+                                    f"{contexts_run['run_id']}")
+            inputs.append(direction_run["params"]["tables"]["labels"])
+            directed = {r["work_id"] for r in tables.read(root / inputs[-1]) if r["label"] in ("for", "against")}
+            extra.update(directed_only=True, direction_run=direction_run["run_id"], items_before_direction=len(built))
+            built = [i for i in built if i.cited_work in directed]
         items = [Item(i.item_id, i.text) for i in built]
         work_of = {i.item_id: i.cited_work for i in built}
-        extra = {"rules": list(RULES), "dropped": dict(dropped), "contexts": len(contexts)}
     calls = -(-len(items) // task.batch_size)
     out(f"{task_id} {subject}: {len(items)} items, {calls} call(s) per coder, coders "
         f"{', '.join(c.coder_id for c in coders)}"
         + (f"; results without an abstract {extra['results_without_abstract']}" if task_id == "T7" else
-           f"; dropped {dict(extra['dropped'])}"))
+           f"; dropped {dict(extra['dropped'])}"
+           + (f"; on directed results only, of {extra['items_before_direction']}" if directed_only else "")))
     if dry_run:
         return None
     params = {"task": task_id, "task_version": task.version, "batch_size": task.batch_size, "seed": SEED,

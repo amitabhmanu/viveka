@@ -68,6 +68,8 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--fold", required=True)
     p.add_argument("--max-live-calls", type=int, help="Per coder; archived answers still replay")
     p.add_argument("--dry-run", action="store_true", help="Count items and calls; no coder is called")
+    p.add_argument("--directed-only", action="store_true",
+                   help="T1: only contexts citing results a coder labelled for or against the claim (D-29)")
 
     p = sub.add_parser("pilot", parents=[common],
                        help="S9-pilot: the descriptive pilot of D-29 from the coded labels (never a verdict)")
@@ -168,7 +170,8 @@ def main(argv: list[str] | None = None) -> int:
 
             try:
                 run_coding(root, args.task, args.field, args.commitment, args.fold,
-                           max_live_calls=args.max_live_calls, dry_run=args.dry_run)
+                           max_live_calls=args.max_live_calls, dry_run=args.dry_run,
+                           directed_only=args.directed_only)
             except (CodingRefused, CaseError) as exc:
                 print(f"viveka: {exc}")
                 return 1
