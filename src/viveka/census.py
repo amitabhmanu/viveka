@@ -136,7 +136,10 @@ _REPORT = re.compile(r"\b(?:[A-Z]{2,}[- ]?(?:PUB|REP|TH|EP|PH|TM)[- ]?\d|CERN[- 
 _WEB = re.compile(r"https?://|www\.|available (?:at|from)\b", re.I)
 _BOOK = re.compile(r"\((?:eds?|editors?)\.?\)|\beds?\.\s*\)|\b(?:university )?press\b|\bpublishers?\b|\bverlag\b|"
                    r"\bisbn\b|\b\d(?:st|nd|rd|th) ed(?:ition|\.)", re.I)
-_PUBLISHER_CITY = re.compile(r"\((?:[A-Z][\w.&'-]*\s?)+,\s*[A-Z][\w .'-]+,\s*(?:18|19|20)\d\d\)")
+# Capitalised words, each separated by one space, then ", City, year)". Written so each word boundary can fall in
+# one place only: the earlier form, (?:[A-Z][\w.&'-]*\s?)+, matched the same strings but could split a run of
+# capitals in every possible way, and took hours on a reference like "(ABCDEFGHIJKLMNOPQRSTUVWXYZ...".
+_PUBLISHER_CITY = re.compile(r"\((?:[A-Z][\w.&'-]*\s)*[A-Z][\w.&'-]*\s?,\s*[A-Z][\w .'-]+,\s*(?:18|19|20)\d\d\)")
 _NEWS = re.compile(r"\b(?:new scientist|newspaper|magazine)\b", re.I)
 
 

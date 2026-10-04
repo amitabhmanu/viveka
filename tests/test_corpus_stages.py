@@ -460,9 +460,13 @@ def test_the_fetch_dry_run_projects_each_commitment_s_bearing_frame(world):
 def _relax_gate_one(root):
     """m and v down to 1 in the test registry, so the fixture's small clusters reach gate 1's first two checks."""
     path = root / "registry" / "thresholds.yaml"
+    import re
+
     text = path.read_text(encoding="utf-8")
-    assert text.count("value: 190") == 1 and text.count("value: 463") == 1
-    write_lf(path, text.replace("value: 190", "value: 1").replace("value: 463", "value: 1"))
+    for name in ("m_min_members", "v_min_citations"):  # whatever the registered sizes are
+        text, count = re.subn(rf"(\n  {name}:\n(?:    .*\n)*?    value: )\d+", r"\g<1>1", text)
+        assert count == 1, name
+    write_lf(path, text)
 
 
 def test_the_cluster_census_measures_the_windows_that_pass_m_and_v_and_s4_reads_its_coverage(world):

@@ -131,6 +131,27 @@ def test_reference_kinds(reference, kind):
     assert reference_kind(reference) == kind
 
 
+def test_publisher_city_pattern_matches_what_it_did_and_stays_fast_on_runs_of_capitals():
+    import itertools
+    import re
+    import time
+
+    from viveka.census import _PUBLISHER_CITY
+
+    earlier = re.compile(r"\((?:[A-Z][\w.&'-]*\s?)+,\s*[A-Z][\w .'-]+,\s*(?:18|19|20)\d\d\)")
+    publishers = ["Pergamon", "McGraw-Hill", "John Wiley & Sons", "North Holland ", "AB", "A. B. Smith", "pergamon",
+                  "Springer  Verlag", "O'Reilly", "D.Reidel", ""]
+    tails = [", Oxford, 1965)", ",Cambridge, 2001)", " , New York, 1899)", ", oxford, 1965)", ", Oxford, 2165)",
+             ", Oxford 1965)", ", St. Louis, 1977", ", Oxford, 1965) and more"]
+    for publisher, tail in itertools.product(publishers, tails):
+        text = f"Landau, Quantum Mechanics ({publisher}{tail}."
+        assert bool(_PUBLISHER_CITY.search(text)) == bool(earlier.search(text)), text
+    # the earlier form backtracked exponentially here (an hour at 36 capitals); a census hung on such a reference
+    started = time.perf_counter()
+    assert reference_kind(Reference(None, text="Anon (" + "A" * 200 + " 1999 no closing bracket")) == "unclassifiable"
+    assert time.perf_counter() - started < 1.0
+
+
 def _candidate(doi="10.9/hit", score=60.0, year=1986, volume="56", page="3", journal="Physical Review Letters",
                title="Reanalysis of the Eotvos experiment", kind="journal-article"):
     return Candidate(doi, score, year, volume, page, journal, title, kind)
