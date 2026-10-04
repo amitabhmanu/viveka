@@ -47,6 +47,8 @@ SCHEMAS: dict[str, pa.Schema] = {
                            ("overlap", pa.float64())]),
     "leakage": pa.schema([("item_id", _S), ("subject", _S), ("coder_id", _S), ("request_id", _S), ("guess", _S),
                           ("confidence", pa.float64()), ("missing", _S)]),
+    "audits": pa.schema([("kind", _S), ("item_id", _S), ("coder_id", _S), ("rep", _I32), ("subject", _S),
+                         ("label", _S), ("reason_span", _S), ("missing", _S)]),
     "eligibility": pa.schema([("resolution", pa.float64()), ("lineage_id", _S), ("window_start", _I32),
                               ("window_end", _I32), ("members", _I32), ("citations_on_claim", _I32),
                               ("disconfirmations", _I32), ("coverage", pa.float64()), ("closed", pa.bool_()),
@@ -68,6 +70,7 @@ KEYS: dict[str, tuple[str, ...]] = {
     "lineages": ("method", "resolution", "window_start", "window_end", "cluster"),
     "eligibility": ("resolution", "window_start", "lineage_id"),
     "leakage": ("coder_id", "item_id"),
+    "audits": ("kind", "coder_id", "item_id", "rep"),
 }
 
 

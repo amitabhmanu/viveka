@@ -236,3 +236,49 @@ def test_leakage_scoring_counts_accuracy_against_chance_and_cannot_tell_as_a_mis
     assert (r["answered"], r["missing"], r["accuracy"]) == (3, 1, 2 / 3)
     assert r["above_chance_pp"] == 46.7 and r["passes"] is False
     assert r["by_subject"]["homeopathy"] == {"correct": 1, "n": 2}
+
+
+def test_exchanged_pairs_name_the_true_area_and_one_from_the_other_side():
+    from viveka.coders.audits import exchanged_pairs
+
+    sides = {"homeopathy": "pseudoscience", "chiropractic": "pseudoscience", "plate-tectonics": "science",
+             "molecular-genetics": "science", "thermodynamics": "science"}
+    items, pairs = exchanged_pairs([("homeopathy", Item("a", "Text a.")), ("thermodynamics", Item("b", "Text b."))],
+                                   sides, seed=1)
+    assert [i.item_id for i in items] == ["a#true", "a#swapped", "b#true", "b#swapped"]
+    assert items[0].text == "Research area of the citing paper: homeopathy.\nText a."
+    assert sides[pairs["a"]["swapped_to"]] == "science" and sides[pairs["b"]["swapped_to"]] == "pseudoscience"
+    assert items[1].text.endswith("\nText a.") and pairs == exchanged_pairs(
+        [("homeopathy", Item("a", "Text a.")), ("thermodynamics", Item("b", "Text b."))], sides, seed=1)[1]
+
+
+def test_symmetry_is_judged_against_the_coders_own_retest_rate_and_reports_the_direction():
+    from viveka.coders.audits import retest_share, symmetry
+
+    def lab(item, label, coder="c"):
+        return Label(item, coder, 0, "r", {"label": label, "reason_span": "why" if label == "x" else None})
+
+    retest = retest_share([lab("1", "+"), lab("2", "+"), lab("3", "none"), lab("4", "x")],
+                          [lab("1", "+"), lab("2", "none"), lab("3", "none"), lab("4", "x")])
+    assert retest["c"] == {"pairs": 4, "changed": 1, "share": 0.25}
+    pairs = {"p": {"side": "science"}, "q": {"side": "pseudoscience"}, "r": {"side": "science"},
+             "s": {"side": "science"}}
+    results = [lab("p#true", "+"), lab("p#swapped", "x"),     # a science passage discounted once called pseudo
+               lab("q#true", "x"), lab("q#swapped", "x"),
+               lab("r#true", "+"), lab("r#swapped", "+"),
+               lab("s#true", "none"), lab("s#swapped", "none")]
+    r = symmetry(results, pairs, retest, s=0.05)["c"]
+    assert (r["pairs"], r["changed"], r["share"], r["excess"]) == (4, 1, 0.25, 0.0) and r["passes"]
+    assert (r["more_x_as_pseudoscience"], r["fewer_x_as_pseudoscience"]) == (1, 0)
+
+
+def test_discount_agreement_is_kappa_on_x_for_each_pair_of_coders():
+    from viveka.coders.audits import discount_agreement, kappa
+
+    assert kappa([True, False, True, False], [True, False, True, False]) == 1.0
+    assert kappa([True, True, False, False], [True, False, True, False]) == 0.0
+    rows = [Label(i, c, 0, "r", {"label": lab, "reason_span": None})
+            for c, labels in (("a", "x+x+"), ("b", "x+x+"), ("z", "++++"))
+            for i, lab in zip("1234", labels, strict=True)]
+    out = discount_agreement(rows)
+    assert out["a | b"]["kappa"] == 1.0 and out["a | z"]["kappa"] == 0.0 and out["a | z"]["items"] == 4
