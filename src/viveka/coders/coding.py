@@ -159,3 +159,85 @@ def run_coding(root: Path, task_id: str, field_id: str, commitment: str, fold: s
         out(f"  {coder_id}: {lab} {n}")
     out(f"run {ctx.run_id}")
     return ctx.run_id
+
+
+PILOT_SEED = 20261009  # decision D-29
+PILOT_DRAWS = 2000
+PILOT_MIN_ITEMS = 30
+
+
+def _interval(i) -> str:
+    return "–" if i is None else f"{i.point:+.2f} [{i.lower:+.2f}, {i.upper:+.2f}]"
+
+
+def run_pilot(root: Path, fold: str, *, out=print) -> str:
+    """Stage S9-pilot (decision D-29): the descriptive pilot for every commitment with both a T7 and a T1 run on
+    the same member contexts. Not a measure of the framework and never a verdict."""
+    from viveka.corpus import tables
+    from viveka.measures.pilot import STANCES, StanceRow, pilot
+    from viveka.paths import rel_posix
+    from viveka.provenance import RunContext, recent_runs
+
+    latest: dict[tuple[str, str], dict] = {}
+    for m in recent_runs(root, limit=10_000):
+        if m.get("stage") == "S8" and m.get("fold") == fold and m.get("status") == "ok":
+            latest.setdefault((m["case"], m["params"]["task"]), m)
+    subjects = sorted(s for s, t in latest if t == "T1" and (s, "T7") in latest
+                      and latest[(s, "T7")]["params"]["member_contexts_run"]
+                      == latest[(s, "T1")]["params"]["member_contexts_run"])
+    if not subjects:
+        raise CodingRefused(f"no commitment in fold {fold} has T7 and T1 runs on the same member contexts")
+    params = {"seed": PILOT_SEED, "draws": PILOT_DRAWS, "min_items": PILOT_MIN_ITEMS, "level": 0.95,
+              "runs": {s: {t: latest[(s, t)]["run_id"] for t in ("T7", "T1")} for s in subjects},
+              "sides": {s: latest[(s, "T1")]["params"]["side"] for s in subjects}, "result": {}}
+    with RunContext(root, "S9-pilot", "calibration-fields", fold, ["prompts", "instrument", "thresholds"],
+                    seed=PILOT_SEED, params=params) as ctx:
+        rows = []
+        lines = [f"# Pilot (D-29), {fold} fold: run `{ctx.run_id}`", "",
+                 "Descriptive only: not the framework's Δ or Ω, and not a verdict. Per commitment, pooled over its "
+                 "coded lineage-windows. D0 = discounted share on results against the claim minus on results for "
+                 "it; A0 = accepted share on results for minus against; positive = kinder to evidence in the claim's "
+                 "favour. 95% intervals resample cited results and coders.", "",
+                 "| commitment | side | coder | contexts on for / against | + for / against | x for / against | "
+                 "D0 [95%] | A0 [95%] |", "|---|---|---|---|---|---|---|---|"]
+        for subject in subjects:
+            labels = {}
+            for t in ("T7", "T1"):
+                path = root / latest[(subject, t)]["params"]["tables"]["labels"]
+                ctx.record_input(path)
+                labels[t] = tables.read(path)
+            direction = {(r["coder_id"], r["work_id"]): r["label"] for r in labels["T7"] if r["label"]}
+            stance = [StanceRow(r["item_id"], r["work_id"], r["coder_id"], r["label"]) for r in labels["T1"]
+                      if r["label"]]
+            result = pilot(stance, direction, draws=PILOT_DRAWS, seed=PILOT_SEED)
+            side = params["sides"][subject]
+            small = min((sum(n.values()) for n in result.items.values()), default=0) < PILOT_MIN_ITEMS
+            for coder in result.coders:
+                sh, n = result.shares[coder], result.items[coder]
+
+                def pct(d, s, sh=sh):
+                    return "–" if sh[d][s] is None else f"{sh[d][s]:.0%}"
+
+                pooled = (f"{_interval(result.d0)} | {_interval(result.a0)} |" if coder == result.coders[0]
+                          else " | |")
+                lines.append(f"| {subject} | {side} | {coder.split(':')[-1]} | {n['for']} / {n['against']} | "
+                             f"{pct('for', '+')} / {pct('against', '+')} | {pct('for', 'x')} / {pct('against', 'x')} "
+                             f"| {pooled}")
+                rows += [{"subject": subject, "side": side, "coder_id": coder, "direction": d, "stance": s,
+                          "share": sh[d][s], "items": n[d]} for d in ("for", "against") for s in STANCES]
+            for name, interval in (("D0", result.d0), ("A0", result.a0)):
+                rows.append({"subject": subject, "side": side, "coder_id": "pooled", "direction": name,
+                             "stance": None, "share": None if interval is None else interval.point, "items": None})
+            ctx.params["result"][subject] = {
+                "d0": None if result.d0 is None else [result.d0.point, result.d0.lower, result.d0.upper],
+                "a0": None if result.a0 is None else [result.a0.point, result.a0.lower, result.a0.upper],
+                "items": result.items, "too_small": small}
+            if small:
+                lines.append(f"| {subject} | | | fewer than {PILOT_MIN_ITEMS} contexts on directed results: too "
+                             "small to read | | | | |")
+        text = "\n".join(lines) + "\n"
+        ctx.params["tables"] = {
+            "pilot": rel_posix(ctx.store(tables.to_parquet("pilot", rows), "parquet", rows=len(rows)), root),
+            "report": rel_posix(ctx.store(text.encode("utf-8"), "md"), root)}
+    out(text)
+    return ctx.run_id

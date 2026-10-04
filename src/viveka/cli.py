@@ -68,6 +68,10 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--fold", required=True)
     p.add_argument("--max-live-calls", type=int, help="Per coder; archived answers still replay")
     p.add_argument("--dry-run", action="store_true", help="Count items and calls; no coder is called")
+
+    p = sub.add_parser("pilot", parents=[common],
+                       help="S9-pilot: the descriptive pilot of D-29 from the coded labels (never a verdict)")
+    p.add_argument("--fold", required=True)
     return parser
 
 
@@ -149,6 +153,15 @@ def main(argv: list[str] | None = None) -> int:
             from viveka.corpus.commands import run as run_corpus
 
             return run_corpus(args, root)
+        if args.command == "pilot":
+            from viveka.coders.coding import CodingRefused, run_pilot
+
+            try:
+                run_pilot(root, args.fold)
+            except CodingRefused as exc:
+                print(f"viveka: {exc}")
+                return 1
+            return 0
         if args.command == "code":
             from viveka.cases import CaseError
             from viveka.coders.coding import CodingRefused, run_coding
