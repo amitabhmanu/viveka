@@ -12,9 +12,9 @@ Four mechanical steps, each a pure function here and each recorded by rule name 
 * the registered dictionaries (``coders.redaction``), applied after the markers;
 * exact duplicates (the same redacted text for the same cited work) are coded once.
 
-Two drop rules follow (owner, 4 Oct 2026, D-24), each counted and never repaired: ``english_v1`` drops a
-context not written in English, since its language points to the venues of one field; ``resolved_v1`` drops an
-item in which the cited work's marker could not be identified, since a stance is coded toward one result.
+Two drop rules follow (owner, 4 Oct 2026, D-24), each counted and never repaired: ``english_v2`` drops a
+context not written in English, since its language points to the venues of one field; ``resolved_v1`` drops
+an item in which the cited work's marker could not be identified, since a stance is coded toward one result.
 """
 
 from __future__ import annotations
@@ -28,12 +28,17 @@ from dataclasses import dataclass
 
 PROSE_RULE = "prose_v1"
 CITATION_RULE = "citations_v1"
-LANGUAGE_RULE = "english_v1"
+LANGUAGE_RULE = "english_v2"
 RESOLVED_RULE = "resolved_v1"
-MIN_ENGLISH_SHARE = 0.15
 _ENGLISH = frozenset("""the of and to in a is that for are with as was be by this on not or from which were
 these an it has have been their than its we our they but also at can may such between both however
 other more there when where this""".split())
+# Function words of the other languages the corpora contain (German, French, Spanish, Portuguese, Italian),
+# none of them also an English word.
+_FOREIGN = frozenset("""der die das und ist sind wird werden nicht mit von für auf dem den des eine einer
+eines zur zum im bei auch als sich les une est sont dans pour sur avec qui ces aux par pas plus été
+el los las del una por para con que se lo como más fue han ser son sobre entre também não uma pelo pela
+são foram dos il della degli delle che sono stato""".split())
 MIN_WORDS = 8
 MIN_WORD_SHARE = 0.6
 
@@ -77,9 +82,11 @@ def is_prose(text: str) -> bool:
 
 
 def is_english(text: str) -> bool:
-    """``english_v1``: at least MIN_ENGLISH_SHARE of the words are common English function words."""
+    """``english_v2``: there are English function words, and no more function words of another language.
+    (``english_v1`` asked for 15% English function words and also dropped terse English sentences.)"""
     words = [w.lower() for w in _WORD.findall(text)]
-    return bool(words) and sum(w in _ENGLISH for w in words) / len(words) >= MIN_ENGLISH_SHARE
+    english = sum(w in _ENGLISH for w in words)
+    return english > 0 and english >= sum(w in _FOREIGN for w in words)
 
 
 def _matches(authors: str, years: str, cited: CitedWork | None) -> bool:

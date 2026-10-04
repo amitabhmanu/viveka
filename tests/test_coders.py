@@ -192,6 +192,11 @@ def test_only_prose_becomes_an_item_and_duplicates_are_coded_once():
     table = "C1 4.57E01 7.78E-02 0.00E+00 1.96E-01 3.89E-04 -5.13E-08 0.00E+00 0.00E+00 C2 4.57E01"
     sentence = "The earlier trial (Linde et al., 1997) was too small to show anything at all, the authors argue."
     assert not is_prose(table) and is_prose(sentence) and not is_prose("See (Linde, 1997).")
+    from viveka.coders.items import is_english
+
+    assert is_english("Prions contain PrP, a protease-resistant detergent-insoluble conformer of the normal protein.")
+    assert not is_english("Les maladies à prions sont dans une classe qui est pour les protéines.")
+    assert not is_english("Bei PrP handelt es sich um den Hauptbestandteil der Prionen, die mit seltenen Erkrankungen.")
     german = "Die Wirkungen werden im Wesentlichen durch Placebo-Effekte erklärt, wie die Autoren zeigen [12]."
     several = "Earlier trials were small and poorly blinded, as several authors have noted [12, 14] and [15]."
     rows = [{"cited_work": "W1", "citing_doi": "10.1/a", "text": sentence},
