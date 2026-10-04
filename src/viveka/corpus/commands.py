@@ -457,11 +457,13 @@ def coding_scope(root: Path, field_id: str, commitment: str, fold: str) -> tuple
 
 def fetch_member_contexts(root: Path, field_id: str, commitment: str, fold: str, *,
                           transport: httpx.BaseTransport | None = None, out: Out = print) -> str:
-    """Semantic Scholar's contexts for the citations D-28 codes: for each citing paper of the scope, its
-    references with contexts, kept where the cited paper is a bearing result it cites in the corpus.
+    """Semantic Scholar's contexts for the citations D-28 codes: for each cited result of the scope, its
+    citations with contexts, kept where the citing paper is one of the scope's papers citing it. (A citing
+    paper's references would need one request per citing paper, but many publishers elide them; the citations
+    of a cited result carry those papers' contexts.)
 
-    A citation is unmeasured when its citing paper has no DOI, Semantic Scholar does not know the paper, the
-    cited result has no DOI to match, or Semantic Scholar gives the reference no context; each is counted."""
+    A citation is unmeasured when the cited result has no DOI, Semantic Scholar does not know it, the citing
+    paper has no DOI to match, or Semantic Scholar gives the citation no context; each is counted."""
     from viveka.social.scope import WINDOWS_RULE
 
     case, _ = load_commitment(root, field_id, commitment)
@@ -485,43 +487,49 @@ def fetch_member_contexts(root: Path, field_id: str, commitment: str, fold: str,
         for name in ("works", "citations", "authorships"):
             ctx.record_input(root / fetch["params"]["tables"][name])
         ctx.record_input(root / s4["params"]["tables"]["eligibility"])
+        citers: dict[str, set[str]] = defaultdict(set)  # cited result -> the scope's citing papers
+        for citing, cited in pairs:
+            citers[cited].add(citing)
         with make_fetcher(root, config, need=("semanticscholar",), transport=transport,
                           run_id=ctx.run_id) as fetcher:
             try:
-                rows, truncated, without_doi, unknown = [], [], [], []
-                for citing in sorted(wanted):
-                    doi = doi_of.get(citing)
+                rows, truncated, cited_without_doi, unknown = [], [], [], []
+                for cited in sorted(citers):
+                    doi = doi_of.get(cited)
                     if not doi:
-                        without_doi.append(citing)
+                        cited_without_doi.append(cited)
                         continue
-                    items, cut = semanticscholar.iter_references(fetcher, doi, int(s2["page_size"]),
-                                                                 int(s2["max_offset"]))
+                    items, cut = semanticscholar.iter_citations(fetcher, doi, int(s2["page_size"]),
+                                                                int(s2["max_offset"]))
                     if cut:
-                        truncated.append(citing)
+                        truncated.append(cited)
                     if not items:
-                        unknown.append(citing)
+                        unknown.append(cited)
                     for item in items:
-                        cited_doi = normalize_doi(((item.get("citedPaper") or {}).get("externalIds") or {}).get("DOI"))
-                        cited = work_of_doi.get(cited_doi) if cited_doi else None
-                        if cited in wanted[citing]:
-                            rows += [dict(r, citing_work=citing)
-                                     for r in semanticscholar.reference_rows(doi, None, cited, item)]
+                        citing_doi = normalize_doi(((item.get("citingPaper") or {}).get("externalIds") or {})
+                                                   .get("DOI"))
+                        citing = work_of_doi.get(citing_doi) if citing_doi else None
+                        if citing in citers[cited]:
+                            rows += [{"citing_work": citing, **{k: v for k, v in r.items() if k != "citing_s2_id"}}
+                                     for r in semanticscholar.context_rows(cited, item)]
             finally:
                 _finish(ctx, fetcher)
         with_context = {(r["citing_work"], r["cited_work"]) for r in rows}
         scope_path = ctx.store(tables.to_parquet("scope", scope), "parquet", rows=len(scope))
         path = ctx.store(tables.to_parquet("member_contexts", rows), "parquet", rows=len(rows))
-        no_doi_cited = {(c, d) for c, d in pairs if not doi_of.get(d)}
+        citing_without_doi = {c for c, _ in pairs if not doi_of.get(c)}
         ctx.params.update({"tables": {"scope": rel_posix(scope_path, root), "member_contexts": rel_posix(path, root)},
-                           "citing_without_doi": len(without_doi), "citing_unknown_to_s2": len(unknown),
-                           "truncated": sorted(truncated), "cited_without_doi": len(no_doi_cited),
+                           "endpoint": "citations of each cited result (references are elided by many publishers)",
+                           "cited_without_doi": len(cited_without_doi), "cited_unknown_to_s2": len(unknown),
+                           "citing_without_doi": len(citing_without_doi), "truncated": sorted(truncated),
                            "citations_with_context": len(with_context),
                            "results_with_context": len({d for _, d in with_context}),
                            "semanticscholar_key": env.get(env.S2_API_KEY) is not None})
     share = len(with_context) / len(pairs) if pairs else 0.0
     out(f"{subject}: {len(windows)} lineage-window(s), {len(pairs)} citations of {params['scope_results']} bearing "
-        f"results from {len(wanted)} citing papers; with a context: {len(with_context)} ({share:.1%}); citing "
-        f"papers without DOI {len(without_doi)}, unknown to Semantic Scholar {len(unknown)}")
+        f"results from {len(wanted)} citing papers; with a context: {len(with_context)} ({share:.1%}); cited "
+        f"results without DOI {len(cited_without_doi)}, unknown to Semantic Scholar {len(unknown)}; citing papers "
+        f"without DOI {len(citing_without_doi)}")
     out(f"run {ctx.run_id}: {len(rows)} contexts")
     out(_usage_line(ctx.usage))
     return ctx.run_id
@@ -1551,8 +1559,9 @@ def run(args: argparse.Namespace, root: Path, *, transport: httpx.BaseTransport 
                 out(f"member-contexts dry run for {args.field}-{args.commitment}: {len(windows)} lineage-window(s), "
                     f"{len({(r['citing_work'], r['cited_work']) for r in scope})} citations of "
                     f"{len({r['cited_work'] for r in scope})} bearing results from {len(citing)} citing papers")
-                out(f"  semanticscholar free: about {len(citing)} reference request(s), one per citing paper "
-                    "(archived ones replay)")
+                cited = {r["cited_work"] for r in scope}
+                out(f"  semanticscholar free: at least {len(cited)} citation request(s), one page per 1000 citations "
+                    "of each cited result (archived ones replay)")
                 return 0
             fetch_member_contexts(root, args.field, args.commitment, args.fold, transport=transport, out=out)
             return 0

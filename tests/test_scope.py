@@ -4,7 +4,6 @@ import random
 
 import pytest
 
-from viveka.corpus import semanticscholar
 from viveka.social.scope import coding_windows, eligible_windows, window_citations
 
 
@@ -52,10 +51,3 @@ def test_abstract_text_rebuilds_word_order():
     assert abstract_text({}) is None
 
 
-def test_reference_rows_carry_the_citing_paper_and_each_context():
-    item = {"contexts": ["first [1]", "second [1]"], "intents": ["result", "background"], "isInfluential": True}
-    rows = semanticscholar.reference_rows("10.1/x", None, "W9", item)
-    assert [(r["cited_work"], r["citing_doi"], r["context_index"], r["text"]) for r in rows] == [
-        ("W9", "10.1/x", 0, "first [1]"), ("W9", "10.1/x", 1, "second [1]")]
-    assert rows[0]["intents"] == ["background", "result"]
-    assert semanticscholar.reference_rows("10.1/x", None, "W9", {}) == []
