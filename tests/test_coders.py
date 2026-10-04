@@ -167,3 +167,51 @@ def test_redaction_replaces_whole_words_and_stems_with_their_placeholders():
     assert build([])("nothing to do") == "nothing to do"
     assert check({"format": 1, "subject": "a", "terms": ["x"]}) == []
     assert check({"format": 2, "terms": "x", "colour": []}) != []
+
+
+def test_citation_markers_become_ref_and_the_cited_works_marker_becomes_cited():
+    from viveka.coders.items import CitedWork, mask_citations
+
+    cited = CitedWork("W1", "Linde", 1997)
+    text = ("Meta-analyses disagree (Linde et al., 1997; Shang and Egger, 2005; e.g., Ernst, 2002). "
+            "Kleijnen et al. (1991) were earlier [12], [3-5, 9]; this was done in 1998 (in 1998).")
+    masked, placed = mask_citations(text, cited)
+    assert placed and masked == ("Meta-analyses disagree ([CITED]; [REF]; [REF]). "
+                                 "[REF] were earlier [REF], [REF]; this was done in 1998 (in 1998).")
+    masked, placed = mask_citations("Earlier work [12] found it.", cited)
+    assert (masked, placed) == ("Earlier work [CITED] found it.", True)  # the only marker is the cited work's
+    masked, placed = mask_citations("Earlier work [12, 14] and [15] found it.", cited)
+    assert (masked, placed) == ("Earlier work [REF] and [REF] found it.", False)  # among several, unresolved
+    assert mask_citations("as Lindé et al. (1997) showed", CitedWork("W1", "Linde", 1997)) == (
+        "as [CITED] showed", True)
+
+
+def test_only_prose_becomes_an_item_and_duplicates_are_coded_once():
+    from viveka.coders.items import CitedWork, build_items, is_prose
+
+    table = "C1 4.57E01 7.78E-02 0.00E+00 1.96E-01 3.89E-04 -5.13E-08 0.00E+00 0.00E+00 C2 4.57E01"
+    sentence = "The earlier trial (Linde et al., 1997) was too small to show anything at all, the authors argue."
+    assert not is_prose(table) and is_prose(sentence) and not is_prose("See (Linde, 1997).")
+    german = "Die Wirkungen werden im Wesentlichen durch Placebo-Effekte erklärt, wie die Autoren zeigen [12]."
+    several = "Earlier trials were small and poorly blinded, as several authors have noted [12, 14] and [15]."
+    rows = [{"cited_work": "W1", "citing_doi": "10.1/a", "text": sentence},
+            {"cited_work": "W1", "citing_doi": "10.1/b", "text": sentence},
+            {"cited_work": "W1", "citing_doi": "10.1/c", "text": table},
+            {"cited_work": "W1", "citing_doi": "10.1/d", "text": german},
+            {"cited_work": "W1", "citing_doi": "10.1/e", "text": several}]
+    items, dropped = build_items(rows, {"W1": CitedWork("W1", "Linde", 1997)}, lambda t: t.replace("trial", "[TERM]"))
+    assert dropped == {"not_prose": 1, "duplicate": 1, "not_english": 1, "unresolved": 1}
+    (item,) = items
+    assert item.cited_marked and item.sources == ("10.1/a", "10.1/b")
+    assert item.text == "The earlier [TERM] ([CITED]) was too small to show anything at all, the authors argue."
+
+
+def test_distinctive_terms_ranks_what_one_subject_says_and_the_others_do_not():
+    from viveka.coders.redaction import distinctive_terms
+
+    texts = {"a": ["the dilution was shaken"] * 100 + ["the study was small"] * 100,
+             "b": ["the plate moved north"] * 100 + ["the study was small"] * 100}
+    found = distinctive_terms(texts, top=3)
+    assert {w for w, _, _ in found["a"]} >= {"dilution", "shaken"}
+    assert "study" not in {w for w, _, _ in found["a"]} and "plate" in {w for w, _, _ in found["b"]}
+    assert all(z > 0 for _, z, _ in found["a"])

@@ -14,6 +14,7 @@ homeopathy, homeopathic, homeopaths); spaces in an entry match any run of spaces
 from __future__ import annotations
 
 import re
+from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -87,6 +88,58 @@ def load_dictionaries(root: Path, subjects: Sequence[str] | None = None) -> list
         if problems:
             raise RedactionError(f"{path.name}: " + "; ".join(problems))
         out.append(data)
+    return out
+
+
+_TOKEN = re.compile(r"[^\W\d_][\w'’\-]*[^\W_]|[^\W\d_]")
+_PLACEHOLDER_WORDS = frozenset({"term", "name", "place", "org", "ref", "cited"})
+# Function words carry no field and only differ by style; leaving them out lets content words surface.
+_STOPWORDS = frozenset("""a about above after again against all also although am among an and any are as at be
+because been before being below between both but by can could did do does doing down during each either et
+etc few for from further had has have having he her here hers him his how however i if in into is it its
+itself just may might more most much must my no nor not now of off on once only or other our ours out over
+own per same she should since so some such than that the their theirs them then there these they this those
+through thus to too under until up upon very via was we were what when where whether which while who whom
+whose why will with within without would yet you your al fig figs table eg ie""".split())
+
+
+def distinctive_terms(texts_by_subject: Mapping[str, Iterable[str]], top: int = 60, min_count: int = 5,
+                      min_z: float = 1.96) -> dict[str, list[tuple[str, float, int]]]:
+    """Candidate dictionary entries: for each subject, the words most over-represented in its texts against all
+    the others, by the log-odds ratio with an informative Dirichlet prior (Monroe, Colaresi and Quinn 2008),
+    scored as a z value. Texts are expected already redacted, so what is listed is what still leaks. The list is
+    for review: nothing enters a dictionary without the owner."""
+    import math
+
+    counts: dict[str, Counter] = {}
+    for subject, texts in texts_by_subject.items():
+        c: Counter = Counter()
+        for text in texts:
+            c.update(w for w in (t.lower() for t in _TOKEN.findall(text))
+                     if w not in _PLACEHOLDER_WORDS and w not in _STOPWORDS and len(w) > 2)
+        counts[subject] = c
+    total = Counter()
+    for c in counts.values():
+        total.update(c)
+    alpha0 = sum(total.values()) or 1
+    prior = {w: n / alpha0 * 500.0 for w, n in total.items()}  # prior pseudo-counts, 500 in all
+    a_sum = sum(prior.values())
+    out = {}
+    for subject, c in counts.items():
+        rest = total - c
+        n_i, n_j = sum(c.values()), sum(rest.values())
+        scored = []
+        for w, y_i in c.items():
+            if y_i < min_count:
+                continue
+            a = prior[w]
+            y_j = rest.get(w, 0)
+            delta = (math.log((y_i + a) / (n_i + a_sum - y_i - a))
+                     - math.log((y_j + a) / (n_j + a_sum - y_j - a)))
+            z = delta / math.sqrt(1 / (y_i + a) + 1 / (y_j + a))
+            if z >= min_z:  # significantly over-represented only
+                scored.append((w, round(z, 2), y_i))
+        out[subject] = sorted(scored, key=lambda s: -s[1])[:top]
     return out
 
 
