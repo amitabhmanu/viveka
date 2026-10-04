@@ -1,0 +1,91 @@
+format: 1
+subject: plate-tectonics
+note: "Seed list drafted 4 Oct 2026 from domain knowledge, before any leakage test; extended only through S6 (leakage above g) and owner review. Applied to every item of every subject."
+terms:
+  - plate*
+  - tecton*
+  - hotspot*
+  - hot spot*
+  - mantle plume*
+  - plume*
+  - mantle
+  - lithospher*
+  - asthenospher*
+  - subduct*
+  - mid-ocean ridge*
+  - ridge*
+  - rift*
+  - transform fault*
+  - seafloor
+  - sea floor
+  - seamount*
+  - guyot*
+  - volcan*
+  - magma*
+  - basalt*
+  - paleomagnet*
+  - palaeomagnet*
+  - magnetic anomal*
+  - polar wander*
+  - true polar wander
+  - plate motion*
+  - absolute plate motion*
+  - reference frame*
+  - rigid plate*
+  - plate rigidity
+  - diffuse deformation
+  - deformation zone*
+  - intraplate
+  - geodes*
+  - GPS
+  - GNSS
+  - seismic*
+  - earthquake*
+  - crust*
+  - continent*
+  - ocean*
+  - geolog*
+  - geophys*
+  - Euler pole*
+  - Euler vector*
+names:
+  - Wilson
+  - Morgan
+  - Wegener
+  - Hess
+  - Vine
+  - Matthews
+  - McKenzie
+  - Parker
+  - Le Pichon
+  - Gordon
+  - DeMets
+  - Tarduno
+  - Molnar
+  - Steinberger
+  - Koppers
+places:
+  - Hawaii*
+  - Emperor
+  - Iceland*
+  - Pacific
+  - Atlantic
+  - Indian Ocean
+  - Louisville
+  - Reunion
+  - Réunion
+  - Kerguelen
+  - Yellowstone
+  - Andes
+  - Himalaya*
+  - Tibet*
+  - Japan
+  - Alps
+organisations:
+  - NUVEL
+  - MORVEL
+  - ODP
+  - DSDP
+  - IODP
+  - Ocean Drilling Program
+  - Deep Sea Drilling Project

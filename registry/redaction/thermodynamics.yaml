@@ -1,0 +1,79 @@
+format: 1
+subject: thermodynamics
+note: "Seed list drafted 4 Oct 2026 from domain knowledge, before any leakage test; extended only through S6 (leakage above g) and owner review. Applied to every item of every subject."
+terms:
+  - thermodynam*
+  - temperature*
+  - thermometr*
+  - thermometer*
+  - kelvin
+  - Celsius
+  - ITS-90
+  - ITS90
+  - IPTS-68
+  - IPTS68
+  - International Temperature Scale
+  - temperature scale*
+  - fixed point*
+  - triple point*
+  - Boltzmann constant
+  - gas thermometr*
+  - acoustic gas thermometr*
+  - dielectric-constant gas thermometr*
+  - Johnson noise
+  - noise thermometr*
+  - radiation thermometr*
+  - platinum resistance thermometer*
+  - SPRT*
+  - equation of state
+  - equations of state
+  - cubic equation*
+  - van der Waals
+  - Peng-Robinson
+  - Peng Robinson
+  - Soave
+  - Redlich-Kwong
+  - Redlich Kwong
+  - SRK
+  - PR EoS
+  - EoS
+  - EOS
+  - mixing rule*
+  - binary interaction parameter*
+  - fugacit*
+  - vapor-liquid
+  - vapour-liquid
+  - VLE
+  - phase equilibri*
+  - critical point*
+  - acentric factor
+  - SAFT
+  - PC-SAFT
+  - enthalp*
+  - entrop*
+  - heat capacit*
+  - virial
+  - compressibility factor
+  - hydrocarbon*
+  - refrigerant*
+names:
+  - Peng
+  - Robinson
+  - Soave
+  - Redlich
+  - Kwong
+  - Preston-Thomas
+  - Moldover
+  - Fellmuth
+  - Prausnitz
+  - Gmehling
+places: []
+organisations:
+  - CCT
+  - Consultative Committee for Thermometry
+  - BIPM
+  - CIPM
+  - NIST
+  - PTB
+  - NPL
+  - CODATA

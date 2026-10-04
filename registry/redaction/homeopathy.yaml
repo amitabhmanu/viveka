@@ -1,0 +1,90 @@
+format: 1
+subject: homeopathy
+note: "Seed list drafted 4 Oct 2026 from domain knowledge, before any leakage test; extended only through S6 (leakage above g) and owner review. Applied to every item of every subject."
+terms:
+  - homeopath*
+  - homoeopath*
+  - homöopath*
+  - high dilution*
+  - ultra high dilution*
+  - ultramolecular
+  - ultra-molecular
+  - potenc*
+  - potentis*
+  - potentiz*
+  - dynamis*
+  - dynamiz*
+  - succuss*
+  - serial dilution*
+  - centesimal
+  - decimal dilution*
+  - Avogadro*
+  - similia*
+  - like cures like
+  - law of similars
+  - simillimum
+  - pathogenetic trial*
+  - materia medica
+  - repertor*
+  - individualised treatment
+  - individualized treatment
+  - classical homeopathy
+  - isopath*
+  - isotherap*
+  - nosode*
+  - Arnica
+  - Oscillococcinum
+  - Galphimia
+  - Belladonna
+  - Pulsatilla
+  - Nux vomica
+  - Rhus tox*
+  - Lycopodium
+  - Sulphur
+  - Calcarea
+  - Natrum mur*
+  - 30C
+  - 200C
+  - 6C
+  - 12C
+  - 30CH
+  - 6X
+  - 12X
+  - D6
+  - D12
+  - D30
+  - Q potenc*
+  - LM potenc*
+  - water memory
+  - remedy
+  - remedies
+  - memory of water
+names:
+  - Hahnemann*
+  - Vithoulkas
+  - Benveniste
+  - Reilly
+  - Linde
+  - Mathie
+  - Kleijnen
+  - Shang
+  - Ernst
+  - Bellavite
+  - Endler
+  - Teut
+  - Frass
+  - Montagnier
+places:
+  - Glasgow
+  - Köthen
+organisations:
+  - Faculty of Homeopathy
+  - British Homeopathic Association
+  - Homeopathic Pharmacopoeia
+  - HPUS
+  - LIGA
+  - Liga Medicorum Homoeopathica Internationalis
+  - CCRH
+  - Central Council for Research in Homoeopathy
+  - NHMRC
+  - Science and Technology Committee

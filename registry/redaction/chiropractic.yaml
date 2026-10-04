@@ -1,0 +1,65 @@
+format: 1
+subject: chiropractic
+note: "Seed list drafted 4 Oct 2026 from domain knowledge, before any leakage test; extended only through S6 (leakage above g) and owner review. Applied to every item of every subject."
+terms:
+  - chiropract*
+  - subluxation*
+  - vertebral subluxation*
+  - spinal manipulat*
+  - spinal manipulative therap*
+  - SMT
+  - spinal adjust*
+  - manual therap*
+  - manual medicine
+  - osteopath*
+  - innate intelligence
+  - nerve interference
+  - straight chiropractic
+  - upper cervical
+  - Gonstead
+  - Activator
+  - instrument-assisted adjust*
+  - high-velocity low-amplitude
+  - high velocity low amplitude
+  - HVLA
+  - segmental dysfunction
+  - vertebrogenic
+  - cervicogenic
+  - cervical artery dissection
+  - vertebrobasilar
+  - neck pain
+  - low back pain
+  - back pain
+  - musculoskeletal
+  - nonmusculoskeletal
+  - non-musculoskeletal
+  - visceral disorder*
+  - infantile colic
+  - colic
+  - otitis media
+  - enuresis
+  - spine
+  - spinal
+names:
+  - Palmer
+  - BJ Palmer
+  - DD Palmer
+  - Haldeman
+  - Bronfort
+  - Meeker
+  - Ernst
+  - Cassidy
+  - Côté
+  - Hurwitz
+places:
+  - Davenport
+organisations:
+  - General Chiropractic Council
+  - GCC
+  - American Chiropractic Association
+  - ACA
+  - World Federation of Chiropractic
+  - WFC
+  - Council on Chiropractic Education
+  - Palmer College
+  - British Chiropractic Association

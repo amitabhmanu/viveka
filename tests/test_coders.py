@@ -151,3 +151,19 @@ def test_the_registered_stance_task_renders_its_codebook_and_versions_by_content
     book = copy / "registry" / "codebook" / "stance.md"
     book.write_text(book.read_text(encoding="utf-8") + "\nOne more rule.\n", encoding="utf-8")
     assert load_task(copy, "T1-stance").version != task.version  # a codebook change is a new task version
+
+
+def test_redaction_replaces_whole_words_and_stems_with_their_placeholders():
+    from viveka.coders.redaction import build, check
+
+    redact = build([{"format": 1, "subject": "a", "terms": ["homeopath*", "high dilution", "potency"],
+                     "names": ["Hahnemann"]},
+                    {"format": 1, "subject": "b", "terms": ["plate*"], "places": ["Hawaii"],
+                     "organisations": ["Royal Society"]}])
+    text = ("Homeopathic remedies at High-Dilution, after Hahnemann's potency rules; plates near hawaii; "
+            "the Royal  Society; template and potencyx untouched")
+    assert redact(text) == ("[TERM] remedies at [TERM], after [NAME]'s [TERM] rules; [TERM] near [PLACE]; "
+                            "the [ORG]; template and potencyx untouched")
+    assert build([])("nothing to do") == "nothing to do"
+    assert check({"format": 1, "subject": "a", "terms": ["x"]}) == []
+    assert check({"format": 2, "terms": "x", "colour": []}) != []

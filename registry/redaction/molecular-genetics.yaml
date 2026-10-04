@@ -1,0 +1,79 @@
+format: 1
+subject: molecular-genetics
+note: "Seed list drafted 4 Oct 2026 from domain knowledge, before any leakage test; extended only through S6 (leakage above g) and owner review. Applied to every item of every subject."
+terms:
+  - DNA
+  - RNA
+  - mRNA
+  - cDNA
+  - nucleic acid*
+  - nucleotide*
+  - gene
+  - genes
+  - genetic*
+  - genom*
+  - allele*
+  - chromosom*
+  - chromatin
+  - transcript*
+  - translat*
+  - protein*
+  - peptide*
+  - amino acid*
+  - codon*
+  - ribosom*
+  - polymeras*
+  - reverse transcript*
+  - retrotranspos*
+  - retrovir*
+  - central dogma
+  - prion*
+  - PrP
+  - scrapie
+  - Creutzfeldt-Jakob
+  - spongiform
+  - amyloid*
+  - misfold*
+  - imprint*
+  - imprinted gene*
+  - parental equivalence
+  - parent-of-origin
+  - maternal
+  - paternal
+  - methylat*
+  - epigenet*
+  - Igf2
+  - H19
+  - uniparental
+  - disomy
+  - Prader-Willi
+  - Angelman
+  - mouse
+  - mice
+  - murine
+  - yeast
+  - Drosophila
+  - embryo*
+  - mutant*
+  - mutation*
+  - knockout
+  - transgen*
+  - sequenc*
+  - PCR
+names:
+  - Crick
+  - Watson
+  - Prusiner
+  - Temin
+  - Baltimore
+  - Surani
+  - McGrath
+  - Solter
+  - Barlow
+  - Reik
+  - Tilghman
+  - Haig
+  - Lindquist
+  - Wickner
+places: []
+organisations: []
