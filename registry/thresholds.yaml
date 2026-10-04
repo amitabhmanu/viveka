@@ -174,7 +174,7 @@ parameters:
     symbol: "q"
     used_in: coders
     meaning: Minimum number of independent coders
-    value: 3
+    value: 2  # owner, 4 Oct 2026 (D-27), a declared departure from the proposed 3
     min_human: 1
     status: convention
     source_run: null
