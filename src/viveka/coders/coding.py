@@ -81,7 +81,7 @@ def run_coding(root: Path, task_id: str, field_id: str, commitment: str, fold: s
                out=print) -> str | None:
     from viveka.cases import load_commitment
     from viveka.coders.claude_cli import ClaudeCliCoder
-    from viveka.coders.items import CitedWork, build_items
+    from viveka.coders.items import CITATION_RULE, CITATION_RULE_V2, CitedNumbers, CitedWork, build_items
     from viveka.coders.leakage import RULES, load_coders
     from viveka.coders.redaction import build, load_dictionaries
     from viveka.coders.tasks import load_task
@@ -117,6 +117,7 @@ def run_coding(root: Path, task_id: str, field_id: str, commitment: str, fold: s
         inputs.append(abstracts_run["params"]["tables"]["abstracts"])
         abstracts = {r["work_id"]: r["abstract"] for r in tables.read(root / inputs[-1])}
         items, work_of, missing = direction_items(claim.claim_id, claim.wording, abstracts)
+        rule_of: dict[str, str] = {}
         extra = {"abstracts_run": abstracts_run["run_id"], "results_without_abstract": missing}
     else:
         fetch = load_manifest(root, contexts_run["params"]["fetch_run"])
@@ -127,8 +128,21 @@ def run_coding(root: Path, task_id: str, field_id: str, commitment: str, fold: s
                  if r["position"] == "first"}
         cited = {w: CitedWork(w, first[w].split()[-1] if first.get(w) else None, (works.get(w) or {}).get("year"))
                  for w in {r["cited_work"] for r in contexts}}
-        built, dropped = build_items(contexts, cited, build(load_dictionaries(root, [field_id])))
-        extra = {"rules": list(RULES), "dropped": dict(dropped), "contexts": len(contexts)}
+        positions_run = latest_run(root, "S1-reference-positions", subject, fold,
+                                   require_frozen(root, [case.component, "thresholds"], fold))
+        if positions_run is None or positions_run["params"]["member_contexts_run"] != contexts_run["run_id"]:
+            raise CodingRefused(f"no reference-positions run for {subject} from member-contexts run "
+                                f"{contexts_run['run_id']}; run `viveka corpus reference-positions` first")
+        inputs.append(positions_run["params"]["tables"]["reference_positions"])
+        found: dict[tuple[str, str], tuple[set[int], int]] = {}
+        for r in tables.read(root / inputs[-1]):
+            found.setdefault((r["citing_work"], r["cited_work"]), (set(), r["list_length"]))[0].add(r["position"])
+        numbers = {pair: CitedNumbers(frozenset(p), n) for pair, (p, n) in found.items()}
+        built, dropped = build_items(contexts, cited, build(load_dictionaries(root, [field_id])),
+                                     rule=CITATION_RULE_V2, numbers=numbers)
+        rules = [CITATION_RULE_V2 if r == CITATION_RULE else r for r in RULES]
+        extra = {"rules": rules, "dropped": dict(dropped), "contexts": len(contexts),
+                 "reference_positions_run": positions_run["run_id"]}
         if directed_only:  # D-29: stance only on contexts citing a result some coder gave a direction
             direction_run = next((m for m in recent_runs(root, limit=10_000)
                                   if m.get("stage") == "S8" and m.get("case") == subject and m.get("fold") == fold
@@ -143,11 +157,17 @@ def run_coding(root: Path, task_id: str, field_id: str, commitment: str, fold: s
             built = [i for i in built if i.cited_work in directed]
         items = [Item(i.item_id, i.text) for i in built]
         work_of = {i.item_id: i.cited_work for i in built}
-    calls = -(-len(items) // task.batch_size)
+        rule_of = {i.item_id: i.rule for i in built}
+        extra["items_by_rule"] = dict(Counter(rule_of.values()))
+    # D-30: the items citations_v1 resolves are coded in a pass of their own, so calls made before v2 replay.
+    passes = [[i for i in items if rule_of.get(i.item_id, CITATION_RULE) == rule]
+              for rule in (CITATION_RULE, CITATION_RULE_V2)]
+    passes = [p for p in passes if p]
+    calls = sum(-(-len(p) // task.batch_size) for p in passes)
     out(f"{task_id} {subject}: {len(items)} items, {calls} call(s) per coder, coders "
         f"{', '.join(c.coder_id for c in coders)}"
         + (f"; results without an abstract {extra['results_without_abstract']}" if task_id == "T7" else
-           f"; dropped {dict(extra['dropped'])}"
+           f"; by rule {extra['items_by_rule']}; dropped {dict(extra['dropped'])}"
            + (f"; on directed results only, of {extra['items_before_direction']}" if directed_only else "")))
     if dry_run:
         return None
@@ -161,11 +181,13 @@ def run_coding(root: Path, task_id: str, field_id: str, commitment: str, fold: s
         rows, usage = [], {}
         for spec in coders:
             coder = ClaudeCliCoder(spec, root / "data" / "raw" / "coders" / spec.family, max_live_calls=max_live_calls)
-            rows += label_rows(task_id, subject, coder.code(task, items, seed=SEED, rep=0), work_of)
+            for batch_items in passes:
+                rows += label_rows(task_id, subject, coder.code(task, batch_items, seed=SEED, rep=0), work_of)
             usage[spec.coder_id] = {"live_calls": coder.live_calls, "replayed": coder.replayed,
                                     "cli_version": coder.cli_version}
         counts = Counter((r["coder_id"], r["label"] or f"missing:{r['missing']}") for r in rows)
-        item_rows = [{"item_id": i.item_id, "work_id": work_of[i.item_id], "text": i.text} for i in items]
+        item_rows = [{"item_id": i.item_id, "work_id": work_of[i.item_id], "text": i.text,
+                      "rule": rule_of.get(i.item_id)} for i in items]
         ctx.params.update(coder_usage=usage, label_counts={f"{c} {lab}": n for (c, lab), n in sorted(counts.items())},
                           tables={"labels": rel_posix(ctx.store(tables.to_parquet("labels", rows), "parquet",
                                                                 rows=len(rows)), root),

@@ -49,6 +49,8 @@ _UNIT = re.compile(rf"(?:e\.g\.,?\s*|see\s+|cf\.\s*)?({_AUTHORS})\s*,?\s*\(?({_Y
 _NARRATIVE = re.compile(rf"\b({_AUTHORS})\s+\(({_YEAR}(?:\s*,\s*{_YEAR})*)\)")
 _GROUP = re.compile(rf"[\(\[]([^()\[\]]*?{_YEAR}[^()\[\]]*?)[\)\]]")
 _NUMBERED = re.compile(r"\[\s*\d+(?:\s*[-–,]\s*\d+)*\s*\]")
+_NUMBERED_V2 = re.compile(r"\[\s*\d+(?:\s*[-–,]\s*\d+)*\s*\]|\(\s*\d{1,3}(?:\s*[-–,]\s*\d{1,3})*\s*\)")
+CITATION_RULE_V2 = "citations_v2"
 _WORD = re.compile(r"[^\W\d_]{2,}")
 
 
@@ -66,6 +68,15 @@ class ContextItem:
     text: str
     cited_marked: bool
     sources: tuple[str, ...]  # the citing papers whose context this is
+    rule: str = CITATION_RULE  # the citation rule that placed [CITED]
+
+
+@dataclass(frozen=True)
+class CitedNumbers:
+    """Where the cited work stands in the citing paper's reference list (1-based), and the list's length."""
+
+    positions: frozenset[int]
+    list_length: int
 
 
 def _fold(name: str) -> str:
@@ -124,9 +135,66 @@ def mask_citations(text: str, cited: CitedWork | None) -> tuple[str, bool]:
     return text, placed
 
 
+def marker_numbers(marker: str) -> set[int]:
+    """The reference numbers a numbered marker names: "[3-5, 9]" is {3, 4, 5, 9}. An absurd range is empty."""
+    numbers: set[int] = set()
+    for part in re.split(r"\s*,\s*", marker.strip("[]() ")):
+        ends = [int(n) for n in re.findall(r"\d+", part)]
+        if len(ends) == 2 and 0 <= ends[1] - ends[0] <= 50:
+            numbers.update(range(ends[0], ends[1] + 1))
+        elif len(ends) == 1:
+            numbers.add(ends[0])
+        else:
+            return set()
+    return numbers
+
+
+def mask_citations_v2(text: str, numbers: CitedNumbers | None = None) -> tuple[str, bool]:
+    """``citations_v2``, for a context ``citations_v1`` leaves unresolved (decision D-30): numbered markers in
+    parentheses, "(12)" and "(3-5, 9)", are markers too, and a numbered marker naming the cited work's number in
+    the citing paper's reference list becomes ``[CITED]``. The numbers are used only when no marker names a
+    number beyond the list's length (the list would then not be the one the paper numbers by). As in v1, a
+    context's only marker is the cited work's."""
+    placed = False
+
+    def unit(match: re.Match) -> str:
+        return "[REF]"  # v1 found no author-year marker matching the cited work
+
+    def group(match: re.Match) -> str:
+        inner = match.group(1)
+        replaced = _UNIT.sub(unit, inner)
+        return match.group(0) if replaced == inner else match.group(0)[0] + replaced + match.group(0)[-1]
+
+    text = _GROUP.sub(group, text)
+    text = _NARRATIVE.sub(unit, text)
+    named = [marker_numbers(m.group(0)) for m in _NUMBERED_V2.finditer(text)]
+    usable = (numbers is not None and numbers.positions
+              and all(n <= numbers.list_length for names in named for n in names))
+
+    def numbered(match: re.Match) -> str:
+        nonlocal placed
+        if usable and marker_numbers(match.group(0)) & numbers.positions:
+            placed = True
+            return "[CITED]"
+        return "[REF]"
+
+    text = _NUMBERED_V2.sub(numbered, text)
+    if not placed and text.count("[REF]") == 1:
+        text, placed = text.replace("[REF]", "[CITED]"), True
+    return text, placed
+
+
 def build_items(contexts: Iterable[Mapping], cited_works: Mapping[str, CitedWork],
-                redact: Callable[[str], str]) -> tuple[list[ContextItem], Counter]:
-    """Items from context rows (cited_work, citing id, text), and counts of what was dropped and why."""
+                redact: Callable[[str], str], *, rule: str = CITATION_RULE,
+                numbers: Mapping[tuple[str, str], CitedNumbers] | None = None
+                ) -> tuple[list[ContextItem], Counter]:
+    """Items from context rows (cited_work, citing id, text), and counts of what was dropped and why.
+
+    Under ``citations_v2`` a context v1 leaves unresolved is tried again with :func:`mask_citations_v2`;
+    ``numbers`` maps (citing work, cited work) to the cited work's reference numbers. Items v1 resolves are the
+    same under either rule."""
+    if rule not in (CITATION_RULE, CITATION_RULE_V2):
+        raise ValueError(f"unknown citation rule {rule!r}")
     dropped: Counter = Counter()
     merged: dict[str, dict] = {}
     for row in contexts:
@@ -137,7 +205,13 @@ def build_items(contexts: Iterable[Mapping], cited_works: Mapping[str, CitedWork
         if not is_english(text):
             dropped["not_english"] += 1
             continue
-        masked, placed = mask_citations(text, cited_works.get(row["cited_work"]))
+        cited = cited_works.get(row["cited_work"])
+        masked, placed = mask_citations(text, cited)
+        by = CITATION_RULE
+        if not placed and rule == CITATION_RULE_V2:
+            known = (numbers or {}).get((row.get("citing_work"), row["cited_work"]))
+            masked, placed = mask_citations_v2(text, known)
+            by = CITATION_RULE_V2
         if not placed:
             dropped["unresolved"] += 1
             continue
@@ -147,8 +221,11 @@ def build_items(contexts: Iterable[Mapping], cited_works: Mapping[str, CitedWork
         if key in merged:
             dropped["duplicate"] += 1
             merged[key]["sources"].add(source)
+            if by == CITATION_RULE:
+                merged[key]["rule"] = by  # an item v1 resolves anywhere is a v1 item
             continue
-        merged[key] = {"cited_work": row["cited_work"], "text": redacted, "placed": placed, "sources": {source}}
-    items = [ContextItem(key, v["cited_work"], v["text"], v["placed"], tuple(sorted(v["sources"])))
+        merged[key] = {"cited_work": row["cited_work"], "text": redacted, "placed": placed, "sources": {source},
+                       "rule": by}
+    items = [ContextItem(key, v["cited_work"], v["text"], v["placed"], tuple(sorted(v["sources"])), v["rule"])
              for key, v in sorted(merged.items())]
     return items, dropped

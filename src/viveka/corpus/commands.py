@@ -590,6 +590,58 @@ def fetch_abstracts(root: Path, field_id: str, commitment: str, fold: str, *,
     return ctx.run_id
 
 
+def fetch_reference_positions(root: Path, field_id: str, commitment: str, fold: str, *,
+                              transport: httpx.BaseTransport | None = None, out: Out = print) -> str:
+    """For citations_v2 (decision D-30): where each cited result stands in its citing paper's Crossref
+    reference list, for the citing papers with a context citations_v1 leaves unresolved. A citing paper
+    without a deposited list, and a cited result its list does not name by DOI, are counted."""
+    from viveka.coders.items import is_english, is_prose, mask_citations
+
+    case, _ = load_commitment(root, field_id, commitment)
+    config = load_corpus_config(root)
+    contexts_run = latest_member_contexts(root, field_id, commitment, fold)
+    fetch = load_manifest(root, contexts_run["params"]["fetch_run"])
+    doi_of = {r["work_id"]: normalize_doi(r["doi"]) for r in tables.read(root / fetch["params"]["tables"]["works"])
+              if r["doi"]}
+    wanted: dict[str, set[str]] = defaultdict(set)  # citing work -> cited results of its unresolved contexts
+    for r in tables.read(root / contexts_run["params"]["tables"]["member_contexts"]):
+        text = " ".join((r["text"] or "").split())
+        if is_prose(text) and is_english(text) and not mask_citations(text, None)[1]:
+            wanted[r["citing_work"]].add(r["cited_work"])
+    subject = f"{field_id}-{commitment}"
+    params = {"commitment": commitment, "member_contexts_run": contexts_run["run_id"], "citing_works": len(wanted),
+              "pairs": sum(len(v) for v in wanted.values())}
+    with RunContext(root, "S1-reference-positions", subject, fold, [case.component, "thresholds"],
+                    params=params) as ctx:
+        ctx.record_input(root / contexts_run["params"]["tables"]["member_contexts"])
+        rows, without_list = [], 0
+        with make_fetcher(root, config, need=("crossref",), transport=transport, run_id=ctx.run_id) as fetcher:
+            try:
+                for citing in sorted(wanted):
+                    response = fetcher.get(crossref.work_request(doi_of[citing])) if doi_of.get(citing) else None
+                    references = (crossref.references_of(response.body)
+                                  if response is not None and response.status == 200 else None)
+                    if references is None:
+                        without_list += 1
+                        continue
+                    for cited in sorted(wanted[citing]):
+                        positions = [i + 1 for i, doi in enumerate(references.dois)
+                                     if doi and doi == doi_of.get(cited)]
+                        rows += [{"citing_work": citing, "cited_work": cited, "position": p,
+                                  "list_length": references.total} for p in positions]
+            finally:
+                _finish(ctx, fetcher)
+        path = ctx.store(tables.to_parquet("reference_positions", rows), "parquet", rows=len(rows))
+        found = len({(r["citing_work"], r["cited_work"]) for r in rows})
+        ctx.params.update({"tables": {"reference_positions": rel_posix(path, root)},
+                           "citing_without_list": without_list, "pairs_with_position": found})
+    out(f"{subject}: {params['pairs']} citing-cited pairs with an unresolved context from {len(wanted)} citing "
+        f"papers; position found for {found}; citing papers without a Crossref reference list {without_list}")
+    out(f"run {ctx.run_id}")
+    out(_usage_line(ctx.usage))
+    return ctx.run_id
+
+
 # ---------------------------------------------------------------- S2: census
 
 
@@ -1444,11 +1496,13 @@ def add_parsers(sub: argparse._SubParsersAction, common: argparse.ArgumentParser
     p.add_argument("--fold", required=True, choices=FOLDS)
     p.add_argument("--dry-run", action="store_true", help="Show the scope and the requests; no network")
 
-    p = csub.add_parser("abstracts", parents=[common],
-                        help="S1: OpenAlex abstracts of the bearing results with a member context (D-28)")
-    p.add_argument("--field", required=True)
-    p.add_argument("--commitment", required=True)
-    p.add_argument("--fold", required=True, choices=FOLDS)
+    for action, text in (("abstracts", "S1: OpenAlex abstracts of the bearing results with a member context (D-28)"),
+                         ("reference-positions", "S1: cited results' numbers in citing papers' Crossref reference "
+                                                 "lists, for citations_v2 (D-30)")):
+        p = csub.add_parser(action, parents=[common], help=text)
+        p.add_argument("--field", required=True)
+        p.add_argument("--commitment", required=True)
+        p.add_argument("--fold", required=True, choices=FOLDS)
 
     p = csub.add_parser("access", parents=[common],
                         help="Lookup: how much of the literature citing a commitment's results has open full text")
@@ -1564,6 +1618,9 @@ def run(args: argparse.Namespace, root: Path, *, transport: httpx.BaseTransport 
                     "of each cited result (archived ones replay)")
                 return 0
             fetch_member_contexts(root, args.field, args.commitment, args.fold, transport=transport, out=out)
+            return 0
+        if args.command == "corpus" and args.action == "reference-positions":
+            fetch_reference_positions(root, args.field, args.commitment, args.fold, transport=transport, out=out)
             return 0
         if args.command == "corpus" and args.action == "abstracts":
             fetch_abstracts(root, args.field, args.commitment, args.fold, transport=transport, out=out)
