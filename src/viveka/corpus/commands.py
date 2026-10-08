@@ -41,7 +41,7 @@ from viveka.corpus import crossref, ingest, openalex, semanticscholar, tables
 from viveka.corpus.audit import AUDIT_DIR, AuditError, AuditResult, draw, read_audit, report_lines, sheets, works_sheet
 from viveka.corpus.audit import write_once as write_sheet
 from viveka.corpus.clusters import KIND as CLUSTER_KIND
-from viveka.corpus.clusters import cluster_frames, needed_windows
+from viveka.corpus.clusters import cluster_frames, first_windows, needed_windows
 from viveka.corpus.config import LIVE_SOURCES, CensusSettings, CorpusConfig, load_corpus_config
 from viveka.corpus.http import REFUSED_STATUSES, Fetcher, FetchError, UsageMeter
 from viveka.corpus.ids import chunks, normalize_doi, short_id
@@ -1012,7 +1012,7 @@ class ClusterDraw:
 
 
 def cluster_draw(root: Path, subject_id: str, fold: str, *, field: bool = False,
-                 resolution: float | None = None) -> ClusterDraw:
+                 resolution: float | None = None, first: int | None = None) -> ClusterDraw:
     """The cluster frames of a subject and the sample drawn from them; no network, nothing written."""
     case, _ = load_subject(root, subject_id, field)
     config = load_corpus_config(root)
@@ -1047,6 +1047,8 @@ def cluster_draw(root: Path, subject_id: str, fold: str, *, field: bool = False,
     if not needed:
         raise CaseError(f"no lineage-window of {subject_id} meets m and v at resolution {chosen:g}; coverage can "
                         "withhold eligibility but never grant it, so there is nothing to census")
+    if first is not None:  # D-31: only the windows that will be coded, in a seeded order
+        needed = first_windows(needed, subject_id, MEMBER_WINDOWS_SEED, first)
     members, works_by_author, years = _cluster_inputs(root, s3, fetch, chosen, rule)
     frames = cluster_frames(subject_id, needed, members, works_by_author, years)
     draw = draw_sample(case, frames, works_rows, settings.works_per_year, settings.seed, settings.paper_types,
@@ -1056,7 +1058,8 @@ def cluster_draw(root: Path, subject_id: str, fold: str, *, field: bool = False,
 
 
 def census_clusters(root: Path, subject_id: str, fold: str, *, field: bool = False, resolution: float | None = None,
-                    transport: httpx.BaseTransport | None = None, out: Out = print) -> str:
+                    windows: int | None = None, transport: httpx.BaseTransport | None = None,
+                    out: Out = print) -> str:
     """Stage S2C: the coverage census again, with cluster frames (spec §7; framework "Coverage census").
 
     The framework takes the census per cluster, and gate 1 reads a lineage-window's coverage from its own
@@ -1065,14 +1068,17 @@ def census_clusters(root: Path, subject_id: str, fold: str, *, field: bool = Fal
     """
     config = load_corpus_config(root)
     settings = config.census
-    scoped = cluster_draw(root, subject_id, fold, field=field, resolution=resolution)
+    scoped = cluster_draw(root, subject_id, fold, field=field, resolution=resolution, first=windows)
     case, fetch, draw = scoped.case, scoped.fetch, scoped.draw
     samples = draw.samples
     listing = _listing(root, fetch)
     catalogue = _catalogue(config, listing, tables.read(root / fetch["params"]["tables"]["works"]))
     params = {"fetch_run": fetch["run_id"], "s3_run": scoped.s3["run_id"], "s4_runs": scoped.s4_runs,
               "cluster_resolution": scoped.resolution, "cluster_frames": len(draw.by_frame),
-              "frames_scope": "lineage-windows meeting m and v at the resolution, not closed",
+              "frames_scope": ("lineage-windows meeting m and v at the resolution, not closed" if windows is None
+                               else f"the first {windows} of those lineage-windows in the seeded order "
+                                    f"(seed {MEMBER_WINDOWS_SEED}, decision D-31)"),
+              "windows": windows,
               "lineage_works": config.social.lineage_works,
               "works_per_year": settings.works_per_year, "max_unmeasured_share": settings.max_unmeasured_share,
               "resolution": settings.resolution, "doiless_sample_per_work": settings.doiless_sample_per_work,
@@ -1526,6 +1532,8 @@ def add_parsers(sub: argparse._SubParsersAction, common: argparse.ArgumentParser
     p.add_argument("--fold", required=True, choices=FOLDS)
     p.add_argument("--clusters", action="store_true",
                    help="S2C: census the clusters S3 found, for the lineage-windows S4 passes on m and v")
+    p.add_argument("--windows", type=int,
+                   help="With --clusters: census only the first N lineage-windows of the seeded order (D-31)")
     p.add_argument("--resolution", type=float,
                    help="With --clusters: the sweep resolution to census (default: the registered primary)")
     p.add_argument("--dry-run", action="store_true", help="Project live calls from the archive; no network")
@@ -1567,7 +1575,8 @@ def _dry_run(root: Path, args: argparse.Namespace, out: Out) -> int:
     with make_fetcher(root, config, offline=True) as fetcher:
         if args.command == "census":
             if getattr(args, "clusters", False):
-                scoped = cluster_draw(root, subject_id, args.fold, field=is_field, resolution=args.resolution)
+                scoped = cluster_draw(root, subject_id, args.fold, field=is_field, resolution=args.resolution,
+                                      first=args.windows)
                 samples = scoped.draw.samples
                 projection = project_census(fetcher, config, samples, {}, _listing(root, scoped.fetch))
                 out(f"cluster census dry run for {subject_id}: {len(scoped.draw.by_frame)} cluster frame(s) at "
@@ -1652,7 +1661,7 @@ def run(args: argparse.Namespace, root: Path, *, transport: httpx.BaseTransport 
             return _dry_run(root, args, out)
         if args.command == "census" and args.clusters:
             census_clusters(root, subject_id, args.fold, field=is_field, resolution=args.resolution,
-                            transport=transport, out=out)
+                            windows=args.windows, transport=transport, out=out)
         elif args.command == "census":
             census_case(root, subject_id, args.fold, field=is_field, manual=args.manual, audit=args.audit,
                         transport=transport, out=out)

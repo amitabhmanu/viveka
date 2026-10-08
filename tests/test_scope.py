@@ -42,6 +42,19 @@ def test_window_citations_are_members_papers_in_the_window_citing_bearing_result
     assert {r["lineage_id"] for r in rows} == {"L1"}
 
 
+def test_first_windows_grow_by_one_and_keep_the_rest():
+    from viveka.corpus.clusters import first_windows
+
+    needed = [(f"L{i}", 2000 + i, 2004 + i) for i in range(12)]
+    three, four = first_windows(needed, "x", 7, 3), first_windows(list(reversed(needed)), "x", 7, 4)
+    assert len(three) == 3 and len(four) == 4 and set(three) < set(four)
+    assert three == sorted(three)
+    assert first_windows(needed, "x", 7, 99) == sorted(needed)
+    assert first_windows(needed, "y", 7, 3) != three or first_windows(needed, "x", 8, 3) != three
+    with pytest.raises(ValueError):
+        first_windows(needed, "x", 7, 0)
+
+
 def test_abstract_text_rebuilds_word_order():
     from viveka.corpus.commands import abstract_text
 

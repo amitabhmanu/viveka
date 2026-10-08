@@ -14,6 +14,7 @@ scoping changes which literatures are measured, never how one is measured.
 
 from __future__ import annotations
 
+import random
 from collections.abc import Iterable, Mapping, Sequence
 
 KIND = "cluster"
@@ -38,6 +39,17 @@ def needed_windows(eligibility_rows: Iterable[Mapping], resolution: float) -> li
                 and not row["closed"]):
             ends[(row["lineage_id"], int(row["window_start"]))] = int(row["window_end"])
     return sorted((lineage, start, end) for (lineage, start), end in ends.items())
+
+
+def first_windows(needed: Sequence[tuple[str, int, int]], subject: str, seed: int,
+                  count: int) -> list[tuple[str, int, int]]:
+    """Decision D-31: the first ``count`` windows of a seeded order over the needed ones, sorted. The order is a
+    property of the subject and the seed alone, so asking for one more window adds one and keeps the rest: a
+    window that fails coverage is replaced by the next in the order."""
+    if count < 1:
+        raise ValueError("at least one window")
+    ordered = sorted(needed)
+    return sorted(random.Random(f"{seed}:{subject}").sample(ordered, len(ordered))[:count])
 
 
 def cluster_frames(case_id: str, needed: Sequence[tuple[str, int, int]],
