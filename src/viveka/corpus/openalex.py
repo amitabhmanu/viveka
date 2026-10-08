@@ -94,7 +94,9 @@ def _batchable(doi: str) -> bool:
 def lookup_dois(fetcher: Fetcher, dois: Sequence[str | None], batch: int,
                 fields: Sequence[str] = WORK_FIELDS) -> dict[str, dict]:
     """The OpenAlex work for each DOI that OpenAlex has; DOIs it lacks are absent from the result."""
-    wanted = sorted({d for d in (normalize_doi(x) for x in dois) if d})
+    # A deposited "DOI" with whitespace in it ("10.1103/physrevlett.77.3288. pmid:10062183") is not one: it
+    # breaks the filter syntax (HTTP 400) and OpenAlex cannot hold it, so it is absent from the result unasked.
+    wanted = sorted({d for d in (normalize_doi(x) for x in dois) if d and not any(c.isspace() for c in d)})
     found: dict[str, dict] = {}
     for chunk in chunks([d for d in wanted if _batchable(d)], batch):
         response = fetcher.get(doi_batch_request(chunk, fields))

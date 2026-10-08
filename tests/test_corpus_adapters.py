@@ -40,6 +40,15 @@ def test_doi_lookup_batches_and_reports_only_found(tmp_path):
     assert kinds.count("/works") == 3 and sum(p.startswith("/works/doi:") for p in kinds) == 1
 
 
+def test_doi_lookup_skips_values_with_whitespace(tmp_path):
+    fake = FakeSources()
+    fake.add(oa_work("W1", 2000, doi="10.5/1"))
+    with fake_fetcher(tmp_path, fake) as fetcher:
+        found = openalex.lookup_dois(fetcher, ["10.5/1", "10.5/1. pmid:10062183"], 50, fields=openalex.ID_FIELDS)
+    assert list(found) == ["10.5/1"]
+    assert all("pmid" not in str(c.url) for c in fake.calls)
+
+
 def test_rows_from_a_work():
     work = oa_work("W7", 1991, doi="10.1/X", refs=["W2", "W1", "W2"], source="S5",
                    authors=(("A1", "Ann"), ("A2", "Bo")))
