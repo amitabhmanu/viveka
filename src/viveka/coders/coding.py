@@ -76,10 +76,10 @@ def label_rows(task_id: str, subject: str, results: Sequence, work_of: Mapping[s
     return rows
 
 
-def run_coding(root: Path, task_id: str, field_id: str, commitment: str, fold: str, *,
+def run_coding(root: Path, task_id: str, field_id: str, commitment: str | None, fold: str, *,
                max_live_calls: int | None = None, dry_run: bool = False, directed_only: bool = False,
                out=print) -> str | None:
-    from viveka.cases import load_commitment
+    from viveka.cases import load_coded
     from viveka.coders.claude_cli import ClaudeCliCoder
     from viveka.coders.items import CITATION_RULE, CITATION_RULE_V2, CitedNumbers, CitedWork, build_items
     from viveka.coders.leakage import RULES, load_coders
@@ -95,8 +95,7 @@ def run_coding(root: Path, task_id: str, field_id: str, commitment: str, fold: s
         raise CodingRefused(f"unknown task {task_id}")
     if directed_only and task_id != "T1":
         raise CodingRefused("--directed-only applies to stance (T1) only")
-    case, claim = load_commitment(root, field_id, commitment)
-    subject = f"{field_id}-{commitment}"
+    case, claim, subject = load_coded(root, field_id, commitment)
     task = load_task(root, TASKS[task_id])
     components = ["prompts", "instrument", "thresholds", case.component, *(
         [f"redaction/{field_id}"] if task_id == "T1" else [])]

@@ -1,0 +1,79 @@
+format: 1
+subject: weak-scale-supersymmetry
+note: "Seed list drafted 8 Oct 2026 from domain knowledge under decision D-31, before any item of the case was seen; awaiting owner review. No leakage test has been run on it (the test failed for every coder on the calibration fields, D-25)."
+terms:
+  - supersymmetr*
+  - SUSY
+  - superpartner*
+  - sparticle*
+  - squark*
+  - slepton*
+  - gluino*
+  - gaugino*
+  - higgsino*
+  - neutralino*
+  - chargino*
+  - sfermion*
+  - stop quark*
+  - top squark*
+  - stau*
+  - sneutrino*
+  - gravitino*
+  - MSSM
+  - NMSSM
+  - CMSSM
+  - mSUGRA
+  - supergravity
+  - R-parity
+  - soft breaking
+  - soft supersymmetry breaking
+  - softly broken
+  - naturalness
+  - fine-tuning
+  - fine tuning
+  - hierarchy problem
+  - little hierarchy
+  - grand unif*
+  - gauge coupling unification
+  - GUT
+  - SU(5)
+  - SO(10)
+  - Higgs*
+  - electroweak*
+  - weak scale
+  - TeV
+  - GeV
+  - missing transverse*
+  - dark matter
+  - WIMP*
+  - lightest supersymmetric particle
+  - LSP
+  - split supersymmetry
+names:
+  - Dimopoulos
+  - Georgi
+  - Haber
+  - Kane
+  - Barbieri
+  - Giudice
+  - Amaldi
+  - Nilles
+  - Wess
+  - Zumino
+  - Fayet
+  - Witten
+  - Arkani-Hamed
+  - Ellis
+  - Nanopoulos
+places: []
+organisations:
+  - CERN
+  - LHC
+  - LEP
+  - ATLAS
+  - CMS
+  - Tevatron
+  - Fermilab
+  - CDF
+  - XENON*
+  - LUX

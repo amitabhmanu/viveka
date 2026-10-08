@@ -63,8 +63,10 @@ def _parser() -> argparse.ArgumentParser:
     p = sub.add_parser("code", parents=[common],
                        help="S8: direction (T7) or stance (T1) labels for one commitment, by the qualified pool")
     p.add_argument("--task", required=True, choices=["T7", "T1"])
-    p.add_argument("--field", required=True)
-    p.add_argument("--commitment", required=True)
+    group = p.add_mutually_exclusive_group(required=True)
+    group.add_argument("--field")
+    group.add_argument("--case")
+    p.add_argument("--commitment", help="Required with --field")
     p.add_argument("--fold", required=True)
     p.add_argument("--max-live-calls", type=int, help="Per coder; archived answers still replay")
     p.add_argument("--dry-run", action="store_true", help="Count items and calls; no coder is called")
@@ -169,7 +171,9 @@ def main(argv: list[str] | None = None) -> int:
             from viveka.coders.coding import CodingRefused, run_coding
 
             try:
-                run_coding(root, args.task, args.field, args.commitment, args.fold,
+                if bool(args.field) != bool(args.commitment):
+                    raise CaseError("name a commitment with --field, and none with --case")
+                run_coding(root, args.task, args.field or args.case, args.commitment, args.fold,
                            max_live_calls=args.max_live_calls, dry_run=args.dry_run,
                            directed_only=args.directed_only)
             except (CodingRefused, CaseError) as exc:

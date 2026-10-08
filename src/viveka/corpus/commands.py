@@ -19,7 +19,7 @@ from pathlib import Path
 import httpx
 
 from viveka import env
-from viveka.cases import Case, CaseError, Claim, WorkRef, bearing_set, load_commitment, load_subject
+from viveka.cases import Case, CaseError, Claim, WorkRef, bearing_set, load_coded, load_commitment, load_subject
 from viveka.census import (
     CatalogueEntry,
     FrameWork,
@@ -424,8 +424,7 @@ def coding_scope(root: Path, field_id: str, commitment: str, fold: str) -> tuple
     from viveka.social.graph import node_keys
     from viveka.social.scope import coding_windows, eligible_windows, window_citations
 
-    case, claim = load_commitment(root, field_id, commitment)
-    subject = f"{field_id}-{commitment}"
+    case, claim, subject = load_coded(root, field_id, commitment)
     s4 = latest_run(root, "S4", subject, fold, require_frozen(root, [case.component, "thresholds"], fold))
     if s4 is None:
         raise CaseError(f"no successful S4 run for {subject} in fold {fold} with the current registry; run "
@@ -466,7 +465,7 @@ def fetch_member_contexts(root: Path, field_id: str, commitment: str, fold: str,
     paper has no DOI to match, or Semantic Scholar gives the citation no context; each is counted."""
     from viveka.social.scope import WINDOWS_RULE
 
-    case, _ = load_commitment(root, field_id, commitment)
+    case, _, subject = load_coded(root, field_id, commitment)
     config = load_corpus_config(root)
     s2 = config.semanticscholar
     s4, fetch, windows, scope = coding_scope(root, field_id, commitment, fold)
@@ -477,7 +476,6 @@ def fetch_member_contexts(root: Path, field_id: str, commitment: str, fold: str,
     for r in scope:
         wanted[r["citing_work"]].add(r["cited_work"])
     pairs = {(c, d) for c, ds in wanted.items() for d in ds}
-    subject = f"{field_id}-{commitment}"
     params = {"commitment": commitment, "s4_run": s4["run_id"], "fetch_run": fetch["run_id"],
               "windows_rule": WINDOWS_RULE, "windows_per_science": MEMBER_WINDOWS_PER_SCIENCE,
               "windows_seed": MEMBER_WINDOWS_SEED, "side": case.pair,
@@ -545,11 +543,11 @@ def abstract_text(inverted: Mapping[str, Sequence[int]] | None) -> str | None:
 
 
 def latest_member_contexts(root: Path, field_id: str, commitment: str, fold: str) -> dict:
-    case, _ = load_commitment(root, field_id, commitment)
-    run = latest_run(root, "S1-member-contexts", f"{field_id}-{commitment}", fold,
+    case, _, subject = load_coded(root, field_id, commitment)
+    run = latest_run(root, "S1-member-contexts", subject, fold,
                      require_frozen(root, [case.component, "thresholds"], fold))
     if run is None:
-        raise CaseError(f"no successful member-contexts run for {field_id}-{commitment} in fold {fold} with the "
+        raise CaseError(f"no successful member-contexts run for {subject} in fold {fold} with the "
                         "current registry; run `viveka corpus member-contexts` first")
     return run
 
@@ -558,13 +556,13 @@ def fetch_abstracts(root: Path, field_id: str, commitment: str, fold: str, *,
                     transport: httpx.BaseTransport | None = None, out: Out = print) -> str:
     """OpenAlex abstracts of the bearing results that have at least one member context (the items of the
     direction task, D-28). A result without an abstract is unmeasured for direction and counted."""
-    case, _ = load_commitment(root, field_id, commitment)
+    case, _, subject = load_coded(root, field_id, commitment)
     config = load_corpus_config(root)
     contexts_run = latest_member_contexts(root, field_id, commitment, fold)
     contexts = tables.read(root / contexts_run["params"]["tables"]["member_contexts"])
     results = sorted({r["cited_work"] for r in contexts})
     params = {"commitment": commitment, "member_contexts_run": contexts_run["run_id"], "results": len(results)}
-    with RunContext(root, "S1-abstracts", f"{field_id}-{commitment}", fold, [case.component, "thresholds"],
+    with RunContext(root, "S1-abstracts", subject, fold, [case.component, "thresholds"],
                     params=params) as ctx:
         ctx.record_input(root / contexts_run["params"]["tables"]["member_contexts"])
         found: dict[str, str | None] = {}
@@ -583,7 +581,7 @@ def fetch_abstracts(root: Path, field_id: str, commitment: str, fold: str, *,
         with_abstract = sum(r["abstract"] is not None for r in rows)
         ctx.params.update({"tables": {"abstracts": rel_posix(path, root)}, "with_abstract": with_abstract,
                            "not_returned": sum(w not in found for w in results)})
-    out(f"{field_id}-{commitment}: {len(results)} results with a member context; with an abstract: {with_abstract}"
+    out(f"{subject}: {len(results)} results with a member context; with an abstract: {with_abstract}"
         + (f" ({with_abstract / len(results):.1%})" if results else ""))
     out(f"run {ctx.run_id}")
     out(_usage_line(ctx.usage))
@@ -597,7 +595,7 @@ def fetch_reference_positions(root: Path, field_id: str, commitment: str, fold: 
     without a deposited list, and a cited result its list does not name by DOI, are counted."""
     from viveka.coders.items import is_english, is_prose, mask_citations
 
-    case, _ = load_commitment(root, field_id, commitment)
+    case, _, subject = load_coded(root, field_id, commitment)
     config = load_corpus_config(root)
     contexts_run = latest_member_contexts(root, field_id, commitment, fold)
     fetch = load_manifest(root, contexts_run["params"]["fetch_run"])
@@ -608,7 +606,6 @@ def fetch_reference_positions(root: Path, field_id: str, commitment: str, fold: 
         text = " ".join((r["text"] or "").split())
         if is_prose(text) and is_english(text) and not mask_citations(text, None)[1]:
             wanted[r["citing_work"]].add(r["cited_work"])
-    subject = f"{field_id}-{commitment}"
     params = {"commitment": commitment, "member_contexts_run": contexts_run["run_id"], "citing_works": len(wanted),
               "pairs": sum(len(v) for v in wanted.values())}
     with RunContext(root, "S1-reference-positions", subject, fold, [case.component, "thresholds"],
@@ -1491,18 +1488,14 @@ def add_parsers(sub: argparse._SubParsersAction, common: argparse.ArgumentParser
 
     p = csub.add_parser("member-contexts", parents=[common],
                         help="S1: contexts of lineage members' citations of results bearing on a claim (D-28)")
-    p.add_argument("--field", required=True)
-    p.add_argument("--commitment", required=True)
-    p.add_argument("--fold", required=True, choices=FOLDS)
+    _coded_arguments(p)
     p.add_argument("--dry-run", action="store_true", help="Show the scope and the requests; no network")
 
     for action, text in (("abstracts", "S1: OpenAlex abstracts of the bearing results with a member context (D-28)"),
                          ("reference-positions", "S1: cited results' numbers in citing papers' Crossref reference "
                                                  "lists, for citations_v2 (D-30)")):
         p = csub.add_parser(action, parents=[common], help=text)
-        p.add_argument("--field", required=True)
-        p.add_argument("--commitment", required=True)
-        p.add_argument("--fold", required=True, choices=FOLDS)
+        _coded_arguments(p)
 
     p = csub.add_parser("access", parents=[common],
                         help="Lookup: how much of the literature citing a commitment's results has open full text")
@@ -1538,6 +1531,23 @@ def add_parsers(sub: argparse._SubParsersAction, common: argparse.ArgumentParser
     p.add_argument("--dry-run", action="store_true", help="Project live calls from the archive; no network")
     p.add_argument("--manual", type=Path, help=f"CSV of hand-entered reference lists under {MANUAL_DIR}/")
     p.add_argument("--audit", type=Path, help=f"A completed ingestion audit (<name>-references.csv under {AUDIT_DIR}/)")
+
+
+def _coded_arguments(parser: argparse.ArgumentParser) -> None:
+    """A field's commitment (--field X --commitment c) or a case (--case X), and the fold."""
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--field")
+    group.add_argument("--case")
+    parser.add_argument("--commitment", help="Required with --field")
+    parser.add_argument("--fold", required=True, choices=FOLDS)
+
+
+def _coded(args: argparse.Namespace) -> tuple[str, str | None]:
+    if args.field and not args.commitment:
+        raise CaseError(f"field {args.field} is coded per commitment; name one with --commitment")
+    if args.case and args.commitment:
+        raise CaseError("--commitment applies to a field, not a case")
+    return (args.field or args.case), args.commitment
 
 
 def _subject_arguments(parser: argparse.ArgumentParser) -> None:
@@ -1608,22 +1618,22 @@ def run(args: argparse.Namespace, root: Path, *, transport: httpx.BaseTransport 
                                   source_name=args.source_name, transport=transport, out=out)
         if args.command == "corpus" and args.action == "member-contexts":
             if args.dry_run:
-                _, _, windows, scope = coding_scope(root, args.field, args.commitment, args.fold)
+                s4, _, windows, scope = coding_scope(root, *_coded(args), args.fold)
                 citing = {r["citing_work"] for r in scope}
-                out(f"member-contexts dry run for {args.field}-{args.commitment}: {len(windows)} lineage-window(s), "
+                out(f"member-contexts dry run for {s4['case']}: {len(windows)} lineage-window(s), "
                     f"{len({(r['citing_work'], r['cited_work']) for r in scope})} citations of "
                     f"{len({r['cited_work'] for r in scope})} bearing results from {len(citing)} citing papers")
                 cited = {r["cited_work"] for r in scope}
                 out(f"  semanticscholar free: at least {len(cited)} citation request(s), one page per 1000 citations "
                     "of each cited result (archived ones replay)")
                 return 0
-            fetch_member_contexts(root, args.field, args.commitment, args.fold, transport=transport, out=out)
+            fetch_member_contexts(root, *_coded(args), args.fold, transport=transport, out=out)
             return 0
         if args.command == "corpus" and args.action == "reference-positions":
-            fetch_reference_positions(root, args.field, args.commitment, args.fold, transport=transport, out=out)
+            fetch_reference_positions(root, *_coded(args), args.fold, transport=transport, out=out)
             return 0
         if args.command == "corpus" and args.action == "abstracts":
-            fetch_abstracts(root, args.field, args.commitment, args.fold, transport=transport, out=out)
+            fetch_abstracts(root, *_coded(args), args.fold, transport=transport, out=out)
             return 0
         if args.command == "corpus" and args.action == "access":
             return access_lookup(root, args.field, args.commitment, args.fold, transport=transport, out=out)

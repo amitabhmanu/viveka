@@ -1,8 +1,8 @@
 """What the first calibration coding covers (decision D-28): which lineage-windows, and which citations in them.
 
 * ``windows_v1``: every eligible lineage-window (S4, primary resolution, eligible pending n) of a pseudoscience
-  commitment; for a science commitment, ``per_science`` of them drawn by
-  ``random.Random(f"{seed}:{subject}").sample`` over the sorted eligible windows. Each window is coded whole.
+  commitment; for a science commitment, and for a contested case (decision D-31), ``per_science`` of them drawn
+  by ``random.Random(f"{seed}:{subject}").sample`` over the sorted eligible windows. Each window is coded whole.
 * the citations of a window: every citation from a paper credited to the window's members (the ``lineage_works``
   rule, published within the window) to a result bearing on the claim, the quantity S4 counts toward v.
 
@@ -32,7 +32,7 @@ def coding_windows(eligible: Sequence[Window], side: str, subject: str, *, per_s
     ordered = sorted(eligible)
     if side == "pseudoscience":
         return ordered
-    if side != "science":
+    if side not in ("science", "contested"):
         raise ValueError(f"unknown side {side!r}")
     return sorted(random.Random(f"{seed}:{subject}").sample(ordered, min(per_science, len(ordered))))
 

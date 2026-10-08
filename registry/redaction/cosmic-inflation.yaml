@@ -1,0 +1,77 @@
+format: 1
+subject: cosmic-inflation
+note: "Seed list drafted 8 Oct 2026 from domain knowledge under decision D-31, before any item of the case was seen; awaiting owner review. No leakage test has been run on it (the test failed for every coder on the calibration fields, D-25)."
+terms:
+  - inflation*
+  - inflaton*
+  - slow-roll*
+  - slow roll*
+  - reheating
+  - preheating
+  - e-fold*
+  - e-folding*
+  - de Sitter
+  - quasi-de Sitter
+  - horizon problem
+  - flatness problem
+  - monopole problem
+  - primordial*
+  - scale-invarian*
+  - scale invarian*
+  - spectral index
+  - tensor-to-scalar*
+  - tensor to scalar*
+  - B-mode*
+  - gravitational wave*
+  - non-Gaussian*
+  - isocurvature
+  - adiabatic perturbation*
+  - curvature perturbation*
+  - cosmic microwave background
+  - CMB
+  - cosmolog*
+  - early universe
+  - big bang
+  - multiverse
+  - eternal inflation
+  - chaotic inflation
+  - new inflation
+  - hybrid inflation
+  - Starobinsky
+  - cyclic universe
+  - ekpyrotic
+  - bouncing cosmolog*
+  - Hubble*
+  - spatial curvature
+  - closed universe
+  - galactic dust
+  - polarization
+  - polarisation
+  - anisotrop*
+names:
+  - Guth
+  - Linde
+  - Albrecht
+  - Steinhardt
+  - Mukhanov
+  - Bardeen
+  - Hawking
+  - Turner
+  - Vilenkin
+  - Ijjas
+  - Loeb
+  - Eriksen
+  - Di Valentino
+  - Melchiorri
+  - Silk
+places:
+  - South Pole
+organisations:
+  - Planck
+  - WMAP
+  - COBE
+  - BICEP*
+  - Keck Array
+  - BICEP/Keck
+  - LiteBIRD
+  - Simons Observatory

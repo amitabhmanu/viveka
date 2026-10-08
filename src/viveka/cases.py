@@ -147,6 +147,17 @@ def load_commitment(root: Path, field_id: str, commitment_id: str) -> tuple[Case
     return replace(field, claim=found.claim, seeds=found.seeds), load_claim(root, found.claim)
 
 
+def load_coded(root: Path, subject_id: str, commitment_id: str | None) -> tuple[Case, Claim, str]:
+    """What the coding stages work on, and its name in run records: a field's commitment
+    ("<field>-<commitment>") or, with no commitment, a case with its claim."""
+    if commitment_id:
+        return (*load_commitment(root, subject_id, commitment_id), f"{subject_id}-{commitment_id}")
+    case, claim = load_case(root, subject_id)
+    if claim is None:
+        raise CaseError(f"case {subject_id} has no claim")
+    return case, claim, subject_id
+
+
 def load_subject(root: Path, subject_id: str, is_field: bool) -> tuple[Case, Claim | None]:
     """A case with its claim, or a calibration field (no claim)."""
     return (load_field(root, subject_id), None) if is_field else load_case(root, subject_id)
