@@ -1,0 +1,15 @@
+# Drafted 8 Oct 2026 under decision D-31 (exploratory contested cases); awaiting owner review.
+format: 1
+case: cosmic-inflation
+claim: cosmic-inflation
+role: pilot
+pair: contested
+window: {start: 1981, end: 2025}
+notes: "Exploratory contested case (D-31), not a matched pair: 'pilot' and 'contested' are the nearest values the case schema allows, and no pair prediction attaches to it. Window from the first seed (1981) to the end of the corpus. The community has no venues of its own (it publishes in the general physics and astronomy journals and on arXiv), so the only frame is the works citing the seeds. Running the case now means it can no longer serve as a pre-registered contested case of the framework's validation programme."
+seeds:
+  - {openalex: W2134251287, doi: 10.1103/physrevd.23.347, note: "Guth 1981, Inflationary universe (founding claim)"}
+  - {openalex: W1973861971, doi: 10.1016/0370-2693(82)91219-9, note: "Linde 1982, new inflation"}
+  - {openalex: W2012869970, doi: 10.1103/physrevlett.48.1220, note: "Albrecht and Steinhardt 1982, new inflation"}
+  - {openalex: W2155678178, doi: 10.1103/physrevlett.112.241101, note: "BICEP2 2014, reported detection of B-mode polarisation (principal positive report, later attributed to dust)"}
+frames:
+  - {id: citing, kind: mainstream, cites: seeds, note: "Every work citing a seed in the window, proponents and critics included."}

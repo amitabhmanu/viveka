@@ -1,0 +1,32 @@
+# Drafted 8 Oct 2026 under decision D-31 (exploratory contested cases); every work verified by OpenAlex lookup.
+# Awaiting owner review.
+
+format: 1
+claim: cosmic-inflation
+wording: "The early universe underwent a period of accelerated expansion driven by a slowly rolling scalar field, which made it spatially flat and statistically isotropic and seeded nearly scale-invariant, adiabatic, Gaussian perturbations, with primordial gravitational waves."
+notes: "Contested case, exploratory. The wording lists what the community cites as inflation's confirmed predictions (flatness, isotropy, the spectrum of perturbations) and its awaited one (primordial gravitational waves), so the converse results are fixed by its own practice (framework, principle P): evidence of curvature, of statistical anisotropy, or the absence of the gravitational-wave signal. The charge that inflation cannot be disconfirmed because its models adjust to any result (Ijjas, Steinhardt and Loeb 2013) is a critique, not a result, and is not an event; whether results like these are allowed to count is what the case measures. For owner review: the Planck constraints papers (2013 XXII, 2018 X) are cited both as inflation's confirmation and as ruling out its simplest models, so they are left to the direction task and not listed; and whether the claim should be split into the paradigm and its simple single-field models, which the upper limits on gravitational waves bear on far more directly."
+events:
+  - id: eriksen-2004
+    date: "2004"
+    kind: disconfirmation
+    works: [{openalex: W2170603249, doi: 10.1086/382267}]
+    note: "WMAP: a hemispherical power asymmetry in the microwave background, against the statistical isotropy the community cites as support."
+    source: "OpenAlex lookup, 8 Oct 2026 (year from the record)."
+  - id: bicep-keck-planck-2015
+    date: "2015"
+    kind: disconfirmation
+    works: [{openalex: W1964777539, doi: 10.1103/physrevlett.114.101301}]
+    note: "Joint BICEP2/Keck and Planck analysis: the 2014 B-mode signal is consistent with galactic dust; no detection of primordial gravitational waves."
+    source: "OpenAlex lookup, 8 Oct 2026 (year from the record)."
+  - id: di-valentino-2019
+    date: "2019"
+    kind: disconfirmation
+    works: [{openalex: W2987576354, doi: 10.1038/s41550-019-0906-9}]
+    note: "Planck 2018 lensing amplitude read as evidence for a closed universe, against the flatness the community cites as support."
+    source: "OpenAlex lookup, 8 Oct 2026 (year from the record)."
+  - id: bicep-keck-2021
+    date: "2021"
+    kind: disconfirmation
+    works: [{openalex: W3202102945, doi: 10.1103/physrevlett.127.151301}]
+    note: "BICEP/Keck through 2018: tensor-to-scalar ratio below 0.036; still no primordial gravitational waves, and the simplest monomial models excluded."
+    source: "OpenAlex lookup, 8 Oct 2026 (year from the record)."

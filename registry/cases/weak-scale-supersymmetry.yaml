@@ -1,0 +1,15 @@
+# Drafted 8 Oct 2026 under decision D-31 (exploratory contested cases); awaiting owner review.
+format: 1
+case: weak-scale-supersymmetry
+claim: weak-scale-supersymmetry
+role: pilot
+pair: contested
+window: {start: 1981, end: 2025}
+notes: "Exploratory contested case (D-31), not a matched pair: 'pilot' and 'contested' are the nearest values the case schema allows, and no pair prediction attaches to it. Window from the first seed (1981) to the end of the corpus. The community has no venues of its own (it publishes in the general high-energy physics journals and on arXiv), so the only frame is the works citing the seeds. Running the case now means it can no longer serve as a pre-registered contested case of the framework's validation programme."
+seeds:
+  - {openalex: W2137478082, doi: 10.1016/0550-3213(81)90522-8, note: "Dimopoulos and Georgi 1981, softly broken supersymmetry and SU(5) (founding model)"}
+  - {openalex: W2090314870, doi: 10.1016/0370-1573(85)90051-1, note: "Haber and Kane 1985, The search for supersymmetry (the programme's standard reference)"}
+  - {openalex: W1982283102, doi: 10.1016/0550-3213(88)90171-x, note: "Barbieri and Giudice 1988, upper bounds on superpartner masses from naturalness (the stated revision condition)"}
+  - {openalex: W2051795315, doi: 10.1016/0370-2693(91)91641-8, note: "Amaldi, de Boer and Fürstenau 1991, gauge couplings unify with supersymmetry (principal result cited as support)"}
+frames:
+  - {id: citing, kind: mainstream, cites: seeds, note: "Every work citing a seed in the window, proponents and critics included."}

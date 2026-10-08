@@ -1,0 +1,38 @@
+# Drafted 8 Oct 2026 under decision D-31 (exploratory contested cases); every work verified by OpenAlex lookup.
+# Awaiting owner review.
+
+format: 1
+claim: weak-scale-supersymmetry
+wording: "Supersymmetric partners of the known particles exist at or near the weak scale, where they stabilise the Higgs mass against large quantum corrections."
+notes: "Contested case, exploratory. The claim is the naturalness form of supersymmetry, the one with a stated revision condition: Barbieri and Giudice (1988, a seed) bounded superpartner masses from above by the fine-tuning they would require. By the community's own practice, searches that could have found superpartners count as support when positive, so null searches count against (framework, principle P). The 125 GeV Higgs (2012) is not listed: it lies inside the range minimal models allow and outside the range they favour without heavy superpartners, so its direction is itself disputed; the direction task labels it like any other bearing result. For owner review: whether the LEP Higgs bound belongs here (it bears on the claim through fine-tuning, the 'little hierarchy problem', not through a direct search), and whether dark-matter direct detection does (it bears on the neutralino, which the community cites as support)."
+events:
+  - id: lep-higgs-2003
+    date: "2003"
+    kind: disconfirmation
+    works: [{openalex: W2173403199, doi: 10.1016/s0370-2693(03)00614-2}]
+    note: "LEP combined: no Higgs boson below 114.4 GeV, above the mass minimal supersymmetric models reach without fine-tuning."
+    source: "OpenAlex lookup, 8 Oct 2026 (year from the record)."
+  - id: cms-2011
+    date: "2011"
+    kind: disconfirmation
+    works: [{openalex: W1999552654, doi: 10.1016/j.physletb.2011.03.021}]
+    note: "CMS, first 7 TeV data: no excess in jets with missing transverse energy; squark and gluino mass limits beyond the Tevatron's."
+    source: "OpenAlex lookup, 8 Oct 2026 (year from the record)."
+  - id: atlas-2011
+    date: "2011"
+    kind: disconfirmation
+    works: [{openalex: W6910370097, doi: 10.1016/j.physletb.2011.05.061}]
+    note: "ATLAS, first 7 TeV data: no squarks or gluinos in jets with missing transverse momentum."
+    source: "OpenAlex lookup, 8 Oct 2026 (year from the record)."
+  - id: atlas-2018
+    date: "2018"
+    kind: disconfirmation
+    works: [{openalex: W2772060706, doi: 10.1103/physrevd.97.112001}]
+    note: "ATLAS, 36 inverse femtobarns at 13 TeV: no squarks or gluinos; limits near 2 TeV, beyond the masses naturalness had bounded."
+    source: "OpenAlex lookup, 8 Oct 2026 (year from the record)."
+  - id: xenon1t-2018
+    date: "2018"
+    kind: disconfirmation
+    works: [{openalex: W2805537661, doi: 10.1103/physrevlett.121.111302}]
+    note: "XENON1T, one ton-year: no dark-matter signal; excludes much of the neutralino parameter space the community cites as support."
+    source: "OpenAlex lookup, 8 Oct 2026 (year from the record)."
