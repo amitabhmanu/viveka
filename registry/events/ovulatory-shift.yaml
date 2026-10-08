@@ -1,0 +1,32 @@
+# Drafted 8 Oct 2026 under decision D-31 (exploratory contested cases); every work verified by OpenAlex lookup.
+# Awaiting owner review.
+
+format: 1
+claim: ovulatory-shift
+wording: "Women's mate preferences shift across the ovulatory cycle: near ovulation, women are more attracted to men who show cues of genetic quality, such as masculinity and symmetry, especially as short-term partners."
+notes: "Contested case, exploratory: one adaptive hypothesis of evolutionary psychology, chosen because the evidence the community cites runs both ways and the results against it are dated. The framework's open question for the field is Gould and Lewontin's charge, whether failed adaptive hypotheses debit adaptationism or are replaced (framework, 'Expected readings'); this case measures only how results on this one hypothesis are treated. For owner review: the two 2014 meta-analyses reached opposite conclusions from overlapping studies; the one concluding in favour (Gildersleeve, Haselton and Fales) is a seed, the one concluding against (Wood and colleagues) an event."
+events:
+  - id: wood-2014
+    date: "2014"
+    kind: disconfirmation
+    works: [{openalex: W1992063018, doi: 10.1177/1754073914523073}]
+    note: "Meta-analysis of 58 reports: no robust shift in preferences for masculinity, dominance, symmetry or health across the cycle."
+    source: "OpenAlex lookup, 8 Oct 2026 (year from the record)."
+  - id: jones-2018
+    date: "2018"
+    kind: disconfirmation
+    works: [{openalex: W2786696582, doi: 10.1177/0956797618760197}]
+    note: "Large longitudinal study with measured hormones: preferences for facial masculinity do not track hormonal status."
+    source: "OpenAlex lookup, 8 Oct 2026 (year from the record)."
+  - id: junger-2018
+    date: "2018"
+    kind: disconfirmation
+    works: [{openalex: W2790575179, doi: 10.1016/j.evolhumbehav.2018.03.007}]
+    note: "Pre-registered study with hormone assays: fertile women rate male bodies as more attractive regardless of masculinity; no preference shift."
+    source: "OpenAlex lookup, 8 Oct 2026 (year from the record)."
+  - id: stern-2020
+    date: "2020"
+    kind: disconfirmation
+    works: [{openalex: W2953240541, doi: 10.1177/0956797619882022}]
+    note: "Pre-registered study: no ovulatory shift in preferences for men's behaviours."
+    source: "OpenAlex lookup, 8 Oct 2026 (year from the record)."

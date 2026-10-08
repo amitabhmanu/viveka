@@ -1,0 +1,15 @@
+# Drafted 8 Oct 2026 under decision D-31 (exploratory contested cases); awaiting owner review.
+format: 1
+case: ovulatory-shift
+claim: ovulatory-shift
+role: pilot
+pair: contested
+window: {start: 1998, end: 2025}
+notes: "Exploratory contested case (D-31), not a matched pair: 'pilot' and 'contested' are the nearest values the case schema allows, and no pair prediction attaches to it. Window from the first seed (1998) to the end of the corpus. Two frames: the works citing the seeds, and evolutionary psychology's own journals, so that the community is found among the people who publish there and not only among those who cite this hypothesis. Evolution and Human Behavior is an Elsevier journal and Human Nature a Springer one; how many of their reference lists and citing passages are available is not yet measured. Running the case now means evolutionary psychology can no longer serve as a pre-registered contested case of the framework's validation programme on this hypothesis."
+seeds:
+  - {openalex: W2083493504, doi: 10.1098/rspb.1998.0380, note: "Gangestad and Thornhill 1998, cycle variation in preference for the scent of symmetrical men (founding report)"}
+  - {openalex: W1752299843, doi: 10.1038/21557, note: "Penton-Voak et al. 1999, Menstrual cycle alters face preference (principal positive report)"}
+  - {openalex: W2149454885, doi: 10.1037/a0035438, note: "Gildersleeve, Haselton and Fales 2014, the meta-analysis concluding that the shifts are robust"}
+frames:
+  - {id: citing, kind: mainstream, cites: seeds, note: "Every work citing a seed in the window, proponents and critics included."}
+  - {id: community, kind: community, sources: [S148068116, S69210698, S67524285], note: "Evolution and Human Behavior (ISSN-L 1090-5138), Evolutionary Psychology (1474-7049) and Human Nature (1045-6767), from OpenAlex."}

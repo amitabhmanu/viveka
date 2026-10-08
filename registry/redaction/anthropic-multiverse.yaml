@@ -1,0 +1,59 @@
+format: 1
+subject: anthropic-multiverse
+note: "Seed list drafted 8 Oct 2026 from domain knowledge under decision D-31, before any item of the case was seen; awaiting owner review. No leakage test has been run on it (the test failed for every coder on the calibration fields, D-25)."
+terms:
+  - multiverse*
+  - landscape
+  - anthropic*
+  - eternal inflation
+  - eternally inflating
+  - inflation*
+  - bubble universe*
+  - pocket universe*
+  - bubble collision*
+  - bubble nucleation
+  - false vacuum
+  - vacua
+  - vacuum energy
+  - vacuum decay
+  - tunnel*
+  - cosmological constant
+  - dark energy
+  - string theor*
+  - flux compactification*
+  - flux vacua
+  - measure problem
+  - typicality
+  - Boltzmann brain*
+  - spatial curvature
+  - open universe
+  - closed universe
+  - cosmic microwave background
+  - CMB
+  - cosmolog*
+  - de Sitter
+  - fine-tuning
+  - fine tuning
+  - swampland
+names:
+  - Weinberg
+  - Vilenkin
+  - Linde
+  - Guth
+  - Bousso
+  - Polchinski
+  - Susskind
+  - Freivogel
+  - Kleban
+  - Schillo
+  - Feeney
+  - Peiris
+  - Garriga
+  - Tegmark
+  - Di Valentino
+  - Coleman
+  - De Luccia
+places: []
+organisations:
+  - Planck
+  - WMAP

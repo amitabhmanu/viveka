@@ -1,0 +1,63 @@
+format: 1
+subject: ovulatory-shift
+note: "Seed list drafted 8 Oct 2026 from domain knowledge under decision D-31, before any item of the case was seen; awaiting owner review. No leakage test has been run on it (the test failed for every coder on the calibration fields, D-25)."
+terms:
+  - evolutionary psycholog*
+  - evolved psycholog*
+  - adaptationis*
+  - ovulat*
+  - periovulatory
+  - menstrual*
+  - fertil*
+  - conception risk
+  - cycle phase*
+  - cycle shift*
+  - luteal
+  - follicular
+  - estradiol
+  - oestradiol
+  - progesterone
+  - testosterone
+  - hormon*
+  - contracepti*
+  - mate preference*
+  - mate choice
+  - mating
+  - short-term partner*
+  - long-term partner*
+  - short-term mating
+  - extra-pair*
+  - good genes
+  - genetic quality
+  - masculin*
+  - feminin*
+  - symmetr*
+  - fluctuating asymmetry
+  - facial*
+  - attractive*
+  - dominan*
+  - sexual selection
+  - sexual desire
+  - dual sexuality
+  - estrus
+  - oestrus
+names:
+  - Gangestad
+  - Thornhill
+  - Penton-Voak
+  - Perrett
+  - Haselton
+  - Gildersleeve
+  - Fales
+  - Buss
+  - Wood
+  - Kressel
+  - Jones
+  - DeBruine
+  - Penke
+  - Jünger
+  - Stern
+  - Tooby
+  - Cosmides
+places: []
+organisations: []

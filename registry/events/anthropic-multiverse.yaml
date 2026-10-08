@@ -1,0 +1,20 @@
+# Drafted 8 Oct 2026 under decision D-31 (exploratory contested cases); every work verified by OpenAlex lookup.
+# Awaiting owner review.
+
+format: 1
+claim: anthropic-multiverse
+wording: "Our observable universe is one region of an eternally inflating multiverse with many vacua, and the observed value of the cosmological constant is explained by anthropic selection among them."
+notes: "Contested case, exploratory, drafted expecting a thin reading. The community cites one result as support: the observed cosmological constant lying inside Weinberg's 1987 anthropic bound (a seed). By principle P, results of that kind must then be able to count against. It has also stated revision conditions: a universe nucleated as a bubble has negative spatial curvature, so measured positive curvature would rule the picture out (Freivogel and colleagues 2006 and Kleban and Schillo 2012, both seeds), and bubble collisions would leave imprints on the microwave background. Only two results are registered against, and most of what this literature cites is theory; the likely outcome is too little cited evidence to read, which the framework reports as such (a tradition is out of scope only if it claims no empirical warrant, and this one claims some). For owner review: the closed-universe result is also an event of the cosmic-inflation case, and the two communities overlap; whether the absence of a detected bubble collision counts against a claim that predicts collisions only as possible, not as necessary."
+events:
+  - id: feeney-2011
+    date: "2011"
+    kind: disconfirmation
+    works: [{openalex: W2157221705, doi: 10.1103/physrevlett.107.071301}]
+    note: "First search for bubble-collision imprints in the WMAP microwave background: no significant evidence of a collision."
+    source: "OpenAlex lookup, 8 Oct 2026 (year from the record)."
+  - id: di-valentino-2019
+    date: "2019"
+    kind: disconfirmation
+    works: [{openalex: W2987576354, doi: 10.1038/s41550-019-0906-9}]
+    note: "Planck 2018 lensing amplitude read as evidence for a closed universe, the sign of curvature the community said would rule out bubble nucleation."
+    source: "OpenAlex lookup, 8 Oct 2026 (year from the record)."

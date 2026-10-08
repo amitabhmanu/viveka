@@ -1,0 +1,16 @@
+# Drafted 8 Oct 2026 under decision D-31 (exploratory contested cases); awaiting owner review.
+format: 1
+case: anthropic-multiverse
+claim: anthropic-multiverse
+role: pilot
+pair: contested
+window: {start: 1983, end: 2025}
+notes: "Exploratory contested case (D-31), not a matched pair: 'pilot' and 'contested' are the nearest values the case schema allows, and no pair prediction attaches to it. Window from the first seed (1983) to the end of the corpus. The community has no venues of its own, so the only frame is the works citing the seeds. Its authors overlap with the cosmic-inflation case's; the overlap is not yet measured."
+seeds:
+  - {openalex: W1590390162, doi: 10.1103/physrevd.27.2848, note: "Vilenkin 1983, Birth of inflationary universes (eternal inflation)"}
+  - {openalex: W2063829172, doi: 10.1103/physrevlett.59.2607, note: "Weinberg 1987, anthropic bound on the cosmological constant (the result cited as support)"}
+  - {openalex: W2108534226, doi: 10.1088/1126-6708/2000/06/006, note: "Bousso and Polchinski 2000, the landscape of flux vacua"}
+  - {openalex: W2114900035, doi: 10.1088/1126-6708/2006/03/039, note: "Freivogel, Kleban, Rodríguez Martínez and Susskind 2006, Observational consequences of a landscape (stated revision condition: curvature)"}
+  - {openalex: W2024244587, doi: 10.1088/1475-7516/2012/06/029, note: "Kleban and Schillo 2012, Spatial curvature falsifies eternal inflation (stated revision condition)"}
+frames:
+  - {id: citing, kind: mainstream, cites: seeds, note: "Every work citing a seed in the window, proponents and critics included."}
