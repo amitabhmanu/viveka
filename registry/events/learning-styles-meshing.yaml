@@ -1,0 +1,44 @@
+# Drafted 10 Oct 2026 under decision D-34 (exploratory borderline-pseudoscience cases); every work verified by OpenAlex lookup.
+# Awaiting owner review.
+
+format: 1
+claim: learning-styles-meshing
+wording: "Learners have stable preferred learning styles, and instruction matched to a learner's style produces better learning than instruction that is not matched."
+notes: "Exploratory case: the meshing hypothesis of learning styles, chosen because it is widely taught in education while the controlled tests of matching have come out against it, and those tests are dated. The claim is about matching; that learners report preferences, or differ in ability or prior knowledge, is not in dispute here and does not bear on it. For owner review: Pashler and colleagues' review is registered by its OpenAlex year (2008; the issue is dated December 2008 and appeared in 2009), and Coffield and colleagues' 2004 report, the other major critical review, has no DOI and is not registered."
+events:
+  - id: massa-mayer-2006
+    date: "2006"
+    kind: disconfirmation
+    works: [{openalex: W2167813085, doi: 10.1016/j.lindif.2006.10.001}]
+    note: "Three experiments: matching multimedia instruction to verbalizer or visualizer style did not improve learning."
+    source: "OpenAlex lookup, 10 Oct 2026 (year from the record)."
+  - id: pashler-2008
+    date: "2008"
+    kind: disconfirmation
+    works: [{openalex: W2112955368, doi: 10.1111/j.1539-6053.2009.01038.x}]
+    note: "Review: almost no study uses the design needed to test meshing, and those that do mostly contradict it."
+    source: "OpenAlex lookup, 10 Oct 2026 (year from the record)."
+  - id: rogowsky-2014
+    date: "2014"
+    kind: disconfirmation
+    works: [{openalex: W2154195903, doi: 10.1037/a0037478}]
+    note: "Experiment with adults: matching auditory or visual preference to listening or reading did not improve comprehension."
+    source: "OpenAlex lookup, 10 Oct 2026 (year from the record)."
+  - id: cuevas-2015
+    date: "2015"
+    kind: disconfirmation
+    works: [{openalex: W2201394645, doi: 10.1177/1477878515606621}]
+    note: "Review of research since 2009: the studies with adequate designs do not support matching instruction to styles."
+    source: "OpenAlex lookup, 10 Oct 2026 (year from the record)."
+  - id: knoll-2016
+    date: "2016"
+    kind: disconfirmation
+    works: [{openalex: W2519276661, doi: 10.1111/bjop.12214}]
+    note: "Experiment: verbal or visual style preference predicted judgements of learning but not recall of words or pictures."
+    source: "OpenAlex lookup, 10 Oct 2026 (year from the record)."
+  - id: husmann-2018
+    date: "2018"
+    kind: disconfirmation
+    works: [{openalex: W2789440911, doi: 10.1002/ase.1777}]
+    note: "Anatomy students: studying in line with one's VARK style was unrelated to course performance."
+    source: "OpenAlex lookup, 10 Oct 2026 (year from the record)."

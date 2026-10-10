@@ -1,0 +1,44 @@
+# Drafted 10 Oct 2026 under decision D-34 (exploratory borderline-pseudoscience cases); every work verified by OpenAlex lookup.
+# Awaiting owner review.
+
+format: 1
+claim: acupuncture-beyond-sham
+wording: "Needling at traditional acupuncture points produces clinical benefit beyond that of sham needling, such as superficial needling at non-points or non-penetrating needles."
+notes: "Exploratory case: the specific-effect claim of acupuncture, chosen because the community cites large trials on both sides and the results against it are dated. The claim is about verum against sham; that acupuncture of either kind does better than no treatment or usual care is not in dispute here and does not bear on it. For owner review: the 2012 individual patient data meta-analysis (Vickers and colleagues) found a small difference from sham and is a seed, while the 2009 BMJ review (Madsen and colleagues) found a difference too small to matter clinically and is an event; whether the German trials (GERAC), where verum and sham did not differ but both beat usual care, are read as disconfirmations is the heart of the dispute."
+events:
+  - id: linde-2005
+    date: "2005"
+    kind: disconfirmation
+    works: [{openalex: W2149227217, doi: 10.1001/jama.293.17.2118}]
+    note: "Randomised trial in migraine: acupuncture no more effective than sham acupuncture, both better than waiting list."
+    source: "OpenAlex lookup, 10 Oct 2026 (year from the record)."
+  - id: scharf-2006
+    date: "2006"
+    kind: disconfirmation
+    works: [{openalex: W2027523579, doi: 10.7326/0003-4819-145-1-200607040-00005}]
+    note: "GERAC trial in knee osteoarthritis: no difference between traditional Chinese and sham acupuncture."
+    source: "OpenAlex lookup, 10 Oct 2026 (year from the record)."
+  - id: haake-2007
+    date: "2007"
+    kind: disconfirmation
+    works: [{openalex: W2157041856, doi: 10.1001/archinte.167.17.1892}]
+    note: "GERAC trial in chronic low back pain: verum and sham acupuncture did not differ; both beat conventional therapy."
+    source: "OpenAlex lookup, 10 Oct 2026 (year from the record)."
+  - id: cherkin-2009
+    date: "2009"
+    kind: disconfirmation
+    works: [{openalex: W2117065566, doi: 10.1001/archinternmed.2009.65}]
+    note: "Randomised trial in chronic low back pain: simulated acupuncture with toothpicks as effective as individualised or standardised needling."
+    source: "OpenAlex lookup, 10 Oct 2026 (year from the record)."
+  - id: madsen-2009
+    date: "2009"
+    kind: disconfirmation
+    works: [{openalex: W2106666670, doi: 10.1136/bmj.a3115}]
+    note: "Systematic review of three-armed trials: a small analgesic difference between acupuncture and placebo acupuncture, of doubtful clinical relevance and not distinguishable from bias."
+    source: "OpenAlex lookup, 10 Oct 2026 (year from the record)."
+  - id: hinman-2014
+    date: "2014"
+    kind: disconfirmation
+    works: [{openalex: W2105767438, doi: 10.1001/jama.2014.12660}]
+    note: "Randomised trial in chronic knee pain: neither needle nor laser acupuncture better than sham."
+    source: "OpenAlex lookup, 10 Oct 2026 (year from the record)."

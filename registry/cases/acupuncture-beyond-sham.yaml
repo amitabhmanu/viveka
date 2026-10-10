@@ -1,0 +1,15 @@
+# Drafted 10 Oct 2026 under decision D-34 (exploratory borderline-pseudoscience cases); awaiting owner review.
+format: 1
+case: acupuncture-beyond-sham
+claim: acupuncture-beyond-sham
+role: pilot
+pair: contested
+window: {start: 1998, end: 2025}
+notes: "Exploratory case (D-34), not a matched pair: 'pilot' and 'contested' are the nearest values the case schema allows, and no pair prediction attaches to it. Acupuncture is usually classed as pseudoscience but runs sham-controlled trials and publishes in indexed clinical journals. Window from the first seed (1998) to the end of the corpus. Two frames (owner decision, 10 Oct 2026): the works citing the seeds, and acupuncture's own journals, so that the community is found among the people who publish there and not only among those who cite these papers. Running the case now means acupuncture can no longer serve as a pre-registered case of the framework's validation programme on this claim."
+seeds:
+  - {openalex: W4241190731, doi: 10.1001/jama.280.17.1518, note: "NIH Consensus Development Panel 1998, Acupuncture (the statement that brought it into mainstream practice)"}
+  - {openalex: W2086173689, doi: 10.7326/0003-4819-141-12-200412210-00006, note: "Berman et al. 2004, acupuncture better than sham in osteoarthritis of the knee (principal positive trial)"}
+  - {openalex: W2139701896, doi: 10.1001/archinternmed.2012.3654, note: "Vickers et al. 2012, individual patient data meta-analysis concluding acupuncture is more than a placebo"}
+frames:
+  - {id: citing, kind: mainstream, cites: seeds, note: "Every work citing a seed in the window, proponents and critics included."}
+  - {id: community, kind: community, sources: [S157213201, S105094556, S52239022], note: "Acupuncture in Medicine (ISSN-L 0964-5284), Journal of Acupuncture and Meridian Studies (2005-2901) and Medical Acupuncture (1933-6586), from OpenAlex."}

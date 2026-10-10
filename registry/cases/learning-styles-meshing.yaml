@@ -1,0 +1,14 @@
+# Drafted 10 Oct 2026 under decision D-34 (exploratory borderline-pseudoscience cases); awaiting owner review.
+format: 1
+case: learning-styles-meshing
+claim: learning-styles-meshing
+role: pilot
+pair: contested
+window: {start: 2005, end: 2025}
+notes: "Exploratory case (D-34), not a matched pair: 'pilot' and 'contested' are the nearest values the case schema allows, and no pair prediction attaches to it. Learning styles is a belief held inside a mainstream discipline (education) and has no journals of its own, so there is one frame, the works citing the seeds. Window from the 2005 seed to the end of the corpus, not from the first seed (1992): an owner decision of 10 Oct 2026, made before any fetch, because the window rule draws three lineage-windows in a seeded order and windows before about 2005 gave almost no citing passages in the supersymmetry case (D-32). Running the case now means learning styles can no longer serve as a pre-registered case of the framework's validation programme on this claim."
+seeds:
+  - {openalex: W1604331748, doi: 10.1002/j.2334-4822.1992.tb00213.x, note: "Fleming and Mills 1992, Not another inventory (the VARK model)"}
+  - {openalex: W2108361489, doi: 10.1080/00220671.1995.9941181, note: "Dunn et al. 1995, meta-analytic validation of the Dunn and Dunn model (principal positive report on matching)"}
+  - {openalex: W2147454772, doi: 10.5465/amle.2005.17268566, note: "Kolb and Kolb 2005, Learning styles and learning spaces (experiential learning styles in higher education)"}
+frames:
+  - {id: citing, kind: mainstream, cites: seeds, note: "Every work citing a seed in the window, proponents and critics included."}

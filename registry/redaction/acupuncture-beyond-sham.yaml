@@ -1,0 +1,39 @@
+format: 1
+subject: acupuncture-beyond-sham
+note: "Seed list drafted 10 Oct 2026 from domain knowledge under decision D-34, before any item of the case was seen; awaiting owner review. No leakage test has been run on it (the test failed for every coder on the calibration fields, D-25)."
+terms:
+  - acupunctur*
+  - electroacupunctur*
+  - electro-acupunctur*
+  - acupoint*
+  - acupressure
+  - moxibustion
+  - needl*
+  - sham
+  - verum
+  - placebo
+  - non-penetrating
+  - nonpenetrating
+  - minimal acupuncture
+  - non-point*
+  - meridian*
+  - qi
+  - de qi
+  - deqi
+  - traditional chinese medicine
+  - chinese medicine
+  - tcm
+  - complementary and alternative medicine
+  - complementary medicine
+  - alternative medicine
+  - integrative medicine
+  - gerac
+  - toothpick*
+  - low back pain
+  - back pain
+  - chronic pain
+  - migraine
+  - headache*
+  - osteoarthritis
+  - knee
+  - analges*
